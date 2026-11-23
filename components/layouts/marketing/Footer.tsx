@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   GraduationCap,
@@ -9,7 +8,6 @@ import {
   Loader2,
   ArrowRight,
 } from "lucide-react";
-
 
 import type {
   FooterColumn,
@@ -31,6 +29,15 @@ export default function Footer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+  const [currentYear, setCurrentYear] = useState(2026);
+
+  // Set the year after hydration to avoid prerender date errors.
+  useEffect(() => {
+    (() => {
+       setCurrentYear(new Date().getFullYear());
+    })()
+   
+  }, []);
 
   const handleSubscribe = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -112,7 +119,7 @@ export default function Footer({
 
                 <button
                   type="submit"
-                  disabled={!onSubscribe || isSubmitting}
+                  disabled={!onSubscribe || isSubmitting || !email.trim()}
                   className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-brand-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? (
@@ -130,6 +137,7 @@ export default function Footer({
               {message && (
                 <p
                   role="status"
+                  aria-live="polite"
                   className={`mt-2 flex items-center gap-1.5 text-xs ${
                     isSuccess ? "text-green-700" : "text-red-600"
                   }`}
@@ -177,7 +185,7 @@ export default function Footer({
 
           {/* Copyright */}
           <p className="text-center text-xs leading-relaxed text-brand-text-muted sm:text-left">
-            © {new Date().getFullYear()} Coursify. All rights reserved.
+            © {currentYear} Coursify. All rights reserved.
           </p>
 
           {/* Social Links */}

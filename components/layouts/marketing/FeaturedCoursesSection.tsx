@@ -202,9 +202,8 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
                 whileTap={{ scale: 0.98 }}
                 className="w-full sm:w-auto mt-4"
               >
-                <Link
-                  href="/courses"
-            className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg
+                <button
+            className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg cursor-pointer
                    group-hover:bg-primary px-7 text-[15px] font-semibold text-primary border border-primary/60
                     group-hover:text-white transition-colors
                     focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none sm:w-auto"
@@ -215,7 +214,7 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
               className="transition-transform duration-200
                      group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                   />
-                </Link>
+                </button>
               </motion.div>
 
       </div>
