@@ -76,7 +76,7 @@ const CareerCoursesSection = ({
   return (
     <section
       id="career-courses"
-      className=" py-16 sm:py-20"
+      className=" py-16 sm:py-8"
     >
       <div className="w-full px-4 sm:px-6 xl:px-10 2xl:px-15 flex flex-col gap-10">
 
@@ -330,12 +330,12 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
         {/* Price and enrollment */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-border pt-3">
           <div className="min-w-0">
-            <p className="text-xl font-extrabold text-brand-primary">
+            <p className="text-xl md:text-2xl font-extrabold text-brand-primary">
               {formattedPrice}
             </p>
 
             {formattedOriginalPrice && (
-              <p className="text-xs text-brand-text-muted line-through">
+              <p className="text-xs md:text-base text-brand-text-muted line-through">
                 {formattedOriginalPrice}
               </p>
             )}

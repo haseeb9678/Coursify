@@ -414,7 +414,7 @@ const HeroSection = ({ slides = heroSlides }: HeroSectionProps) => {
                         opts={{
                           align: "start",
                           loop: displayedSlides.length > 1,
-                          duration: 15,
+                          duration: 12,
                         }}
                         className="w-full"
                       >

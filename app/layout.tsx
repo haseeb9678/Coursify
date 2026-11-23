@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import Providers from "@/providers/Providers";
 import "./globals.css";
+import CustomCursor from "@/components/shared/CustomCursor";
 
 const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -46,7 +47,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col font-sans antialiased">
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+        <CustomCursor/>
+        </Providers>
       </body>
     </html>
   );
