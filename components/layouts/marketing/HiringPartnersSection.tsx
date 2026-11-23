@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -44,19 +43,23 @@ function CompanyLogo({
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="group flex h-16 items-center justify-center rounded-xl border border-brand-border/70 bg-white px-6 transition-all duration-300 hover:border-brand-soft-border hover:shadow-md">
+    <div className="group flex h-16 w-40 shrink-0 items-center cursor-default!
+     justify-center rounded-xl border border-brand-border/70 bg-white px-6 transition-all duration-300
+      hover:border-primary/50 hover:shadow-md sm:w-44">
       {!failed ? (
         <img
           src={company.logo}
           alt={company.alt}
           loading="lazy"
-          className="max-h-7 max-w-[110px] object-contain grayscale opacity-70 transition-all duration-300 group-hover:scale-105 group-hover:opacity-100"
+          className="max-h-7 max-w-[110px] object-contain grayscale opacity-70
+           transition-all duration-300 group-hover:scale-105 group-hover:opacity-100"
           onError={() => setFailed(true)}
         />
       ) : (
-        <span className="text-xl font-extrabold tracking-tight text-[#6B7280] transition-colors group-hover:text-brand-text">
-          {company.name}
-        </span>
+          <span className="text-xl font-extrabold tracking-tight text-[#6B7280]
+          transition-colors duration-300 group-hover:text-brand-primary">
+  {company.name}
+</span>
       )}
     </div>
   );
@@ -65,7 +68,26 @@ function CompanyLogo({
 export default function HiringPartnersSection() {
   return (
     <section className="relative border-y border-brand-border/60 bg-[#FAFBFD] py-16">
-      <div className="w-full px-4 sm:px-6">
+      {/* Marquee motion: the track holds two identical sets and slides by exactly one set */}
+      <style>{`
+        @keyframes hiring-marquee {
+          from { transform: translate3d(0, 0, 0); }
+          to { transform: translate3d(-50%, 0, 0); }
+        }
+        .hiring-marquee-track {
+          animation: hiring-marquee 30s linear infinite;
+          will-change: transform;
+        }
+        .hiring-marquee-track:hover {
+          animation-play-state: paused;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hiring-marquee-track { animation: none; }
+          .hiring-marquee { overflow-x: auto; }
+        }
+      `}</style>
+
+      <div className="w-full px-4 sm:px-6 xl:px-10 2xl:px-15">
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12">
 
           {/* Left Column: Heading & Subtext */}
@@ -75,7 +97,11 @@ export default function HiringPartnersSection() {
             </span>
 
             <h2 className="text-2xl font-extrabold leading-tight text-brand-text sm:text-3xl">
-              Companies Who Hire Our Certified Students
+              Companies Who Hire Our{" "}
+                <span className="bg-gradient-to-r from-brand-primary to-indigo-500 bg-clip-text text-transparent">
+      Certified  Students
+    </span>
+              
             </h2>
 
             <p className="text-sm leading-relaxed text-brand-text-muted">
@@ -84,11 +110,26 @@ export default function HiringPartnersSection() {
             </p>
           </div>
 
-          {/* Right Column: 3x2 Company Logos */}
-          <div className="grid grid-cols-2 items-center gap-6 sm:grid-cols-3 lg:col-span-7">
-            {companies.map((company) => (
-              <CompanyLogo key={company.name} company={company} />
-            ))}
+          {/* Right Column: Continuously moving company logos (pauses on hover) */}
+          <div
+            className="hiring-marquee min-w-0 overflow-hidden py-3 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] lg:col-span-7"
+          >
+            <div className="hiring-marquee-track flex w-max">
+              {[0, 1].map((setIndex) => (
+                <div
+                  key={setIndex}
+                  aria-hidden={setIndex === 1 ? true : undefined}
+                  className="flex shrink-0 items-center gap-6 pr-6"
+                >
+                  {companies.map((company) => (
+                    <CompanyLogo
+                      key={`${setIndex}-${company.name}`}
+                      company={company}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
 
         </div>

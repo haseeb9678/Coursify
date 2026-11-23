@@ -59,8 +59,8 @@ const FeaturedCoursesSection = ({
          <div className="flex flex-col items-center justify-center gap-4 text-center">
 
   {/* Section Label */}
-            <span className=" border border-primary/30 bg-brand-soft px-6
-  py-3 text-lg font-extrabold uppercase tracking-[0.1em] text-brand-primary">
+            <span className=" rounded-full border border-primary/30 bg-brand-soft px-6
+  py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
     Top Rated Courses
   </span>
 
@@ -91,7 +91,7 @@ const FeaturedCoursesSection = ({
                     {courses.map((course, index) => (
                       <CarouselItem
                         key={course.id}
-                        className="basis-full pl-10 sm:basis-1/2 xl:basis-1/3"
+                        className="basis-full pl-10 md:basis-1/2 xl:basis-1/3"
                       >
                         <MotionReveal className="h-full" delay={index * 0.05} hover>
                           <CourseCard course={course} />
@@ -146,7 +146,7 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
       className="group relative isolate block h-full overflow-hidden rounded-xl border border-primary/30
      hover:border-primary/50
         bg-white/70 px-8 py-8 shadow-sm backdrop-blur-xl min-h-140
-        transition-all duration-300 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/30"
+        transition-all duration-300 hover:-translate-y-2 hover:shadow-lg hover:shadow-primary/20"
     >
       {/* Subtle top gradient glow */}
       <div
@@ -197,25 +197,26 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
           </span>
         </div>
 
-           <motion.div
-               
-                whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto mt-4"
-              >
-                <button
-            className="group inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg cursor-pointer
-                   group-hover:bg-primary px-7 text-[15px] font-semibold text-primary border border-primary/60
-                    group-hover:text-white transition-colors
-                    focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none sm:w-auto"
-                >
-                  Check course
-                  <ArrowUpRight
-                    size={17}
-              className="transition-transform duration-200
-                     group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </button>
-              </motion.div>
+          <motion.span
+  whileTap={{ scale: 0.98 }}
+          className="relative mt-auto flex w-full items-center justify-center gap-2 max-w-max
+  overflow-hidden rounded-lg border border-primary/60 px-5 py-3.5 text-sm font-semibold text-primary 
+  transition-colors duration-300 group-hover:border-primary group-hover:bg-primary
+   group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/20 sm:mt-6"
+>
+  {/* Light sweep on hover */}
+  <span
+    aria-hidden
+    className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-white/25 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
+  />
+
+  <span className="relative">Check course</span>
+
+  <ArrowUpRight
+    size={17}
+    className="relative transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+  />
+</motion.span>
 
       </div>
     </Link>

@@ -10,6 +10,8 @@ export const careerTracks: CareerTrack[] = [
     { id: "3", name: "Data Science", slug: "data-science" },
     { id: "4", name: "Digital Marketing", slug: "digital-marketing" },
     { id: "5", name: "Business", slug: "business" },
+    { id: "6", name: "Mobile Development", slug: "mobile-development" },
+
 ];
 
 export const careerCourses: CareerCourse[] = [

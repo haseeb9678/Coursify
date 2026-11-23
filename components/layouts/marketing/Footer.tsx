@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
@@ -29,14 +30,15 @@ export default function Footer({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Same initial value on server and client prevents hydration mismatch.
   const [currentYear, setCurrentYear] = useState(2026);
 
-  // Set the year after hydration to avoid prerender date errors.
   useEffect(() => {
     (() => {
-       setCurrentYear(new Date().getFullYear());
+      setCurrentYear(new Date().getFullYear());
+      
     })()
-   
   }, []);
 
   const handleSubscribe = async (event: FormEvent<HTMLFormElement>) => {
@@ -64,10 +66,10 @@ export default function Footer({
 
   return (
     <footer className="border-t border-brand-soft-border bg-brand-soft pt-16 pb-10">
-      <div className="w-full px-4 sm:px-6">
+      <div className="w-full px-4 sm:px-6 xl:px-10 2xl:px-15">
 
         {/* Main Footer */}
-        <div className="grid grid-cols-1 gap-12 border-b border-brand-soft-border pb-12 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-18 border-b border-brand-soft-border pb-12 lg:grid-cols-12">
 
           {/* Brand & Newsletter Column */}
           <div className="space-y-5 lg:col-span-4">
@@ -76,14 +78,28 @@ export default function Footer({
             <Link
               href="/"
               aria-label="Coursify homepage"
-              className="inline-flex items-center gap-2.5"
+              className="group relative inline-flex flex-col items-start gap-2 overflow-hidden rounded-xl py-2"
             >
-              <span className="flex size-9 items-center justify-center rounded-lg bg-brand-primary text-white">
-                <GraduationCap size={21} strokeWidth={2} />
-              </span>
+              <span className="relative flex items-center gap-2.5">
 
-              <span className="text-[22px] font-extrabold tracking-tight text-brand-primary">
-                Coursify
+                {/* Logo Icon */}
+                <span className="flex size-10 items-center justify-center rounded-xl bg-brand-primary text-white shadow-lg shadow-brand-primary/20 transition-all duration-300 group-hover:rotate-[-6deg] group-hover:scale-105">
+                  <GraduationCap size={23} strokeWidth={2.2} />
+                </span>
+
+                {/* Brand Name */}
+                <span className="text-4xl font-extrabold tracking-[-0.055em] text-brand-text transition-colors duration-300 group-hover:text-brand-primary sm:text-5xl">
+                  Coursify
+                  <span className="text-brand-primary transition-colors duration-300 group-hover:text-brand-text">
+                    .
+                  </span>
+                </span>
+
+                {/* Light Sweep Effect */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 -left-1/3 z-10 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/60 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
+                />
               </span>
             </Link>
 

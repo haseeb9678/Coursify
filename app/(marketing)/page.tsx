@@ -48,9 +48,6 @@ export default function HomePage() {
         <SkillDomainsSection domains={skillDomains} />
       </MotionReveal>
       <MotionReveal>
-        <StudentCommunityCTA />
-      </MotionReveal>
-      <MotionReveal>
         <GrowKnowledgeSection />
       </MotionReveal>
       <MotionReveal>
@@ -58,9 +55,6 @@ export default function HomePage() {
       </MotionReveal>
       <MotionReveal>
         <TestimonialsSection testimonials={testimonials} />
-      </MotionReveal>
-      <MotionReveal>
-        <BusinessInstructorSection />
       </MotionReveal>
       <MotionReveal>
         <FAQSection faqs={faqs} defaultOpenId="lifetime-access" />

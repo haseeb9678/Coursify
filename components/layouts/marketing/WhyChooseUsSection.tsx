@@ -1,4 +1,6 @@
 
+"use client";
+
 import {
   CalendarClock,
   Wallet,
@@ -11,6 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { motion, useReducedMotion } from "motion/react";
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
 
 interface Benefit {
@@ -41,97 +44,88 @@ const benefits: Benefit[] = [
 ];
 
 const features: Feature[] = [
-  {
-    title: "Expert Mentors",
-    description: "Industry veterans",
-    icon: Award,
-  },
-  {
-    title: "Lifetime Access",
-    description: "Revisit anytime",
-    icon: InfinityIcon,
-  },
-  {
-    title: "Certified Courses",
-    description: "Verified credentials",
-    icon: BadgeCheck,
-  },
-  {
-    title: "Interactive Quizzes",
-    description: "Test your mastery",
-    icon: CircleHelp,
-  },
-  {
-    title: "Global Network",
-    description: "Connect with learners",
-    icon: Globe,
-  },
-  {
-    title: "24/7 Support",
-    description: "Dedicated assistance",
-    icon: Headphones,
-  },
+  { title: "Expert Mentors", description: "Industry veterans", icon: Award },
+  { title: "Lifetime Access", description: "Revisit anytime", icon: InfinityIcon },
+  { title: "Certified Courses", description: "Verified credentials", icon: BadgeCheck },
+  { title: "Interactive Quizzes", description: "Test your mastery", icon: CircleHelp },
+  { title: "Global Network", description: "Connect with learners", icon: Globe },
+  { title: "24/7 Support", description: "Dedicated assistance", icon: Headphones },
 ];
 
 export default function WhyChooseUsSection() {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <section className="relative overflow-hidden py-16 sm:py-20">
-      {/* Ambient background glow */}
-      <div className="pointer-events-none absolute -left-24 top-1/2 size-[380px] -translate-y-1/2 rounded-full bg-brand-accent/[0.08] blur-[110px] sm:size-[480px] sm:blur-[130px]" />
+    <section className="relative isolate overflow-hidden border-y border-brand-primary/[0.07] py-16 sm:py-20">
 
-      <div className="relative z-10 w-full px-4 sm:px-6">
-        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
-          {/* Left Side: Heading and Benefits */}
-          <div className="space-y-6 lg:col-span-5">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-                Why Choose Us
-              </span>
+      {/* Ambient background lighting */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-40 bg-gradient-to-b from-brand-primary/[0.055] via-brand-primary/[0.025] to-transparent" />
 
-              <h2 className="mt-2 text-2xl font-extrabold leading-tight text-brand-text sm:text-3xl lg:text-[34px]">
-                Creating A Community Of Life Long Learners
-              </h2>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-indigo-500/[0.055] via-brand-primary/[0.025] to-transparent" />
 
-              <p className="mt-4 text-[15px] leading-relaxed text-brand-text-muted">
-                We believe education should adapt to your life—not the other
-                way around. Join an active global network of ambitious
-                learners building real-world portfolios.
-              </p>
-            </div>
+      {/* Soft side glows */}
+      <div className="pointer-events-none absolute -left-40 top-1/3 -z-10 size-[420px] rounded-full bg-brand-primary/[0.09] blur-[100px]" />
+
+      <div className="pointer-events-none absolute -right-40 bottom-0 -z-10 size-[380px] rounded-full bg-indigo-400/[0.08] blur-[110px]" />
+
+      <div className="relative z-10 w-full px-4 sm:px-6 xl:px-10 2xl:px-15">
+        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-14">
+
+          {/* Left: Introduction and Benefits */}
+          <div className="space-y-7 lg:col-span-5">
+            <MotionReveal>
+              <div>
+                <span className="inline-flex rounded-full border border-primary/30 bg-brand-soft px-6 py-3 text-[13px] font-extrabold uppercase tracking-[0.16em] text-brand-primary">
+                  Why Choose Us
+                </span>
+
+                <h2 className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-4xl">
+                  Creating A Community Of{" "}
+                  <span className="bg-gradient-to-r from-brand-primary to-indigo-500 bg-clip-text text-transparent">
+                    Life Long Learners
+                  </span>
+                </h2>
+
+                <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-brand-text-muted">
+                  We believe education should adapt to your life—not the other
+                  way around. Join a community of ambitious learners.
+                </p>
+              </div>
+            </MotionReveal>
 
             {/* Benefits */}
-            <div className="space-y-5 pt-1">
+            <div className="space-y-5">
               {benefits.map((benefit, index) => {
                 const Icon = benefit.icon;
 
                 return (
-                  <MotionReveal
-                    key={benefit.title}
-                    delay={index * 0.08}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-primary">
-                        <Icon size={21} />
+                  <MotionReveal key={benefit.title} delay={index * 0.1}>
+                    <motion.div
+                      whileHover={shouldReduceMotion ? undefined : { x: 5 }}
+                      transition={{ duration: 0.25 }}
+                      className="group flex items-start gap-4"
+                    >
+                      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-brand-soft-border bg-white/80 text-brand-primary shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+                        <Icon size={22} />
                       </div>
 
                       <div>
                         <h3 className="text-base font-bold text-brand-text">
                           {benefit.title}
                         </h3>
-
-                        <p className="mt-1 text-sm leading-relaxed text-brand-text-muted">
+                        <p className="mt-1 max-w-md text-sm leading-relaxed text-brand-text-muted">
                           {benefit.description}
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   </MotionReveal>
                 );
               })}
             </div>
           </div>
 
-          {/* Right Side: Feature Cards */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:col-span-7">
+          {/* Right: 3D Feature Cards */}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:col-span-7">
             {features.map((feature, index) => {
               const Icon = feature.icon;
 
@@ -139,23 +133,61 @@ export default function WhyChooseUsSection() {
                 <MotionReveal
                   key={feature.title}
                   className="h-full"
-                  delay={index * 0.06}
+                  delay={index * 0.07}
                   variant="scale"
-                  hover
                 >
-                  <div className="flex min-h-[160px] flex-col items-center justify-center rounded-xl border border-brand-border/80 bg-card p-4 text-center shadow-sm transition-all duration-300 hover:shadow-lg sm:min-h-[175px] sm:p-6">
-                    <div className="mb-3.5 flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-primary">
-                      <Icon size={24} />
-                    </div>
+                  <motion.div
+                    initial={false}
+                    whileHover={
+                      shouldReduceMotion
+                        ? undefined
+                        : {
+                            y: -8,
+                            rotateX: 5,
+                            rotateY: index % 2 === 0 ? -5 : 5,
+                            scale: 1.025,
+                          }
+                    }
+                    transition={{
+                      type: "spring",
+                      stiffness: 220,
+                      damping: 18,
+                    }}
+                    style={{ transformPerspective: 900 }}
+                    className="group relative isolate flex min-h-[165px] h-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-brand-border/70 bg-white/80 p-4 text-center shadow-[0_8px_30px_rgba(37,99,235,0.04)] backdrop-blur-xl transition-all duration-300 hover:border-brand-primary/30 hover:shadow-[0_20px_45px_rgba(37,99,235,0.12)] sm:min-h-[185px] sm:p-6"
+                  >
+                    {/* Subtle top and bottom card lighting */}
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-brand-primary/[0.09] to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
 
-                    <h3 className="text-sm font-bold text-brand-text">
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-indigo-400/[0.07] to-transparent" />
+
+                    {/* Ambient glow */}
+                    <div className="pointer-events-none absolute -right-12 -top-12 size-28 rounded-full bg-brand-primary/[0.10] blur-3xl transition-all duration-500 group-hover:bg-brand-primary/[0.18]" />
+
+                    {/* Icon */}
+                    <motion.div
+                      whileHover={
+                        shouldReduceMotion
+                          ? undefined
+                          : { rotate: 8, scale: 1.12, y: -3 }
+                      }
+                      transition={{ type: "spring", stiffness: 300 }}
+                      className="relative mb-4 flex size-13 items-center justify-center rounded-2xl border border-brand-soft-border bg-gradient-to-br from-white to-brand-soft text-brand-primary shadow-[0_6px_15px_rgba(37,99,235,0.10)]"
+                    >
+                      <Icon size={25} strokeWidth={1.8} />
+                    </motion.div>
+
+                    <h3 className="relative text-sm font-bold text-brand-text transition-colors group-hover:text-brand-primary sm:text-base">
                       {feature.title}
                     </h3>
 
-                    <p className="mt-1 text-xs leading-relaxed text-brand-text-muted">
+                    <p className="relative mt-1 text-xs leading-relaxed text-brand-text-muted">
                       {feature.description}
                     </p>
-                  </div>
+
+                    {/* Bottom accent */}
+                    <div className="absolute bottom-0 left-1/2 h-[2px] w-0 -translate-x-1/2 rounded-full bg-gradient-to-r from-brand-primary to-indigo-500 transition-all duration-300 group-hover:w-1/2" />
+                  </motion.div>
                 </MotionReveal>
               );
             })}

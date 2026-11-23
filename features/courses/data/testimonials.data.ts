@@ -1,4 +1,3 @@
-
 import type { Testimonial } from "@/components/layouts/marketing/TestimonialsSection";
 
 export const testimonials: Testimonial[] = [
@@ -34,5 +33,16 @@ export const testimonials: Testimonial[] = [
         rating: 5,
         review:
             "Transitioning from finance into data analytics seemed daunting until I joined Coursify. The mentor feedback on my SQL and Python capstones made all the difference.",
+    },
+    {
+        id: "testimonial-4",
+        name: "Daniel Okafor",
+        role: "Full-Stack Developer",
+        company: "Shopify",
+        avatar:
+            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+        rating: 5,
+        review:
+            "Building end-to-end applications with real APIs and deployment workflows gave me the confidence to ship production features from day one on my new team.",
     },
 ];

@@ -78,27 +78,28 @@ const CareerCoursesSection = ({
       id="career-courses"
       className=" py-16 sm:py-20"
     >
-      <div className="w-full px-4 sm:px-6">
+      <div className="w-full px-4 sm:px-6 xl:px-10 2xl:px-15 flex flex-col gap-10">
 
         {/* Section heading */}
-        <div className="mb-8 max-w-2xl">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
-            Career Tracks
-          </span>
+          <div className="flex flex-col items-center justify-center gap-4 text-center">
 
-          <h2 className="mt-1 text-2xl font-extrabold leading-tight text-brand-text sm:text-3xl lg:text-[34px]">
-            Launch Your New Career in Just a Few Months
-          </h2>
+  {/* Section Label */}
+            <span className=" rounded-full border border-primary/30 bg-brand-soft px-6
+  py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
+    Career Tracks
+  </span>
 
-          <p className="mt-3 text-sm leading-relaxed text-brand-text-muted sm:text-base">
-            Build in-demand skills with expert-led courses designed
-            to help you move forward in your career.
-          </p>
-        </div>
+  {/* Main Heading */}
+  <h2 className="max-w-xl text-2xl leading-tight font-extrabold tracking-tight text-brand-text sm:text-3xl lg:text-4xl">
+   Launch Your New Career in Just a Few Months
+  </h2>
+
+          </div>
 
         {/* Career track filter tabs */}
         <div
-          className="mb-8 flex items-center gap-6 overflow-x-auto border-b border-brand-border sm:gap-8"
+          className="mx-auto 2xl:min-w-[60%] flex items-center justify-between gap-6 
+          overflow-x-auto border-b border-brand-border sm:gap-8"
           role="tablist"
           aria-label="Filter courses by career track"
         >
@@ -149,13 +150,13 @@ const CareerCoursesSection = ({
                 loop: false,
                 containScroll: "trimSnaps",
               }}
-              className="w-full"
+              className="w-full xl:px-8"
             >
-              <CarouselContent className="-ml-3 sm:-ml-4">
+              <CarouselContent className="-ml-3 sm:-ml-4 py-5">
                 {filteredCourses.map((course, index) => (
                   <CarouselItem
                     key={course.id}
-                    className="basis-full pl-3 sm:basis-1/2 sm:pl-4 md:basis-1/3 xl:basis-1/4"
+                    className="pl-3 md:pl-6 basis-1/2 sm:pl-4 md:basis-1/3 xl:basis-1/4"
                   >
                     <MotionReveal className="h-full" delay={index * 0.05} hover>
                       <CareerCourseCard course={course} />
@@ -168,7 +169,7 @@ const CareerCoursesSection = ({
             {/* Carousel pagination */}
             {snapCount > 1 && (
               <div
-                className="mt-8 flex items-center justify-center gap-2"
+                className="mt-1 flex items-center justify-center gap-2"
                 aria-label="Course carousel pagination"
               >
                 {Array.from({ length: snapCount }).map((_, index) => (
@@ -191,7 +192,8 @@ const CareerCoursesSection = ({
             )}
           </>
         ) : (
-          <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-brand-border bg-card px-4 text-center">
+            <div className="flex min-h-64 xl:min-w-200 xl:max-w-250 xl:mx-auto xl:p-15 flex-col items-center justify-center 
+          rounded-xl border-2 border-dashed border-brand-border bg-card px-4 text-center">
             <BookOpen
               size={32}
               className="mb-3 text-brand-text-muted"
@@ -215,16 +217,26 @@ const CareerCoursesSection = ({
           </div>
         )}
 
-        {/* Explore all courses */}
-        <div className="mt-10 flex justify-center">
-          <Link
-            href="/courses"
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-7 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-primary-hover hover:shadow-md"
-          >
-            Explore All Courses
-            <ArrowRight size={16} />
-          </Link>
-        </div>
+      {/* Explore all courses */}
+<div className="mt-3 flex justify-center">
+  <Link
+    href="/courses"
+    className="group relative inline-flex items-center gap-2 overflow-hidden rounded-md bg-primary px-7 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
+  >
+    {/* Light sweep */}
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
+    />
+
+    <span className="relative">Explore All Courses</span>
+
+    <ArrowRight
+      size={16}
+      className="relative transition-transform duration-300 group-hover:translate-x-1"
+    />
+  </Link>
+</div>
       </div>
     </section>
   );
@@ -246,12 +258,14 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
       : null;
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-xl border border-brand-border bg-card shadow-sm transition-all duration-300 hover:shadow-lg">
+    <article className="flex h-full flex-col overflow-hidden rounded-xl border
+     border-brand-border hover:border-primary/70
+    bg-card shadow-sm transition-all duration-300 hover:shadow-lg">
 
       {/* Course thumbnail */}
       <Link
         href={`/courses/${course.slug}`}
-        className="relative block h-44 overflow-hidden"
+        className="relative block h-55 overflow-hidden"
         aria-label={`View ${course.title}`}
       >
         <Image
@@ -263,7 +277,8 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
         />
 
         {/* Category badge */}
-        <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2.5 py-1 text-[11px] font-bold text-brand-primary shadow-sm backdrop-blur-sm">
+        <span className="absolute left-3 top-3 rounded-md bg-white/80 px-2.5 py-1 
+        text-[11px] font-bold text-brand-primary shadow-sm backdrop-blur-sm">
           {course.category}
         </span>
       </Link>
@@ -288,7 +303,8 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
 
           {/* Course title */}
           <Link href={`/courses/${course.slug}`}>
-            <h3 className="line-clamp-2 min-h-11 text-base font-bold leading-snug text-brand-text transition-colors hover:text-brand-primary">
+            <h3 className="line-clamp-2 min-h-11 text-base font-bold leading-snug text-brand-text 
+            transition-colors hover:text-brand-primary">
               {course.title}
             </h3>
           </Link>
@@ -312,9 +328,9 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
         </div>
 
         {/* Price and enrollment */}
-        <div className="flex items-center justify-between gap-2 border-t border-brand-border pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-border pt-3">
           <div className="min-w-0">
-            <p className="text-lg font-extrabold text-brand-primary">
+            <p className="text-xl font-extrabold text-brand-primary">
               {formattedPrice}
             </p>
 

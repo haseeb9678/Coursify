@@ -9,6 +9,7 @@ import {
   X,
   BookOpen,
   BriefcaseBusiness,
+  ArrowUpRight,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import SearchBar from "./SearchBar";
@@ -45,7 +46,7 @@ const Navbar = () => {
       }}
     >
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto px-4 sm:px-6 md:px-10 xl:px-15">
 
         {/* Main navbar */}
         <div className="flex min-h-[76px] items-center justify-between gap-4">
@@ -76,33 +77,32 @@ const Navbar = () => {
             <SearchBar />
           </div>
 
-          {/* Desktop navigation */}
-          <nav className="hidden shrink-0 items-center gap-6 lg:flex">
-            <motion.div
-              whileHover={shouldReduceMotion ? undefined : { y: -2 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Link
-                href="/courses"
-                className="text-sm font-semibold text-brand-text-muted transition-colors hover:text-primary"
-              >
-                Explore Courses
-              </Link>
-            </motion.div>
+        {/* Desktop navigation */}
+<nav className="hidden shrink-0 items-center gap-7 lg:flex">
+  {[
+    { label: "Explore Courses", href: "/courses" },
+    { label: "Teach", href: "/teach" },
+  ].map((item) => (
+    <motion.div
+      key={item.href}
+      whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Link
+        href={item.href}
+        className="group relative inline-flex py-2 text-sm font-semibold text-brand-text-muted transition-colors duration-300 hover:text-primary"
+      >
+        {item.label}
 
-            <motion.div
-              whileHover={shouldReduceMotion ? undefined : { y: -2 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Link
-                href="/teach"
-                className="text-sm font-semibold text-brand-text-muted transition-colors hover:text-primary"
-              >
-                Teach
-              </Link>
-            </motion.div>
-          </nav>
-
+        {/* Animated underline */}
+        <span
+          aria-hidden="true"
+          className="absolute bottom-0 left-0 h-[2px] w-0 rounded-full bg-primary transition-all duration-300 ease-out group-hover:w-full"
+        />
+      </Link>
+    </motion.div>
+  ))}
+</nav>
           {/* Desktop authentication */}
           <div className="hidden shrink-0 items-center gap-3 md:flex">
             <motion.div
@@ -118,17 +118,28 @@ const Navbar = () => {
             </motion.div>
 
             <motion.div
-              whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.02 }}
-              whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-            >
-              <Link
-                href="/signup"
-                className="flex items-center justify-center rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-primary-hover hover:shadow-md"
-              >
-                Sign Up
-              </Link>
-            </motion.div>
+  whileHover={shouldReduceMotion ? undefined : { y: -2, scale: 1.02 }}
+  whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
+  transition={{ duration: 0.2 }}
+>
+  <Link
+    href="/signup"
+    className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
+  >
+    {/* Light sweep */}
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
+    />
+
+    <span className="relative">Sign Up</span>
+
+    <ArrowUpRight
+      size={17}
+      className="relative transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+    />
+  </Link>
+</motion.div>
           </div>
 
           {/* Mobile menu button */}

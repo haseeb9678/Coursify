@@ -25,12 +25,12 @@ export default function FAQSection({
   if (!faqs.length) return null;
 
   return (
-    <section className="relative py-20">
-      <div className="mx-auto max-w-[760px] px-4 sm:px-6">
+    <section className="relative py-5 pb-15">
+      <div className="mx-auto max-w-250 px-4 sm:px-6">
 
         {/* Section Heading */}
         <div className="mb-12 space-y-2 text-center">
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-primary">
+          <span className="text-sm font-bold uppercase tracking-wider text-brand-primary">
             Got Questions?
           </span>
 
