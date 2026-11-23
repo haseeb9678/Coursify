@@ -49,7 +49,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col font-sans antialiased">
         <Providers>
           {children}
-        <CustomCursor/>
+        {/* <CustomCursor/> */}
         </Providers>
       </body>
     </html>

@@ -299,12 +299,12 @@
   background-clip: padding-box;
 }
 
-@media (pointer: fine) {
+/* @media (pointer: fine) {
   body,
   body * {
     cursor: none !important;
   }
-}
+} */
 
 
 /* ========================================
