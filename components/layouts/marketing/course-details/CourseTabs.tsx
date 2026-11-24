@@ -34,7 +34,8 @@ export default function CourseTabs({
 }: CourseTabsProps) {
   return (
     <>
-      <div className="sticky top-[68px] z-30 -mx-4 border-b border-brand-border bg-background/95 px-4 backdrop-blur-xl sm:top-[76px] sm:mx-0 sm:px-0">
+          <div className="sticky top-[68px] z-30 -mx-4 border-b border-brand-border bg-background/95 
+      px-4 backdrop-blur-xl sm:top-[76px] sm:mx-0 sm:px-0">
         <div
           role="tablist"
           aria-label="Course details"
@@ -77,7 +78,8 @@ export default function CourseTabs({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.2 }}
+                  className="mt-5"
         >
           {activeTab === "overview" && <OverviewTab course={course} />}
 

@@ -2,31 +2,34 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import type { PointerEvent } from "react";
 
 import {
-  Play,
-  Users,
-  MonitorPlay,
-  Sparkles,
-  TrendingUp,
+  useCallback,
+  useEffect,
+  useState,
+  type PointerEvent,
+} from "react";
+
+import {
   ArrowUpRight,
+  ArrowLeft,
+  ArrowRight,
+  Play,
+  Pause,
   GraduationCap,
-  ChevronLeft,
-  ChevronRight,
+  MonitorPlay,
+  BookOpen,
 } from "lucide-react";
 
 import {
+  AnimatePresence,
   motion,
-  useMotionTemplate,
   useMotionValue,
   useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
 
-import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
 import {
   Carousel,
   CarouselContent,
@@ -34,74 +37,122 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 
+
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
 
 import { heroSlides } from "@/features/home/data/hero-slides.data";
 import type { HeroSlide } from "@/features/home/types/hero-slide.types";
+import HeroAmbientBackground from "@/components/shared/HeroAmbientBackground";
 
 interface HeroSectionProps {
   slides?: HeroSlide[];
 }
 
-const GROWTH_BARS = [45, 65, 55, 85, 100];
+const AUTOPLAY_DELAY = 5500;
 
-const HeroSection = ({ slides = heroSlides }: HeroSectionProps) => {
-  const shouldReduceMotion = useReducedMotion();
+const learningBenefits = [
+  {
+    icon: GraduationCap,
+    label: "Expert instructors",
+  },
+  {
+    icon: MonitorPlay,
+    label: "Flexible learning",
+  },
+  {
+    icon: BookOpen,
+    label: "Practical skills",
+  },
+];
 
-  // Depth helper: real translateZ values collapse to 0 for reduced motion.
-  const depth = (value: number) => (shouldReduceMotion ? 0 : value);
+export default function HeroSection({
+  slides = heroSlides,
+}: HeroSectionProps) {
+  const shouldReduceMotion = useReducedMotion() ?? false;
 
-  // Keep a fallback so an empty API response never breaks the hero.
-  const displayedSlides = slides.length > 0 ? slides : heroSlides;
+  const displayedSlides =
+    slides.length > 0 ? slides : heroSlides;
 
-  // Carousel state
-  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const slideCount = displayedSlides.length;
+
+  const [carouselApi, setCarouselApi] =
+    useState<CarouselApi>();
+
   const [activeSlide, setActiveSlide] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
 
-  // 3D pointer movement values
+  // Refined 3D pointer interaction.
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
 
-  const springConfig = { stiffness: 150, damping: 20, mass: 0.6 };
+  const springConfig = {
+    stiffness: 140,
+    damping: 24,
+    mass: 0.8,
+  };
+
   const springX = useSpring(pointerX, springConfig);
   const springY = useSpring(pointerY, springConfig);
 
-  const rotateX = useTransform(springY, [-0.5, 0.5], [8, -8]);
-  const rotateY = useTransform(springX, [-0.5, 0.5], [-12, 12]);
+  const rotateX = useTransform(
+    springY,
+    [-0.5, 0.5],
+    [3, -3],
+  );
 
-  // Moving glare on the main card
-  const glareX = useTransform(springX, [-0.5, 0.5], [0, 100]);
-  const glareY = useTransform(springY, [-0.5, 0.5], [0, 100]);
-  const glare = useMotionTemplate`radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255,255,255,0.4), transparent 55%)`;
-  const glareOpacity = useSpring(0, { stiffness: 140, damping: 24 });
+  const rotateY = useTransform(
+    springX,
+    [-0.5, 0.5],
+    [-4, 4],
+  );
 
-  // Floor shadow slides opposite to the tilt for a grounded feel
-  const shadowX = useTransform(springX, [-0.5, 0.5], [22, -22]);
-  const shadowScale = useTransform(springY, [-0.5, 0.5], [1.06, 0.94]);
+  const floatingX = useTransform(
+    springX,
+    [-0.5, 0.5],
+    [-8, 8],
+  );
+
+  const floatingY = useTransform(
+    springY,
+    [-0.5, 0.5],
+    [-6, 6],
+  );
 
   const handlePointerMove = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
-      if (shouldReduceMotion || event.pointerType === "touch") return;
+      if (
+        shouldReduceMotion ||
+        event.pointerType !== "mouse"
+      ) {
+        return;
+      }
 
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      const rect =
+        event.currentTarget.getBoundingClientRect();
 
-      pointerX.set(x);
-      pointerY.set(y);
-      glareOpacity.set(1);
+      if (!rect.width || !rect.height) return;
+
+      const x =
+        (event.clientX - rect.left) / rect.width - 0.5;
+
+      const y =
+        (event.clientY - rect.top) / rect.height - 0.5;
+
+      pointerX.set(Math.max(-0.5, Math.min(0.5, x)));
+      pointerY.set(Math.max(-0.5, Math.min(0.5, y)));
     },
-    [pointerX, pointerY, glareOpacity, shouldReduceMotion],
+    [pointerX, pointerY, shouldReduceMotion],
   );
 
-  const handlePointerLeave = useCallback(() => {
+  const resetPointer = useCallback(() => {
     pointerX.set(0);
     pointerY.set(0);
-    glareOpacity.set(0);
-  }, [pointerX, pointerY, glareOpacity]);
+  }, [pointerX, pointerY]);
 
-  // Keep active pagination dot synchronized with the carousel.
+  // Synchronize carousel state.
   useEffect(() => {
     if (!carouselApi) return;
 
@@ -120,530 +171,461 @@ const HeroSection = ({ slides = heroSlides }: HeroSectionProps) => {
     };
   }, [carouselApi]);
 
-  // Automatic background slider.
+  // Pause when the browser tab is inactive.
   useEffect(() => {
-    if (
-      !carouselApi ||
-      displayedSlides.length <= 1 ||
-      isPaused ||
-      shouldReduceMotion
-    ) {
-      return;
-    }
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
 
-    const interval = window.setInterval(() => {
-      carouselApi.scrollNext();
-    }, 4500);
+    handleVisibilityChange();
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange,
+    );
 
     return () => {
-      window.clearInterval(interval);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
     };
-  }, [carouselApi, displayedSlides.length, isPaused, shouldReduceMotion]);
+  }, []);
 
-  const floatTransition = {
-    duration: 4.2,
-    repeat: Infinity,
-    repeatType: "mirror" as const,
-    ease: "easeInOut" as const,
-  };
+  const canAutoplay =
+    slideCount > 1 &&
+    !isPaused &&
+    !isHovered &&
+    !isFocused &&
+    !shouldReduceMotion &&
+    isPageVisible;
 
-  const currentSlide = displayedSlides[activeSlide] ?? displayedSlides[0];
+  // Automatic slide navigation.
+  useEffect(() => {
+    if (!carouselApi || !canAutoplay) return;
+
+    const interval = window.setInterval(() => {
+      if (carouselApi.canScrollNext()) {
+        carouselApi.scrollNext();
+      } else {
+        carouselApi.scrollTo(0);
+      }
+    }, AUTOPLAY_DELAY);
+
+    return () => window.clearInterval(interval);
+  }, [carouselApi, canAutoplay, activeSlide]);
+
+  const safeActiveSlide = Math.min(
+    activeSlide,
+    Math.max(0, slideCount - 1),
+  );
+
+  const currentSlide =
+    displayedSlides[safeActiveSlide];
 
   return (
-    <section className="relative isolate overflow-x-clip 
-    pt-10 pb-16 sm:pt-12 lg:pt-16 lg:pb-24">
-      {/* Ambient Background Effects */}
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <motion.div
-          animate={
-            shouldReduceMotion ? undefined : { x: [0, 24, 0], y: [0, -18, 0] }
-          }
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-32 -right-32 size-[340px] rounded-full bg-blue-200/35 blur-[110px] sm:size-[440px]"
-        />
+    <section className="relative isolate w-full overflow-x-clip bg-background">
+      <HeroAmbientBackground />
 
-        <motion.div
-          animate={
-            shouldReduceMotion ? undefined : { x: [0, -20, 0], y: [0, 22, 0] }
-          }
-          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-36 -left-32 size-[320px] rounded-full bg-indigo-200/35 blur-[110px] sm:size-[420px]"
-        />
+      {/* Full-width fluid container */}
+      <div className="w-full px-4 py-10 sm:px-8 sm:py-14 lg:px-[4vw] lg:py-16 xl:py-20 2xl:px-[5vw]">
+        <div className="grid w-full grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-[5vw]">
 
-        <div className="absolute top-20 right-[8%] hidden size-2 rounded-full bg-blue-300/60 md:block" />
-        <div className="absolute bottom-24 left-[8%] hidden size-3 rounded-full bg-indigo-300/50 md:block" />
-      </div>
-
-      <div className="mx-auto w-full max-w-420 px-4 sm:px-6 lg:px-10 2xl:px-14">
-        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-10 xl:gap-12">
           {/* =====================================
-              LEFT CONTENT
+              LEFT — EDITORIAL CONTENT
           ====================================== */}
+
           <MotionReveal
-            className="min-w-0 space-y-6 text-center lg:col-span-6 lg:text-left"
             delay={0.05}
+            className="min-w-0 text-center lg:text-left"
           >
-            {/* Trust Badge */}
-            <motion.div
-              initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55 }}
-              className="inline-flex max-w-full items-center gap-2 rounded-full border border-brand-soft-border bg-brand-soft/90 px-3.5 py-2 text-[11px] font-semibold
-               tracking-wide text-brand-primary shadow-sm backdrop-blur-md sm:text-xs"
-            >
-              <span className="relative flex size-2 shrink-0">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-brand-primary opacity-45" />
-                <span className="relative inline-flex size-2 rounded-full bg-brand-primary" />
+            {/* Eyebrow */}
+            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-primary/10 bg-background/60 px-3.5 py-2 backdrop-blur-md sm:mb-7">
+              <span
+                aria-hidden="true"
+                className="size-2 rounded-full bg-primary"
+              />
+
+              <span className="text-xs font-semibold tracking-wide text-primary sm:text-sm">
+                Learning without limits
               </span>
-              <span className="truncate">#1 TRUSTED ONLINE LEARNING PLATFORM</span>
-              <Sparkles size={13} className="shrink-0" />
-            </motion.div>
+            </div>
 
-            {/* Heading & Subcopy */}
-            <div className="space-y-4 sm:space-y-5">
-              <h1 className="text-3xl leading-[1.16] font-extrabold tracking-tight text-brand-text sm:text-5xl xl:text-[52px]">
-                <span className="block">Enhance your Skills for a</span>
+            {/* Fluid Typography */}
+            <h1 className="text-[clamp(2.25rem,3.7vw,5.75rem)] font-semibold leading-[1.1] tracking-[-0.045em] text-brand-text text-balance">
+              Build skills for a world that{" "}
 
-                <span className="mt-2 inline-flex min-h-[1.25em] items-center justify-center rounded-xl bg-primary/10 px-3 py-1 text-brand-accent lg:justify-start">
-                  <LayoutTextFlip
-                    text=""
-                    
-                    words={[
-                      "Brighter Future",
-                      "Better Skills",
-                      "Bigger Opportunities",
-                    ]}
+              <span className="text-primary">
+                never stops changing.
+              </span>
+            </h1>
+
+            {/* Supporting Description */}
+            <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-[1.8] text-brand-text-muted sm:mt-7 sm:text-base lg:mx-0 xl:text-lg 2xl:text-xl">
+              Learn from industry experts, build practical
+              skills, and take the next step in your
+              career — wherever you are.
+            </p>
+
+            {/* CTA Actions */}
+            <div className="mt-7 flex flex-col items-stretch justify-center gap-3 sm:mt-9 sm:flex-row sm:items-center sm:gap-4 lg:justify-start">
+
+              {/* Primary Button */}
+              <Link
+                href="/courses"
+                className="group relative inline-flex h-13 items-center justify-center gap-3 overflow-hidden rounded-xl bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-[0.98] motion-reduce:transform-none xl:h-14 xl:px-8 xl:text-base"
+              >
+                Explore courses
+
+                <ArrowUpRight
+                  size={19}
+                  strokeWidth={1.8}
+                  className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none"
+                />
+              </Link>
+
+              {/* Secondary Button */}
+              <Link
+                href="/demo"
+                className="group inline-flex h-13 items-center justify-center gap-2.5 rounded-xl border border-brand-border bg-background/60 px-6 backdrop-blur-md text-sm font-semibold text-brand-text transition-colors duration-300 hover:border-primary/25 hover:bg-brand-soft/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 xl:h-14 xl:px-7 xl:text-base"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
+                  <Play
+                    size={13}
+                    strokeWidth={1.8}
+                    className="ml-0.5 fill-current"
                   />
                 </span>
-              </h1>
 
-              <p className="mx-auto max-w-xl text-sm leading-relaxed text-brand-text-muted sm:text-base lg:mx-0 lg:text-[17px]">
-                Access over 5,000+ industry-led video courses, hands-on
-                projects, and globally recognized certifications designed to
-                accelerate your career from anywhere.
-              </p>
+                Watch demo
+              </Link>
             </div>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col items-stretch justify-center gap-3 pt-1 sm:flex-row sm:items-center sm:gap-4 lg:justify-start">
-              <motion.div
-                whileHover={
-                  shouldReduceMotion ? undefined : { y: -2, scale: 1.015 }
-                }
-                whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto"
-              >
-                <Link
-                  href="/courses"
-                  className="group relative inline-flex h-12 w-full items-center 
-                  justify-center gap-2 overflow-hidden rounded-lg bg-primary px-7 xl:min-w-50 text-[15px] 
-                  font-semibold text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary-hover 
-                  focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none sm:w-auto"
-                >
-                  {/* Light sweep on hover */}
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-white/25 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
-                  />
-                  Get Started
-                  <ArrowUpRight
-                    size={17}
-                    className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </Link>
-              </motion.div>
+            {/* Learning Benefits */}
+            <div className="mt-9 flex flex-wrap items-center justify-center gap-x-6 gap-y-4 border-t border-brand-border/70 pt-6 sm:mt-10 lg:justify-start xl:mt-12 xl:gap-x-8">
+              {learningBenefits.map(
+                ({ icon: Icon, label }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-2 text-xs font-medium text-brand-text-muted sm:text-[13px] xl:text-sm"
+                  >
+                    <Icon
+                      size={18}
+                      strokeWidth={1.7}
+                      aria-hidden="true"
+                      className="shrink-0 text-primary"
+                    />
 
-              <motion.div
-                whileHover={shouldReduceMotion ? undefined : { y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto"
-              >
-                <Link
-                  href="/demo"
-                  className="group inline-flex h-12
-                   w-full items-center justify-center gap-2.5 rounded-lg border border-transparent 
-                   px-5 text-[15px] font-semibold text-brand-text transition-colors hover:border-brand-soft-border xl:min-w-50
-                    hover:bg-brand-soft/50 hover:text-primary focus-visible:ring-2 focus-visible:ring-brand-primary 
-                    focus-visible:outline-none sm:w-auto"
-                >
-                  <span className="flex size-9 items-center justify-center rounded-full bg-brand-soft text-primary shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-white">
-                    <Play size={14} fill="currentColor" />
-                  </span>
-                  Watch Demo
-                </Link>
-              </motion.div>
-            </div>
-
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 pt-2 text-xs font-medium text-brand-text-muted sm:text-[13px] lg:justify-start">
-              <div className="flex items-center gap-2">
-                <GraduationCap
-                  size={16}
-                  className="shrink-0 text-brand-primary"
-                />
-                <span>Expert Instructors</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <MonitorPlay size={15} className="shrink-0 text-brand-primary" />
-                <span>Learn Anywhere</span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Sparkles size={15} className="shrink-0 text-brand-primary" />
-                <span>Career Focused</span>
-              </div>
+                    <span>{label}</span>
+                  </div>
+                ),
+              )}
             </div>
           </MotionReveal>
 
           {/* =====================================
-              RIGHT 3D VISUAL + IMAGE SLIDER
+              RIGHT — WIDE 3D CAROUSEL
           ====================================== */}
+
           <MotionReveal
-            className="flex min-w-0 justify-center lg:col-span-6 lg:justify-end"
             variant="fadeLeft"
             delay={0.15}
+            className="w-full min-w-0"
           >
             <div
-              className="relative w-full max-w-[480px] [perspective:1200px] xl:max-w-[510px]"
-              onPointerMove={handlePointerMove}
-              onPointerLeave={handlePointerLeave}
-            >
-              {/* Entrance: the whole scene swings into place once */}
-              <motion.div
-                initial={
-                  shouldReduceMotion
-                    ? false
-                    : { opacity: 0, rotateY: -26, rotateX: 8, y: 28, scale: 0.94 }
+              className="relative mx-auto w-full max-w-180 lg:max-w-none"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onFocusCapture={() => setIsFocused(true)}
+              onBlurCapture={(event) => {
+                if (
+                  !event.currentTarget.contains(
+                    event.relatedTarget as Node | null,
+                  )
+                ) {
+                  setIsFocused(false);
                 }
-                animate={{ opacity: 1, rotateY: 0, rotateX: 0, y: 0, scale: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 85,
-                  damping: 17,
-                  delay: 0.2,
-                }}
-                style={{ transformStyle: "preserve-3d" }}
-                className="relative"
+              }}
+            >
+              {/* 3D Scene */}
+              <div
+                className="relative [perspective:1600px]"
+                onPointerMove={handlePointerMove}
+                onPointerLeave={resetPointer}
               >
-                {/* Tilt layer: everything inside shares one 3D space */}
+                {/* Subtle Layered Backdrop */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 -z-10 hidden translate-x-3 translate-y-3 rounded-[30px] border border-white/50 bg-card/35 backdrop-blur-md sm:block dark:border-white/10"
+                />
+
+                {/* Main 3D Layer */}
                 <motion.div
                   style={
                     shouldReduceMotion
                       ? undefined
-                      : { rotateX, rotateY, transformStyle: "preserve-3d" }
+                      : {
+                          rotateX,
+                          rotateY,
+                          transformStyle: "preserve-3d",
+                        }
                   }
                   className="relative"
                 >
-                  {/* Ambient Glow (deepest layer) */}
-                  <motion.div
-                    style={{ z: depth(-90) }}
-                    className="pointer-events-none absolute inset-8 rounded-full bg-blue-400/20 blur-[70px]"
-                  />
+                  {/* Carousel Frame */}
+                  <div className="relative rounded-[22px] border border-white/60 bg-card/65 p-2 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.3)] backdrop-blur-xl sm:rounded-[28px] sm:p-2.5 dark:border-white/10">
+                    <div className="relative overflow-hidden rounded-[17px] bg-brand-soft sm:rounded-[22px]">
+                      {slideCount > 0 ? (
+                        <Carousel
+                          setApi={setCarouselApi}
+                          opts={{
+                            align: "start",
+                            loop: slideCount > 1,
+                            duration: 20,
+                          }}
+                          className="w-full"
+                        >
+                          <CarouselContent className="ml-0">
+                            {displayedSlides.map(
+                              (slide, index) => (
+                                <CarouselItem
+                                  key={`${slide.id}-${index}`}
+                                  className="min-w-0 basis-full pl-0"
+                                >
+                                  {/* Responsive Fluid Image */}
+                                  <div className="relative aspect-5/4 w-full overflow-hidden bg-brand-soft sm:aspect-4/3 lg:aspect-auto lg:h-[clamp(400px,34vw,740px)]">
+                                    <Image
+                                      src={slide.src}
+                                      alt={slide.alt}
+                                      fill
+                                      priority={index === 0}
+                                      sizes="(max-width: 639px) 95vw, (max-width: 1023px) 720px, 46vw"
+                                      className="object-cover object-center"
+                                    />
 
-                  {/* Decorative Rings */}
-                  <motion.div
-                    animate={shouldReduceMotion ? undefined : { rotate: 360 }}
-                    transition={{ duration: 36, repeat: Infinity, ease: "linear" }}
-                    style={{ z: depth(-60) }}
-                    className="pointer-events-none absolute -inset-4 hidden rounded-[40%] border border-dashed border-blue-300/50 sm:block"
-                  >
-                    {/* Orbiting dot rides the ring */}
-                    <span className="absolute -top-1 left-1/2 size-2 rounded-full bg-brand-primary shadow-[0_0_12px_rgba(37,99,235,0.7)]" />
-                  </motion.div>
+                                    {/* Caption Contrast */}
+                                    <div
+                                      aria-hidden="true"
+                                      className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/55 via-transparent to-transparent"
+                                    />
+                                  </div>
+                                </CarouselItem>
+                              ),
+                            )}
+                          </CarouselContent>
+                        </Carousel>
+                      ) : (
+                        <div className="flex aspect-5/4 flex-col items-center justify-center gap-3 bg-brand-soft lg:aspect-auto lg:h-[clamp(400px,34vw,740px)]">
+                          <GraduationCap
+                            size={48}
+                            strokeWidth={1.2}
+                            className="text-primary"
+                          />
 
-                  <motion.div
-                    animate={shouldReduceMotion ? undefined : { rotate: -360 }}
-                    transition={{ duration: 52, repeat: Infinity, ease: "linear" }}
-                    style={{ z: depth(-85) }}
-                    className="pointer-events-none absolute -inset-9 hidden rounded-[45%] border border-blue-200/40 md:block"
-                  >
-                    <span className="absolute -bottom-1 left-1/3 size-1.5 rounded-full bg-indigo-400/80" />
-                  </motion.div>
+                          <p className="text-sm font-medium text-brand-text-muted">
+                            Your learning journey starts here
+                          </p>
+                        </div>
+                      )}
 
-                  {/* Backdrop Arch */}
-                  <motion.div
-                    style={{ z: depth(-40) }}
-                    className="pointer-events-none absolute inset-x-5 top-10 bottom-0 
-                    rounded-t-[48%] bg-gradient-to-b from-blue-100 via-brand-soft to-indigo-100/70 shadow-inner"
-                  />
+                      {/* Dynamic Slide Caption */}
+                      <AnimatePresence mode="wait">
+                        {currentSlide?.label && (
+                          <motion.div
+                            key={`${currentSlide.id}-${safeActiveSlide}`}
+                            initial={
+                              shouldReduceMotion
+                                ? false
+                                : { opacity: 0, y: 6 }
+                            }
+                            animate={{
+                              opacity: 1,
+                              y: 0,
+                            }}
+                            exit={{
+                              opacity: 0,
+                              y: shouldReduceMotion ? 0 : -6,
+                            }}
+                            transition={{
+                              duration: shouldReduceMotion
+                                ? 0
+                                : 0.25,
+                            }}
+                            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-5 sm:p-7 xl:p-8"
+                          >
+                            <p className="max-w-[90%] text-base font-medium leading-snug tracking-tight text-white sm:text-lg xl:text-xl">
+                              {currentSlide.label}
+                            </p>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
 
-                  {/* Floor shadow */}
+                  {/* Minimal Floating Card */}
                   <motion.div
                     style={
                       shouldReduceMotion
                         ? undefined
-                        : { x: shadowX, scaleX: shadowScale, z: -50 }
+                        : {
+                            x: floatingX,
+                            y: floatingY,
+                            z: 24,
+                          }
                     }
-                    className="pointer-events-none absolute inset-x-10 -bottom-8 h-10 rounded-[50%] bg-blue-900/20 blur-2xl"
-                  />
-
-                  {/* Decorative Floating Orb */}
-                  <motion.div
-                    style={{ z: depth(70) }}
-                    className="pointer-events-none absolute -top-3 right-2 z-20 hidden sm:-right-4 sm:top-12 sm:block"
+                    className="pointer-events-none absolute -left-4 top-[14%] z-20 hidden sm:block xl:-left-7"
                   >
-                    <motion.div
-                      animate={
-                        shouldReduceMotion
-                          ? undefined
-                          : { y: [0, -14, 0], rotate: [0, 18, 0] }
-                      }
-                      transition={floatTransition}
-                      className="flex size-11 items-center justify-center rounded-2xl border border-white/80 bg-white/85 text-brand-primary shadow-lg shadow-blue-200/50 backdrop-blur-xl sm:size-12"
-                    >
-                      <Sparkles size={22} />
-                    </motion.div>
-                  </motion.div>
+                    <div className="flex items-center gap-3 rounded-xl border border-white/60 bg-card/85 px-4 py-3 shadow-[0_12px_30px_-12px_rgba(15,23,42,0.22)] backdrop-blur-xl dark:border-white/10 xl:px-5 xl:py-4">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary xl:size-12">
+                        <GraduationCap
+                          size={23}
+                          strokeWidth={1.7}
+                        />
+                      </span>
 
-                  {/* 3D Main Image Card */}
-                  <motion.div
-                    whileHover={shouldReduceMotion ? undefined : { scale: 1.012 }}
-                    transition={{ type: "spring", stiffness: 160, damping: 22 }}
-                    className="relative z-10 overflow-hidden rounded-[24px] border border-white/85 bg-white p-1.5 shadow-[0_28px_75px_-25px_rgba(37,99,235,0.35)] sm:rounded-[28px] sm:p-2"
-                  >
-                    <div
-                      className="relative overflow-hidden rounded-[20px] sm:rounded-[22px]"
-                      onMouseEnter={() => setIsPaused(true)}
-                      onMouseLeave={() => setIsPaused(false)}
-                      onFocusCapture={() => setIsPaused(true)}
-                      onBlurCapture={() => setIsPaused(false)}
-                    >
-                      <Carousel
-                        setApi={setCarouselApi}
-                        opts={{
-                          align: "start",
-                          loop: displayedSlides.length > 1,
-                          duration: 12,
-                        }}
-                        className="w-full"
-                      >
-                        <CarouselContent className="ml-0">
-                          {displayedSlides.map((slide, index) => (
-                            <CarouselItem
-                              key={`${slide.id}-${index}`}
-                              className="min-w-0 basis-full pl-0"
-                            >
-                              <div className="relative h-[340px] w-full overflow-hidden bg-brand-soft sm:h-[430px] md:h-[490px] xl:h-[550px]">
-                                <Image
-                                  src={slide.src}
-                                  alt={slide.alt}
-                                  fill
-                                  priority={index === 0}
-                                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 480px, 510px"
-                                  className="object-cover object-top"
-                                />
-                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-blue-950/40 via-transparent to-white/10" />
-                              </div>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                      </Carousel>
+                      <div className="space-y-1">
+                        <p className="text-xs font-semibold tracking-tight text-brand-text xl:text-sm">
+                          Learn at your own pace
+                        </p>
 
-                      {/* Cursor glare */}
-                      <motion.div
-                        style={{ background: glare, opacity: glareOpacity }}
-                        className="pointer-events-none absolute inset-0 z-10 mix-blend-soft-light"
-                      />
-
-                      {/* Active Slide Pill */}
-                      {currentSlide?.label && (
-                        <div
-                          key={`${currentSlide.id}-${activeSlide}`}
-                          className="pointer-events-none absolute bottom-3 right-3 sm:left-3 z-10 max-w-[48%] truncate rounded-full border border-white/50 bg-white/90 px-3 py-1.5 text-[10px] font-semibold text-brand-text shadow-md backdrop-blur-md sm:bottom-4 sm:left-4 sm:max-w-[54%] sm:px-3.5 sm:py-2 sm:text-xs"
-                        >
-                          <span className="mr-1.5 inline-block size-2 rounded-full bg-emerald-500" />
-                          {currentSlide.label}
-                        </div>
-                      )}
-
-                      {/* Slider Controls */}
-                      {displayedSlides.length > 1 && (
-                        <div className="absolute right-3 bottom-3 z-20 sm:flex items-center gap-1.5 sm:right-4 sm:bottom-4 hidden">
-                          {/* <button
-                            type="button"
-                            onClick={() => carouselApi?.scrollPrev()}
-                            aria-label="Previous slide"
-                            className="flex size-8 items-center justify-center rounded-full border border-white/60 bg-white/90 text-brand-text shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white hover:text-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none sm:size-9"
-                          >
-                            <ChevronLeft size={17} />
-                          </button> */}
-
-                          <div className="flex items-center gap-1.5 rounded-full border border-white/50 bg-white/90 px-2.5 py-2 shadow-md backdrop-blur-md">
-                            {displayedSlides.map((slide, index) => (
-                              <button
-                                key={`${slide.id}-dot-${index}`}
-                                type="button"
-                                onClick={() => carouselApi?.scrollTo(index)}
-                                aria-label={`Go to slide ${index + 1}`}
-                                aria-current={
-                                  activeSlide === index ? "true" : undefined
-                                }
-                                className={`h-1.5 rounded-full transition-all duration-300 focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none ${
-                                  activeSlide === index
-                                    ? "w-5 bg-brand-primary"
-                                    : "w-1.5 bg-brand-text-muted/40 hover:bg-brand-primary/60"
-                                }`}
-                              />
-                            ))}
-                          </div>
-
-                          {/* <button
-                            type="button"
-                            onClick={() => carouselApi?.scrollNext()}
-                            aria-label="Next slide"
-                            className="flex size-8 items-center justify-center rounded-full border border-white/60 bg-white/90 text-brand-text shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white hover:text-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none sm:size-9"
-                          >
-                            <ChevronRight size={17} />
-                          </button> */}
-                        </div>
-                      )}
+                        <p className="text-[11px] text-brand-text-muted xl:text-xs">
+                          Built around your goals
+                        </p>
+                      </div>
                     </div>
                   </motion.div>
+                </motion.div>
+              </div>
 
-                  {/* =====================================
-                      FLOATING CARD 1: STUDENTS
-                  ====================================== */}
-                  <motion.div
-                    style={{ z: depth(85) }}
-                    className="absolute top-5 left-2 z-20 sm:top-8 sm:-left-7"
+              {/* =====================================
+                  CAROUSEL CONTROLS
+              ====================================== */}
+
+              {slideCount > 1 && (
+                <div className="mt-5 flex items-center justify-between gap-3 sm:mt-7">
+
+                  {/* Slide Counter */}
+                  {/* <div className="flex shrink-0 items-baseline gap-1.5 tabular-nums">
+                    <span className="text-sm font-semibold text-brand-text xl:text-base">
+                      {String(safeActiveSlide + 1).padStart(
+                        2,
+                        "0",
+                      )}
+                    </span>
+
+                    <span className="text-xs text-brand-text-muted">
+                      /
+                    </span>
+
+                    <span className="text-xs font-medium text-brand-text-muted xl:text-sm">
+                      {String(slideCount).padStart(2, "0")}
+                    </span>
+                  </div> */}
+
+                  {/* Pagination */}
+                  <div
+                    aria-label="Slide pagination"
+                    className="flex min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto"
                   >
-                    <motion.div
-                      animate={
-                        shouldReduceMotion
-                          ? undefined
-                          : { y: [0, -10, 0], rotate: [0, -1, 0] }
-                      }
-                      transition={floatTransition}
-                      whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
-                      className="flex items-center gap-2.5 rounded-xl border border-white/85 bg-white/95 px-3 py-2.5 shadow-[0_22px_45px_-15px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:gap-3 sm:p-3.5"
-                    >
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-md shadow-blue-500/30 sm:size-10">
-                        <Users size={18} />
-                      </div>
+                    {displayedSlides.map((slide, index) => {
+                      const isActive =
+                        safeActiveSlide === index;
 
-                      <div>
-                        <p className="text-xs leading-tight font-extrabold text-brand-text sm:text-sm">
-                          250K+
-                        </p>
-                        <p className="text-[10px] font-medium text-brand-text-muted sm:text-[11px]">
-                          Assisted Students
-                        </p>
-                      </div>
-                    </motion.div>
-                  </motion.div>
-
-                  {/* =====================================
-                      FLOATING CARD 2: SKILL GROWTH
-                  ====================================== */}
-                  <div className="absolute top-1/2 right-2 z-20 -translate-y-1/2 sm:-right-6">
-                    <motion.div style={{ z: depth(100) }}>
-                      <motion.div
-                        animate={
-                          shouldReduceMotion
-                            ? undefined
-                            : { y: [0, 9, 0], rotate: [0, 1, 0] }
-                        }
-                        transition={{ ...floatTransition, duration: 5, delay: 0.5 }}
-                        whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
-                        className="w-[126px] rounded-xl border border-white/85 bg-white/95 p-2.5 shadow-[0_22px_45px_-15px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:w-[166px] sm:p-4"
-                      >
-                        <div className="mb-2.5 flex items-center justify-between gap-1 sm:mb-3">
-                          <span className="text-[10px] font-bold text-brand-text sm:text-[11px]">
-                            Skill Growth
-                          </span>
-
-                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-600 sm:text-[11px]">
-                            <TrendingUp size={12} />
-                            +84%
-                          </span>
-                        </div>
-
-                        <div className="flex h-10 items-end justify-between gap-1 sm:h-12 sm:gap-1.5">
-                          {GROWTH_BARS.map((height, index) => (
-                            <motion.div
-                              key={height}
-                              initial={shouldReduceMotion ? false : { scaleY: 0 }}
-                              animate={{ scaleY: 1 }}
-                              transition={{
-                                duration: 0.65,
-                                delay: 0.55 + index * 0.1,
-                                ease: "easeOut",
-                              }}
-                              className={`w-full origin-bottom rounded-t ${
-                                index === 4
-                                  ? "bg-primary"
-                                  : index === 3
-                                    ? "bg-brand-accent"
-                                    : "bg-blue-200"
-                              }`}
-                              style={{ height: `${height}%` }}
-                            />
-                          ))}
-                        </div>
-
-                        <p className="mt-2 hidden text-[10px] text-brand-text-muted sm:block">
-                          Track your learning progress
-                        </p>
-                      </motion.div>
-                    </motion.div>
+                      return (
+                        <button
+                          key={`${slide.id}-dot-${index}`}
+                          type="button"
+                          onClick={() =>
+                            carouselApi?.scrollTo(
+                              index,
+                              shouldReduceMotion,
+                            )
+                          }
+                          disabled={!carouselApi}
+                          aria-label={`Go to slide ${index + 1}`}
+                          aria-current={
+                            isActive ? "true" : undefined
+                          }
+                          className="group flex h-9 min-w-5 shrink-0 cursor-pointer items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default"
+                        >
+                          <span
+                            className={`h-1 rounded-full transition-all duration-300 motion-reduce:transition-none ${
+                              isActive
+                                ? "w-7 bg-primary sm:w-9"
+                                : "w-2.5 bg-brand-text-muted/25 group-hover:bg-primary/50 sm:w-4"
+                            }`}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  {/* =====================================
-                      FLOATING CARD 3: ONLINE COURSES
-                  ====================================== */}
-                  <motion.div
-                    style={{ z: depth(70) }}
-                    className="absolute bottom-14 left-2 z-20 sm:bottom-16 sm:-left-6"
-                  >
-                    <motion.div
-                      animate={
-                        shouldReduceMotion
-                          ? undefined
-                          : { y: [0, -8, 0], rotate: [0, 1, 0] }
+                  {/* Navigation Actions */}
+                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+
+                    {/* Pause / Resume */}
+                    {!shouldReduceMotion && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsPaused((previous) => !previous)
+                        }
+                        aria-label={
+                          isPaused
+                            ? "Resume slideshow"
+                            : "Pause slideshow"
+                        }
+                        title={
+                          isPaused
+                            ? "Resume slideshow"
+                            : "Pause slideshow"
+                        }
+                        className="flex size-10 cursor-pointer items-center justify-center rounded-full text-brand-text-muted transition-colors hover:bg-brand-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        {isPaused ? (
+                          <Play size={16} strokeWidth={1.8} />
+                        ) : (
+                          <Pause size={16} strokeWidth={1.8} />
+                        )}
+                      </button>
+                    )}
+
+                    {/* Previous Slide */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        carouselApi?.scrollPrev(
+                          shouldReduceMotion,
+                        )
                       }
-                      transition={{ ...floatTransition, duration: 4.5, delay: 0.8 }}
-                      whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
-                      className="flex items-center gap-2.5 rounded-xl border border-white/85 bg-white/95 px-3 py-2.5 shadow-[0_22px_45px_-15px_rgba(37,99,235,0.35)] backdrop-blur-xl sm:gap-3 sm:px-4 sm:py-3"
+                      disabled={!carouselApi}
+                      aria-label="Previous slide"
+                      className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-brand-border bg-card/65 text-brand-text backdrop-blur-md transition-colors hover:border-primary/30 hover:bg-brand-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 sm:size-11 xl:size-12"
                     >
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-primary sm:size-9">
-                        <MonitorPlay size={16} />
-                      </div>
+                      <ArrowLeft size={19} strokeWidth={1.8} />
+                    </button>
 
-                      <div>
-                        <p className="text-[11px] font-extrabold text-brand-text sm:text-xs">
-                          100% Online Courses
-                        </p>
-                        <p className="hidden text-[11px] text-brand-text-muted sm:block">
-                          Self-paced & flexible
-                        </p>
-                      </div>
-                    </motion.div>
-                  </motion.div>
-
-                  {/* Bottom Decorative Orb */}
-                  <motion.div
-                    style={{ z: depth(40) }}
-                    className="pointer-events-none absolute right-8 -bottom-7 z-0 hidden sm:block"
-                  >
-                    <motion.div
-                      animate={
-                        shouldReduceMotion
-                          ? undefined
-                          : { y: [0, 10, 0], x: [0, 5, 0] }
+                    {/* Next Slide */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        carouselApi?.scrollNext(
+                          shouldReduceMotion,
+                        )
                       }
-                      transition={{ ...floatTransition, duration: 6 }}
-                      className="size-14 rounded-full bg-gradient-to-br from-blue-300/60 to-indigo-400/40 blur-[1px]"
-                    />
-                  </motion.div>
-                </motion.div>
-              </motion.div>
+                      disabled={!carouselApi}
+                      aria-label="Next slide"
+                      className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-brand-border bg-card/65 text-brand-text backdrop-blur-md transition-colors hover:border-primary/30 hover:bg-brand-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 sm:size-11 xl:size-12"
+                    >
+                      <ArrowRight size={19} strokeWidth={1.8} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </MotionReveal>
         </div>
       </div>
     </section>
   );
-};
-
-export default HeroSection;
+}
