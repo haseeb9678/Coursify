@@ -77,7 +77,7 @@ export default function WhyChooseUsSection() {
             <MotionReveal>
               <div>
                 <span className=" rounded-full border border-primary/30  max-w-max
-                 bg-brand-soft px-6 flex items-center justify-center gap-1
+                 bg-brand-soft px-6 flex items-center justify-center gap-2
   py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
     <HeartHandshake/>
     Why Choose Us

@@ -88,7 +88,7 @@ export default function GrowKnowledgeSection() {
           className="mx-auto mb-14 max-w-2xl space-y-4 text-center sm:mb-16"
         >
           <span className="rounded-full border border-primary/30  max-w-max mx-auto
-                 bg-brand-soft px-6 flex items-center justify-center gap-1
+                 bg-brand-soft px-6 flex items-center justify-center gap-2
   py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
     <Award/>
     Mentorship & Excellence

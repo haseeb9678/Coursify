@@ -85,7 +85,7 @@ const CareerCoursesSection = ({
           <div className="flex flex-col items-center justify-center gap-4 text-center">
 
   {/* Section Label */}
-           <span className=" rounded-full border border-primary/30 bg-brand-soft px-6 flex items-center justify-center gap-1
+           <span className=" rounded-full border border-primary/30 bg-brand-soft px-6 flex items-center justify-center gap-2
   py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
     <GraduationCap/>
     Career Tracks
