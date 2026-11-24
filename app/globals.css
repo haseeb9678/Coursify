@@ -85,50 +85,99 @@
    DARK MODE
 ======================================== */
 
+/* ========================================
+   COURSIFY DARK MODE
+======================================== */
+
 .dark {
-  --background: #0B1120;
-  --foreground: #F9FAFB;
+  /* ========================================
+     BRAND COLORS
+  ======================================== */
 
-  --card: #111827;
-  --card-foreground: #F9FAFB;
+  --brand-primary: #60A5FA;
+  --brand-primary-hover: #93C5FD;
+  --brand-accent: #818CF8;
 
-  --popover: #111827;
-  --popover-foreground: #F9FAFB;
+  /* Soft brand surfaces */
+  --brand-soft: #17263D;
+  --brand-soft-border: #294363;
 
-  --primary: #3B82F6;
-  --primary-foreground: #FFFFFF;
+  /* Neutral palette */
+  --brand-white: #141C2B;
+  --brand-page: #0B101B;
+  --brand-page-secondary: #0F1624;
 
-  --secondary: #172554;
+  /* Typography */
+  --brand-text: #F1F5F9;
+  --brand-text-muted: #94A3B8;
+
+  /* Borders */
+  --brand-border: #263244;
+
+  /* ========================================
+     SHADCN SEMANTIC COLORS
+  ======================================== */
+
+  --background: var(--brand-page);
+  --foreground: var(--brand-text);
+
+  /* Cards */
+  --card: var(--brand-white);
+  --card-foreground: var(--brand-text);
+
+  /* Dropdowns, Tooltips & Popovers */
+  --popover: #182233;
+  --popover-foreground: var(--brand-text);
+
+  /* Primary Actions */
+  --primary: var(--brand-primary);
+  --primary-foreground: #0B1120;
+
+  /* Secondary Actions */
+  --secondary: var(--brand-soft);
   --secondary-foreground: #BFDBFE;
 
-  --muted: #1F2937;
-  --muted-foreground: #9CA3AF;
+  /* Muted Surfaces */
+  --muted: #1C2636;
+  --muted-foreground: var(--brand-text-muted);
 
-  --accent: #172554;
-  --accent-foreground: #BFDBFE;
+  /* Hover & Active States */
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--brand-primary);
 
-  --destructive: #EF4444;
+  /* Destructive Actions */
+  --destructive: #F87171;
 
-  --border: #273449;
-  --input: #273449;
-  --ring: #3B82F6;
+  /* Borders, Inputs & Focus */
+  --border: var(--brand-border);
+  --input: #303D50;
+  --ring: var(--brand-primary);
 
-  /* Sidebar */
-  --sidebar: #111827;
-  --sidebar-foreground: #F9FAFB;
-  --sidebar-primary: #3B82F6;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #172554;
-  --sidebar-accent-foreground: #BFDBFE;
-  --sidebar-border: #273449;
-  --sidebar-ring: #3B82F6;
+  /* ========================================
+     SIDEBAR
+  ======================================== */
 
-  /* Charts */
-  --chart-1: #3B82F6;
-  --chart-2: #60A5FA;
-  --chart-3: #93C5FD;
-  --chart-4: #2563EB;
-  --chart-5: #1D4ED8;
+  --sidebar: #0F1624;
+  --sidebar-foreground: var(--brand-text);
+
+  --sidebar-primary: var(--brand-primary);
+  --sidebar-primary-foreground: #0B1120;
+
+  --sidebar-accent: var(--brand-soft);
+  --sidebar-accent-foreground: var(--brand-primary);
+
+  --sidebar-border: var(--brand-border);
+  --sidebar-ring: var(--brand-primary);
+
+  /* ========================================
+     CHART COLORS
+  ======================================== */
+
+  --chart-1: #60A5FA;
+  --chart-2: #34D399;
+  --chart-3: #A78BFA;
+  --chart-4: #FBBF24;
+  --chart-5: #22D3EE;
 }
 
 /* ========================================
