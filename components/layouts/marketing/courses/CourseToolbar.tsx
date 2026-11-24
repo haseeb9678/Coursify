@@ -41,7 +41,7 @@ interface CourseToolbarProps {
   activeFilterCount: number;
   sort: string;
   totalCourses: number;
-  onSortChange: (value: string) => void;
+  onSortChange: (value: string | null) => void;
   onUpdateFilter: (key: FilterKey, value: string, checked: boolean) => void;
   onRatingChange: (rating: number) => void;
   onCertificateChange: (checked: boolean) => void;

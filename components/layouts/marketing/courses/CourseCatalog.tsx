@@ -33,12 +33,14 @@ export default function CourseCatalogClient() {
     pageSize,
   } = useCourseCatalog();
 
-  const handleSearch = (value: string) => {
+  const handleSearch = (value: string | null) => {
+    if(!value) return
     setSearch(value);
     setPage(1);
   };
 
-  const handleSort = (value: string) => {
+  const handleSort = (value: string | null) => {
+    if(!value) return
     setSort(value);
     setPage(1);
   };
