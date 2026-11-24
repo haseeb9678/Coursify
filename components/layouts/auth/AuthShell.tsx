@@ -141,8 +141,7 @@ export function AuthShell({
     <MotionConfig reducedMotion="user">
       <FlipContext.Provider value={{ flipTo }}>
         <section className="relative flex min-h-dvh items-center 
-        justify-center overflow-hidden bg-gradient-to-b 
-         from-sky-50 via-white to-blue-50/60 px-4 py-10 sm:px-6 sm:py-14">
+        justify-center overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
           {/* Soft background glow */}
           <div
             aria-hidden="true"
