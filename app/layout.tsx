@@ -46,11 +46,11 @@ export default function RootLayout({
       className={`${jakartaSans.variable} ${playfairDisplay.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen flex flex-col font-sans antialiased">
-        <Providers>
-          {children}
-        {/* <CustomCursor/> */}
-        </Providers>
+      <body
+        className="min-h-screen flex flex-col font-sans antialiased"
+        suppressHydrationWarning
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

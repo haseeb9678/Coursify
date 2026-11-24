@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { Plus, Minus } from "lucide-react";
-import { FAQ } from "@/features/courses/types/faq.types";
+import { FAQ } from "@/features/home/types/faq.types";
 
 
 

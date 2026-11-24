@@ -13,7 +13,7 @@ import {
 import type {
   FooterColumn,
   SocialLink,
-} from "@/features/courses/types/footer.types";
+} from "@/features/home/types/footer.types";
 
 interface FooterProps {
   columns: FooterColumn[];

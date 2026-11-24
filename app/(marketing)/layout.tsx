@@ -1,6 +1,6 @@
 import Footer from "@/components/layouts/marketing/Footer";
 import Navbar from "@/components/layouts/marketing/Navbar";
-import { footerColumns } from "@/features/courses/data/footer.data";
+import { footerColumns } from "@/features/home/data/footer.data";
 import React from "react";
 
 export default function MarketingLayout({

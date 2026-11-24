@@ -231,7 +231,7 @@
 /* Chrome, Edge, Safari */
 ::-webkit-scrollbar {
   width: 9px;
-  height: 9px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {

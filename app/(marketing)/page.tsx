@@ -1,4 +1,4 @@
-import BusinessInstructorSection from "@/components/layouts/marketing/BusinessInstructorSection";
+
 import CareerCoursesSection from "@/components/layouts/marketing/CareerCoursesSection";
 import CategoriesSection from "@/components/layouts/marketing/CategoriesSection";
 import FAQSection from "@/components/layouts/marketing/FAQSection";
@@ -7,7 +7,6 @@ import GrowKnowledgeSection from "@/components/layouts/marketing/GrowKnowledgeSe
 import Hero from "@/components/layouts/marketing/Hero";
 import HiringPartnersSection from "@/components/layouts/marketing/HiringPartnersSection";
 import SkillDomainsSection from "@/components/layouts/marketing/SkillDomainsSection";
-import StudentCommunityCTA from "@/components/layouts/marketing/StudentCommunityCTA";
 import TestimonialsSection from "@/components/layouts/marketing/TestimonialsSection";
 import WhyChooseUsSection from "@/components/layouts/marketing/WhyChooseUsSection";
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
@@ -19,9 +18,9 @@ import {
 
 import { categories } from "@/features/courses/data/categories.data";
 import { featuredCourses } from "@/features/courses/data/data.courses";
-import { faqs } from "@/features/courses/data/faqs.data";
 import { skillDomains } from "@/features/courses/data/skill-domains.data";
-import { testimonials } from "@/features/courses/data/testimonials.data";
+import { testimonials } from "@/features/home/data/testimonials.data";
+import { faqs } from "@/features/home/data/faqs.data";
 
 export default function HomePage() {
   return (
@@ -45,7 +44,7 @@ export default function HomePage() {
         <WhyChooseUsSection />
       </MotionReveal>
       <MotionReveal>
-        
+
         <SkillDomainsSection domains={skillDomains} />
       </MotionReveal>
       <MotionReveal>
