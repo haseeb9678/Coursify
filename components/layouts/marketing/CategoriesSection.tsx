@@ -283,7 +283,7 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
             </div>
 
             {/* Slide indicators (mobile only) */}
-            {slideCount > 1 && (
+            {/* {slideCount > 1 && (
               <div className="mt-5 flex items-center justify-center gap-1.5 sm:hidden">
                 {Array.from({ length: slideCount }).map((_, slideIndex) => (
                   <button
@@ -300,7 +300,7 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
                   />
                 ))}
               </div>
-            )}
+            )} */}
           </div>
         ) : (
           <div className="flex min-h-40 items-center justify-center rounded-xl border border-dashed border-brand-border bg-card/50 text-sm text-brand-text-muted">

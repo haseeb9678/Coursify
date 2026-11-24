@@ -167,7 +167,10 @@ function CourseCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
         {/* Category */}
-        <span className="absolute left-1.5 top-1.5 max-w-[calc(100%-12px)] truncate rounded-full border border-white/30 bg-white/95 px-2 py-1 text-[8px] font-bold uppercase tracking-wide text-brand-primary shadow-sm sm:left-3 sm:top-3 sm:px-3 sm:py-1.5 sm:text-[10px]">
+        <span className="absolute left-1.5 top-1.5 
+        max-w-[calc(100%-12px)] truncate rounded-full
+        border border-white/30 bg-white/95 px-2 py-1
+         text-[8px] font-bold uppercase tracking-wide text-brand-primary shadow-sm sm:left-3 sm:top-3 sm:px-3 sm:py-1.5 sm:text-[10px]">
           {course.category}
         </span>
       </Link>
@@ -184,13 +187,13 @@ function CourseCard({
 
           {/* Course Title */}
           <Link href={`/courses/${course.id}`}>
-            <h3 className="line-clamp-2 text-[12px] font-bold leading-4 text-card-foreground transition-colors group-hover:text-brand-primary sm:min-h-12 sm:text-lg sm:leading-6 lg:text-xl">
+            <h3 className="line-clamp-2 text-sm font-bold leading-4 text-card-foreground transition-colors group-hover:text-brand-primary sm:min-h-12 sm:text-lg sm:leading-6 lg:text-xl">
               {course.title}
             </h3>
           </Link>
 
           {/* Instructor */}
-          <p className="truncate text-[10px] text-brand-text-muted sm:text-xs">
+          <p className="truncate text-xs text-brand-text-muted sm:text-xs">
             By {course.instructor}
           </p>
 
@@ -229,10 +232,10 @@ function CourseCard({
         {/* Rank counter (bottom of card) */}
       <span
   aria-label={`Rank ${rank}`}
-  className="pointer-events-none absolute bottom-2 right-3 select-none
+  className="pointer-events-none absolute bottom-2 right-3 select-none 
     bg-gradient-to-br from-primary via-indigo-500 to-violet-800
-    bg-clip-text text-3xl font-black leading-none text-transparent
-    opacity-70 transition-all duration-300
+    bg-clip-text text-4xl font-black leading-none text-transparent
+    opacity-60 transition-all duration-300
     group-hover:opacity-100 group-hover:scale-110
     sm:bottom-0 sm:right-0 sm:text-5xl"
 >
