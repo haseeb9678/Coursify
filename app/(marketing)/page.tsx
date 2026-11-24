@@ -25,7 +25,7 @@ import { testimonials } from "@/features/courses/data/testimonials.data";
 
 export default function HomePage() {
   return (
-    <div className="flex w-full flex-col">
+    <div className="flex w-full flex-col hide-scrollbar">
       <MotionReveal>
         <Hero />
       </MotionReveal>
@@ -45,6 +45,7 @@ export default function HomePage() {
         <WhyChooseUsSection />
       </MotionReveal>
       <MotionReveal>
+        
         <SkillDomainsSection domains={skillDomains} />
       </MotionReveal>
       <MotionReveal>

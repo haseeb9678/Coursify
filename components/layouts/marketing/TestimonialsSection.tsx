@@ -108,7 +108,7 @@ export default function TestimonialsSection({
   if (!testimonials.length) return null;
 
   return (
-    <section className="relative overflow-hidden py-16 sm:py-17">
+    <section className="relative overflow-hidden py-9">
       <div className="w-full px-4 sm:px-6 xl:px-10 2xl:px-15">
 
         {/* Section Heading */}
@@ -140,7 +140,7 @@ export default function TestimonialsSection({
             {testimonials.map((testimonial, index) => (
               <CarouselItem
                 key={testimonial.id}
-                className="min-w-0 basis-[88%] pl-4 sm:basis-1/2 lg:basis-1/3"
+                className="min-w-0 basis-full pl-4 sm:basis-1/2 lg:basis-1/3"
               >
                 <MotionReveal
                   className="h-full"
@@ -292,7 +292,10 @@ function TestimonialCard({
       >
         <article
           style={{ transformStyle: "preserve-3d" }}
-          className="group relative flex h-full min-h-[300px] flex-col justify-between gap-6 rounded-2xl border border-brand-soft-border/80 bg-brand-soft p-5 shadow-[0_10px_28px_-18px_rgba(37,99,235,0.35)] transition-[border-color,box-shadow] duration-300 hover:border-brand-primary/30 hover:shadow-[0_28px_50px_-24px_rgba(37,99,235,0.45)] sm:p-6"
+          className="group relative flex h-full min-h-[300px] flex-col justify-between gap-6 rounded-2xl 
+          border border-primary/30 bg-brand-soft p-5 shadow-[0_10px_28px_-18px_rgba(37,99,235,0.35)]
+           transition-[border-color,box-shadow] duration-300 hover:border-primary/30
+            hover:shadow-[0_28px_50px_-24px_rgba(37,99,235,0.45)] sm:p-6"
         >
           {/* Clipped backdrop: oversized quote mark + cursor light */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">

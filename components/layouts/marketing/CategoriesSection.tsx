@@ -224,7 +224,7 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
   return (
     <section
       id="categories"
-      className="relative isolate overflow-hidden py-16 sm:py-20"
+      className="relative isolate overflow-hidden py-8"
     >
       {/* Quiet dotted texture, fades out at the top and bottom edges */}
       <div
@@ -248,10 +248,6 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
       category
     </span>
             </h2>
-
-         
- 
-
             <p className="text-sm leading-relaxed text-brand-text-muted sm:text-base">
               From design to data, pick a field and learn at your own pace.
             </p>
@@ -275,7 +271,7 @@ const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
             <div
               ref={scrollerRef}
               onScroll={handleScroll}
-              className="-mx-4 -my-3 grid auto-cols-[85%] grid-flow-col grid-rows-2 gap-3 snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-pl-4 px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:my-0 sm:auto-cols-auto sm:grid-flow-row sm:grid-rows-none sm:grid-cols-2 sm:gap-5 sm:snap-none sm:overflow-visible sm:p-0 lg:grid-cols-3 lg:gap-6"
+              className="-mx-4 -my-3 hide-scrollbar grid auto-cols-[85%] grid-flow-col grid-rows-2 gap-3 snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-pl-4 px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:my-0 sm:auto-cols-auto sm:grid-flow-row sm:grid-rows-none sm:grid-cols-2 sm:gap-5 sm:snap-none sm:overflow-visible sm:p-0 lg:grid-cols-3 lg:gap-6"
             >
               {categories.map((category, index) => (
                 <CategoryCard

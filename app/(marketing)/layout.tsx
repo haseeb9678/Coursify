@@ -11,7 +11,7 @@ export default function MarketingLayout({
       <Navbar />
 
       {/* Main content */}
-      <main className="relative flex w-full flex-1 flex-col">
+      <main className="relative flex w-full flex-1 flex-col ">
         {/* Ambient background glows */}
         <div className="pointer-events-none absolute -top-24 right-0 -z-10 size-[620px] rounded-full bg-brand-accent/10 blur-[130px]" />
 

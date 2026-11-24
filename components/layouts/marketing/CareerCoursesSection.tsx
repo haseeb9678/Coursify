@@ -9,6 +9,7 @@ import {
   Clock3,
   ArrowRight,
   Star,
+  GraduationCap,
 } from "lucide-react";
 
 import {
@@ -76,7 +77,7 @@ const CareerCoursesSection = ({
   return (
     <section
       id="career-courses"
-      className=" py-16 sm:py-8"
+      className="py-8"
     >
       <div className="w-full px-4 sm:px-6 xl:px-10 2xl:px-15 flex flex-col gap-10">
 
@@ -84,11 +85,11 @@ const CareerCoursesSection = ({
           <div className="flex flex-col items-center justify-center gap-4 text-center">
 
   {/* Section Label */}
-            <span className=" rounded-full border border-primary/30 bg-brand-soft px-6
+           <span className=" rounded-full border border-primary/30 bg-brand-soft px-6 flex items-center justify-center gap-1
   py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
+    <GraduationCap/>
     Career Tracks
   </span>
-
   {/* Main Heading */}
   <h2 className="max-w-xl text-2xl leading-tight font-extrabold tracking-tight text-brand-text sm:text-3xl lg:text-4xl">
    Launch Your New Career in Just a Few Months
@@ -98,7 +99,7 @@ const CareerCoursesSection = ({
 
         {/* Career track filter tabs */}
         <div
-          className="mx-auto 2xl:min-w-[60%] flex items-center justify-between gap-6 
+          className="mx-auto 2xl:min-w-[60%] flex items-center justify-between gap-6  hide-scrollbar
           overflow-x-auto border-b border-brand-border sm:gap-8"
           role="tablist"
           aria-label="Filter courses by career track"

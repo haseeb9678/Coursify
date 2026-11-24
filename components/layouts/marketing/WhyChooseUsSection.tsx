@@ -11,6 +11,7 @@ import {
   Globe,
   Headphones,
   type LucideIcon,
+  HeartHandshake,
 } from "lucide-react";
 
 import { motion, useReducedMotion } from "motion/react";
@@ -75,9 +76,12 @@ export default function WhyChooseUsSection() {
           <div className="space-y-7 lg:col-span-5">
             <MotionReveal>
               <div>
-                <span className="inline-flex rounded-full border border-primary/30 bg-brand-soft px-6 py-3 text-[13px] font-extrabold uppercase tracking-[0.16em] text-brand-primary">
-                  Why Choose Us
-                </span>
+                <span className=" rounded-full border border-primary/30  max-w-max
+                 bg-brand-soft px-6 flex items-center justify-center gap-1
+  py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
+    <HeartHandshake/>
+    Why Choose Us
+  </span>
 
                 <h2 className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-4xl">
                   Creating A Community Of{" "}
@@ -154,7 +158,11 @@ export default function WhyChooseUsSection() {
                       damping: 18,
                     }}
                     style={{ transformPerspective: 900 }}
-                    className="group relative isolate flex min-h-[165px] h-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-brand-border/70 bg-white/80 p-4 text-center shadow-[0_8px_30px_rgba(37,99,235,0.04)] backdrop-blur-xl transition-all duration-300 hover:border-brand-primary/30 hover:shadow-[0_20px_45px_rgba(37,99,235,0.12)] sm:min-h-[185px] sm:p-6"
+                    className="group relative isolate flex min-h-[165px] h-full flex-col items-center
+                     justify-center overflow-hidden rounded-2xl border border-primary/30
+                      bg-white/80 p-4 text-center shadow-[0_8px_30px_rgba(37,99,235,0.04)] 
+                      backdrop-blur-xl transition-all duration-300 hover:border-primary/80
+                       hover:shadow-[0_20px_45px_rgba(37,99,235,0.12)] sm:min-h-[185px] sm:p-6"
                   >
                     {/* Subtle top and bottom card lighting */}
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-brand-primary/[0.09] to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-100" />
@@ -172,7 +180,9 @@ export default function WhyChooseUsSection() {
                           : { rotate: 8, scale: 1.12, y: -3 }
                       }
                       transition={{ type: "spring", stiffness: 300 }}
-                      className="relative mb-4 flex size-13 items-center justify-center rounded-2xl border border-brand-soft-border bg-gradient-to-br from-white to-brand-soft text-brand-primary shadow-[0_6px_15px_rgba(37,99,235,0.10)]"
+                      className="relative mb-4 flex size-13 items-center justify-center
+                       rounded-2xl border border-brand-soft-border bg-gradient-to-br from-white  hover:border-primary/50
+                       to-brand-soft text-brand-primary shadow-[0_6px_15px_rgba(37,99,235,0.10)]"
                     >
                       <Icon size={25} strokeWidth={1.8} />
                     </motion.div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Sparkles, GraduationCap, PlayCircle } from "lucide-react";
+import { Sparkles, GraduationCap, PlayCircle, Award } from "lucide-react";
 import {
   motion,
   useMotionTemplate,
@@ -87,13 +87,12 @@ export default function GrowKnowledgeSection() {
           transition={{ duration: 0.7, ease: "easeOut" }}
           className="mx-auto mb-14 max-w-2xl space-y-4 text-center sm:mb-16"
         >
-          <div
-            className="inline-flex items-center gap-2 rounded-full border border-primary/40
-           bg-brand-soft px-5 py-4 text-xs font-bold uppercase tracking-wider text-brand-primary"
-          >
-            <Sparkles size={14} />
-            Mentorship & Excellence
-          </div>
+          <span className="rounded-full border border-primary/30  max-w-max mx-auto
+                 bg-brand-soft px-6 flex items-center justify-center gap-1
+  py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
+    <Award/>
+    Mentorship & Excellence
+  </span>
 
           <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-[34px] lg:text-[38px]">
             Grow Your Knowledge With{" "}

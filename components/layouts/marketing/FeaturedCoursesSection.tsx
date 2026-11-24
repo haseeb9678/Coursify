@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
 import type { FeaturedCourse } from "@/features/courses/types/course.types";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Flame } from "lucide-react";
 
 import {
   motion,
@@ -51,7 +51,7 @@ const FeaturedCoursesSection = ({
   }, [api]);
 
   return (
-    <section className="border-y border-brand-border/60 bg-brand-page-secondary py-12">
+    <section className="border-y border-brand-border/60 bg-brand-page-secondary py-6 hide-scrollbar">
       <div className="w-full px-4 sm:px-6 xl:px-10 2xl:px-15">
         <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-1 lg:gap-10">
 
@@ -59,8 +59,9 @@ const FeaturedCoursesSection = ({
          <div className="flex flex-col items-center justify-center gap-4 text-center">
 
   {/* Section Label */}
-            <span className=" rounded-full border border-primary/30 bg-brand-soft px-6
+            <span className=" rounded-full border border-primary/30 bg-brand-soft px-6 flex items-center justify-center gap-1
   py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
+    <Flame/>
     Top Rated Courses
   </span>
 
@@ -91,7 +92,7 @@ const FeaturedCoursesSection = ({
                     {courses.map((course, index) => (
                       <CarouselItem
                         key={course.id}
-                        className="basis-full pl-10 md:basis-1/2 xl:basis-1/3"
+                        className="basis-1.5/2 pl-5 md:pl-7 xl:pl-10 md:basis-1/2 xl:basis-1/3"
                       >
                         <MotionReveal className="h-full" delay={index * 0.05} hover>
                           <CourseCard course={course} />

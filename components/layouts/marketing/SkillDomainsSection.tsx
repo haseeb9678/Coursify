@@ -9,7 +9,7 @@ import {
 } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react";
 import {
   motion,
   useMotionTemplate,
@@ -281,9 +281,12 @@ export default function SkillDomainsSection({
 
         {/* Section Heading */}
         <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <span className="rounded-full border border-primary/30 bg-brand-soft px-6 py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
-            Trending Domains
-          </span>
+              <span className=" rounded-full border border-primary/30  max-w-max
+                 bg-brand-soft px-6 flex items-center justify-center gap-2
+  py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
+    <TrendingUp/>
+    Trending Domains
+  </span>
 
           <h2 className="max-w-xl text-2xl leading-tight font-extrabold tracking-tight text-brand-text sm:text-3xl lg:text-4xl">
             Unlock Your New{" "}
