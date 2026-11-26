@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { Flame, Target } from "lucide-react";
+import { Flame, Target, Trophy } from "lucide-react";
 
 import DashboardCard from "./DashboardCard";
 import { StudentDashboardData } from "@/features/student/types/dashboard.types";
@@ -46,7 +46,7 @@ export default function WeeklyGoalCard({
         </div>
 
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Target size={21} />
+          <Trophy size={21} />
         </span>
       </div>
 

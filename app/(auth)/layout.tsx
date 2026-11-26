@@ -4,6 +4,7 @@ import React from "react";
 import Footer from "@/components/layouts/marketing/Footer";
 import { footerColumns } from "@/features/home/data/footer.data";
 import AuthNavbar from "@/components/layouts/auth/Navbar";
+import GuestGuard from "@/features/auth/guards/guest-guard";
 
 export default function AuthLayout({
   children,
@@ -28,7 +29,10 @@ export default function AuthLayout({
         />
 
         {/* Auth Pages */}
-        {children}
+          <GuestGuard redirectTo="/student/dashboard">
+      {children}
+       </GuestGuard>
+       
       </main>
 
       {/* Shared Footer */}

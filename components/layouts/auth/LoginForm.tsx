@@ -2,16 +2,41 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
-import { AuthShell, FlipLink, formContainer, formItem } from "./AuthShell";
-import { Divider, Field, FormMessage, SocialButtons, SubmitButton } from "./AuthParts";
-import { LoginFormValues, loginSchema } from "@/validation/auth/login.schema";
+import {
+  AuthShell,
+  FlipLink,
+  formContainer,
+  formItem,
+} from "./AuthShell";
+
+import {
+  Divider,
+  Field,
+  FormMessage,
+  SocialButtons,
+  SubmitButton,
+} from "./AuthParts";
+
+import {
+  type LoginFormValues,
+  loginSchema,
+} from "@/validation/auth/login.schema";
+
+import { useLogin } from "@/features/auth/hooks/use-login";
+import { getGraphQLErrorMessage } from "@/lib/graphql/error";
 
 const LoginForm = () => {
+  const router = useRouter();
+
   const [formMessage, setFormMessage] = useState("");
+
+  const loginMutation = useLogin();
 
   const {
     register,
@@ -19,23 +44,34 @@ const LoginForm = () => {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: {
+      email: "",
+      password: "",
+    },
     mode: "onBlur",
   });
 
-  // Replace this function with your login API later.
+  const isLoading = isSubmitting || loginMutation.isPending;
+
+  // Handle user login
   const onSubmit = async (values: LoginFormValues) => {
     setFormMessage("");
 
     try {
-      // Example future integration:
-      // await authService.login(values);
+      const response = await loginMutation.mutateAsync({
+        email: values.email.trim().toLowerCase(),
+        password: values.password,
+      });
 
-      console.log("Validated login data:", values);
-      setFormMessage("Your form is valid. API integration is ready.");
-    } catch (error) {
-      console.error("Login error:", error);
-      setFormMessage("Something went wrong. Please try again.");
+      toast.success(response.message);
+
+      router.replace("/");
+    } catch (error: unknown) {
+      const message = getGraphQLErrorMessage(error);
+
+      setFormMessage(message);
+
+      toast.error(message);
     }
   };
 
@@ -59,21 +95,28 @@ const LoginForm = () => {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Log in to Coursify
           </h1>
-          <p className="text-sm text-slate-500">Good to see you again.</p>
+
+          <p className="text-sm text-slate-500">
+            Good to see you again.
+          </p>
         </motion.div>
 
         <SocialButtons onSelect={setFormMessage} />
 
         <Divider>or use your email</Divider>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="space-y-4"
+        >
           <Field
             id="email"
             label="Email"
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            disabled={isSubmitting}
+            disabled={isLoading}
             error={errors.email?.message}
             registration={register("email")}
           />
@@ -84,7 +127,7 @@ const LoginForm = () => {
             type="password"
             autoComplete="current-password"
             placeholder="Your password"
-            disabled={isSubmitting}
+            disabled={isLoading}
             error={errors.password?.message}
             registration={register("password")}
             labelAside={
@@ -100,15 +143,21 @@ const LoginForm = () => {
           <FormMessage message={formMessage} />
 
           <SubmitButton
-            isSubmitting={isSubmitting}
+            isSubmitting={isLoading}
             label="Log in"
             loadingLabel="Logging in..."
           />
         </form>
 
-        <motion.p variants={formItem} className="text-center text-sm text-slate-500">
+        <motion.p
+          variants={formItem}
+          className="text-center text-sm text-slate-500"
+        >
           New to Coursify?{" "}
-          <FlipLink href="/signup" className="font-semibold text-blue-600 hover:underline">
+          <FlipLink
+            href="/signup"
+            className="font-semibold text-blue-600 hover:underline"
+          >
             Create an account
           </FlipLink>
         </motion.p>

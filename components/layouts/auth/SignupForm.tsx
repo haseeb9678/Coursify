@@ -1,15 +1,41 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AuthShell, FlipLink, formContainer, formItem } from "./AuthShell";
-import { Divider, Field, FormMessage, SocialButtons, SubmitButton } from "./AuthParts";
-import { SignupFormValues, signupSchema } from "@/validation/auth/signup.schema";
+import { toast } from "sonner";
+
+import {
+  AuthShell,
+  FlipLink,
+  formContainer,
+  formItem,
+} from "./AuthShell";
+
+import {
+  Divider,
+  Field,
+  FormMessage,
+  SocialButtons,
+  SubmitButton,
+} from "./AuthParts";
+
+import {
+  type SignupFormValues,
+  signupSchema,
+} from "@/validation/auth/signup.schema";
+
+import { useRegister } from "@/features/auth/hooks/use-register";
+import { getGraphQLErrorMessage } from "@/lib/graphql/error";
 
 const SignupForm = () => {
+  const router = useRouter();
+
   const [formMessage, setFormMessage] = useState("");
+
+  const registerMutation = useRegister();
 
   const {
     register,
@@ -17,23 +43,36 @@ const SignupForm = () => {
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+    },
     mode: "onBlur",
   });
 
-  // Replace this function with your registration API later.
+  const isLoading = isSubmitting || registerMutation.isPending;
+
+  // Handle user registration
   const onSubmit = async (values: SignupFormValues) => {
     setFormMessage("");
 
     try {
-      // Example future integration:
-      // await authService.register(values);
+      const response = await registerMutation.mutateAsync({
+        name: values.name.trim(),
+        email: values.email.trim().toLowerCase(),
+        password: values.password,
+      });
 
-      console.log("Validated signup data:", values);
-      setFormMessage("Your form is valid. API integration is ready.");
-    } catch (error) {
-      console.error("Signup error:", error);
-      setFormMessage("Something went wrong. Please try again.");
+      toast.success(response.message);
+
+      router.replace("/login");
+    } catch (error: unknown) {
+      const message = getGraphQLErrorMessage(error);
+
+      setFormMessage(message);
+
+      toast.error(message);
     }
   };
 
@@ -57,20 +96,27 @@ const SignupForm = () => {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Create your account
           </h1>
-          <p className="text-sm text-slate-500">Free to start. No credit card needed.</p>
+
+          <p className="text-sm text-slate-500">
+            Free to start. No credit card needed.
+          </p>
         </motion.div>
 
         <SocialButtons onSelect={setFormMessage} />
 
         <Divider>or use your email</Divider>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="space-y-4"
+        >
           <Field
             id="name"
             label="Full name"
             autoComplete="name"
             placeholder="Your full name"
-            disabled={isSubmitting}
+            disabled={isLoading}
             error={errors.name?.message}
             registration={register("name")}
           />
@@ -81,7 +127,7 @@ const SignupForm = () => {
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            disabled={isSubmitting}
+            disabled={isLoading}
             error={errors.email?.message}
             registration={register("email")}
           />
@@ -91,9 +137,9 @@ const SignupForm = () => {
             label="Password"
             type="password"
             autoComplete="new-password"
-            placeholder="At least 8 characters"
+            placeholder="At least 12 characters"
             hint="Include uppercase, lowercase and a number."
-            disabled={isSubmitting}
+            disabled={isLoading}
             error={errors.password?.message}
             registration={register("password")}
           />
@@ -101,27 +147,39 @@ const SignupForm = () => {
           <FormMessage message={formMessage} />
 
           <SubmitButton
-            isSubmitting={isSubmitting}
+            isSubmitting={isLoading}
             label="Create account"
             loadingLabel="Creating account..."
           />
         </form>
 
-        <motion.div variants={formItem} className="space-y-3 text-center">
+        <motion.div
+          variants={formItem}
+          className="space-y-3 text-center"
+        >
           <p className="text-sm text-slate-500">
             Already have an account?{" "}
-            <FlipLink href="/login" className="font-semibold text-blue-600 hover:underline">
+            <FlipLink
+              href="/login"
+              className="font-semibold text-blue-600 hover:underline"
+            >
               Log in
             </FlipLink>
           </p>
 
           <p className="text-xs leading-relaxed text-slate-400">
             By signing up, you agree to our{" "}
-            <a href="/terms" className="underline hover:text-blue-600">
+            <a
+              href="/terms"
+              className="underline hover:text-blue-600"
+            >
               Terms
             </a>{" "}
             and{" "}
-            <a href="/privacy" className="underline hover:text-blue-600">
+            <a
+              href="/privacy"
+              className="underline hover:text-blue-600"
+            >
               Privacy Policy
             </a>
             .

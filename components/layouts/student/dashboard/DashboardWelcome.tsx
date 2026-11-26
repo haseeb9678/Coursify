@@ -10,17 +10,21 @@ import {
 
 import { motion, useReducedMotion } from "motion/react";
 
-interface DashboardWelcomeProps {
-  studentName: string;
-}
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
-export default function DashboardWelcome({
-  studentName,
-}: DashboardWelcomeProps) {
+export default function DashboardWelcome() {
   const shouldReduceMotion = useReducedMotion();
 
+  // Authentication state
+  const user = useAuthStore((state) => state.user);
+
+  const isInitialized = useAuthStore(
+    (state) => state.isInitialized,
+  );
+
+  // Extract first name from authenticated user
   const firstName =
-    studentName.trim().split(/\s+/)[0] || "Student";
+    user?.name.trim().split(/\s+/)[0] || "Student";
 
   return (
     <motion.section
@@ -57,8 +61,25 @@ export default function DashboardWelcome({
             Your learning workspace
           </span>
 
+          {/* Personalized Welcome Heading */}
           <h1 className="text-2xl font-bold tracking-tight text-brand-text sm:text-3xl lg:text-4xl">
-            Welcome back, {firstName}!
+            Welcome back,{" "}
+
+            {!isInitialized ? (
+              <span
+                role="status"
+                aria-label="Loading student name"
+                className="
+                  inline-block h-[0.85em] w-24
+                  animate-pulse rounded-md
+                  bg-primary/15 align-middle
+                  motion-reduce:animate-none
+                  sm:w-32
+                "
+              />
+            ) : (
+              <span>{firstName}!</span>
+            )}
           </h1>
 
           <p className="max-w-lg text-sm leading-relaxed text-brand-text-muted">
@@ -85,6 +106,7 @@ export default function DashboardWelcome({
 
         {/* Minimal decorative illustration */}
         <motion.div
+          aria-hidden="true"
           animate={
             shouldReduceMotion
               ? undefined

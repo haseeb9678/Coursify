@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -7,15 +6,33 @@ import {
   GraduationCap,
   Menu,
   ArrowUpRight,
+  UserRound,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
 import SearchBar from "./SearchBar";
 import MobileNavSidebar from "./MobileNavSidebar";
 
+import { useAuthStore } from "@/features/auth/store/auth.store";
+
 const Navbar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+
+  // Authentication state
+  const user = useAuthStore((state) => state.user);
+
+  const isAuthenticated = useAuthStore(
+    (state) => state.isAuthenticated,
+  );
+
+  // Generate user initials
+  const userInitials = user?.name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((name) => name.charAt(0).toUpperCase())
+    .join("");
 
   return (
     <>
@@ -34,7 +51,9 @@ const Navbar = () => {
             {/* Logo */}
             <motion.div
               className="shrink-0"
-              whileHover={shouldReduceMotion ? undefined : { scale: 1.03 }}
+              whileHover={
+                shouldReduceMotion ? undefined : { scale: 1.03 }
+              }
               transition={{ duration: 0.2 }}
             >
               <Link href="/" className="flex items-center gap-2">
@@ -48,7 +67,7 @@ const Navbar = () => {
               </Link>
             </motion.div>
 
-            {/* Desktop Search - Hidden Below md */}
+            {/* Desktop Search */}
             <div className="hidden min-w-0 flex-1 justify-center px-4 md:flex">
               <SearchBar />
             </div>
@@ -61,7 +80,9 @@ const Navbar = () => {
               ].map((item) => (
                 <motion.div
                   key={item.href}
-                  whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+                  whileHover={
+                    shouldReduceMotion ? undefined : { y: -2 }
+                  }
                   transition={{ duration: 0.2 }}
                 >
                   <Link
@@ -79,58 +100,93 @@ const Navbar = () => {
               ))}
             </nav>
 
-            {/* Desktop Authentication */}
-            <div className="hidden shrink-0 items-center gap-3 md:flex">
-              <motion.div
-                whileHover={shouldReduceMotion ? undefined : { y: -2 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Link
-                  href="/login"
-                  className="rounded-md px-4 py-2 text-sm font-semibold text-brand-text transition-colors hover:bg-brand-soft hover:text-primary"
-                >
-                  Login
-                </Link>
-              </motion.div>
+            {/* Authentication & Mobile Navigation */}
+            <div className="flex shrink-0 items-center gap-3">
 
-              <motion.div
-                whileHover={
-                  shouldReduceMotion ? undefined : { y: -2, scale: 1.02 }
+              {isAuthenticated && user ? (
+                /* Authenticated User Profile */
+                <Link
+                  href="/student/dashboard"
+                  aria-label={`Open dashboard for ${user.name}`}
+                  title={user.name}
+                  className="group flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-sm font-semibold tracking-wide text-primary transition-colors duration-200 hover:border-primary/30 hover:bg-primary/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:size-11"
+                >
+                  {userInitials ? (
+                    <span>{userInitials}</span>
+                  ) : (
+                    <UserRound
+                      size={20}
+                      strokeWidth={1.8}
+                    />
+                  )}
+                </Link>
+              ) : (
+                /* Desktop Guest Authentication */
+                <div className="hidden shrink-0 items-center gap-3 md:flex">
+                  <motion.div
+                    whileHover={
+                      shouldReduceMotion ? undefined : { y: -2 }
+                    }
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Link
+                      href="/login"
+                      className="rounded-md px-4 py-2 text-sm font-semibold text-brand-text transition-colors hover:bg-brand-soft hover:text-primary"
+                    >
+                      Login
+                    </Link>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={
+                      shouldReduceMotion
+                        ? undefined
+                        : { y: -2, scale: 1.02 }
+                    }
+                    whileTap={
+                      shouldReduceMotion
+                        ? undefined
+                        : { scale: 0.98 }
+                    }
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Link
+                      href="/signup"
+                      className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
+                      />
+
+                      <span className="relative">Sign Up</span>
+
+                      <ArrowUpRight
+                        size={17}
+                        className="relative transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                      />
+                    </Link>
+                  </motion.div>
+                </div>
+              )}
+
+              {/* Mobile / Tablet Sidebar Toggle */}
+              <motion.button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open navigation menu"
+                aria-expanded={isSidebarOpen}
+                aria-haspopup="dialog"
+                whileTap={
+                  shouldReduceMotion
+                    ? undefined
+                    : { scale: 0.94 }
                 }
-                whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
-                transition={{ duration: 0.2 }}
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-border bg-white text-brand-text transition-all duration-200 hover:border-primary/30 hover:bg-brand-soft hover:text-primary lg:hidden"
               >
-                <Link
-                  href="/signup"
-                  className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/35 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
-                  />
-
-                  <span className="relative">Sign Up</span>
-
-                  <ArrowUpRight
-                    size={17}
-                    className="relative transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </Link>
-              </motion.div>
+                <Menu size={21} />
+              </motion.button>
             </div>
-
-            {/* Mobile / Tablet Sidebar Toggle */}
-            <motion.button
-              type="button"
-              onClick={() => setIsSidebarOpen(true)}
-              aria-label="Open navigation menu"
-              aria-expanded={isSidebarOpen}
-              aria-haspopup="dialog"
-              whileTap={shouldReduceMotion ? undefined : { scale: 0.94 }}
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-border bg-white text-brand-text transition-all duration-200 hover:border-primary/30 hover:bg-brand-soft hover:text-primary lg:hidden"
-            >
-              <Menu size={21} />
-            </motion.button>
           </div>
         </div>
       </motion.header>

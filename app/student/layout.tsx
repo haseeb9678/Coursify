@@ -2,13 +2,18 @@ import { Suspense, type ReactNode } from "react";
 import { cookies } from "next/headers";
 
 import StudentLayoutClient from "@/components/layouts/student/StudentLayoutClient";
-import Footer from "@/components/layouts/marketing/Footer";
-import { footerColumns } from "@/features/home/data/footer.data";
+
+import AuthGuard from "@/features/auth/guards/auth-guard";
 
 interface StudentLayoutProps {
   children: ReactNode;
 }
 
+// Opt out of instant navigation validation
+// because AuthGuard conditionally renders nested pages.
+export const instant = false;
+
+// Resolve student layout preferences
 async function StudentLayoutContent({
   children,
 }: StudentLayoutProps) {
@@ -23,15 +28,13 @@ async function StudentLayoutContent({
       : sidebarState === "true";
 
   return (
-    <StudentLayoutClient
-      defaultOpen={defaultOpen}
-      
-    >
+    <StudentLayoutClient defaultOpen={defaultOpen}>
       {children}
     </StudentLayoutClient>
   );
 }
 
+// Student workspace loading skeleton
 function StudentLayoutFallback() {
   return (
     <div
@@ -73,14 +76,17 @@ function StudentLayoutFallback() {
   );
 }
 
+// Protected student layout
 export default function StudentLayout({
   children,
 }: StudentLayoutProps) {
   return (
-    <Suspense fallback={<StudentLayoutFallback />}>
-      <StudentLayoutContent>
-        {children}
-      </StudentLayoutContent>
-    </Suspense>
+    <AuthGuard allowedRoles={["STUDENT"]}>
+      <Suspense fallback={<StudentLayoutFallback />}>
+        <StudentLayoutContent>
+          {children}
+        </StudentLayoutContent>
+      </Suspense>
+    </AuthGuard>
   );
 }

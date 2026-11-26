@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -9,6 +8,8 @@ import {
   ArrowUpRight,
   LogIn,
   UserPlus,
+  UserRound,
+  ChevronRight,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
@@ -16,7 +17,11 @@ import {
   Sheet,
   SheetContent,
   SheetHeader,
+  SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
+
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
 interface MobileNavSidebarProps {
   open: boolean;
@@ -44,6 +49,25 @@ export default function MobileNavSidebar({
 }: MobileNavSidebarProps) {
   const shouldReduceMotion = useReducedMotion();
 
+  // Authentication state
+  const user = useAuthStore((state) => state.user);
+
+  const isAuthenticated = useAuthStore(
+    (state) => state.isAuthenticated,
+  );
+
+  const isInitialized = useAuthStore(
+    (state) => state.isInitialized,
+  );
+
+  // Generate user initials
+  const userInitials = user?.name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((name) => name.charAt(0).toUpperCase())
+    .join("");
+
   const closeSidebar = () => onOpenChange(false);
 
   return (
@@ -52,7 +76,16 @@ export default function MobileNavSidebar({
         side="left"
         className="flex w-[300px] flex-col overflow-hidden border-r border-brand-border bg-white p-0 sm:w-[360px]"
       >
+        {/* Sidebar Header */}
         <SheetHeader className="border-b border-brand-border px-5 py-6 text-left">
+          <SheetTitle className="sr-only">
+            Navigation Menu
+          </SheetTitle>
+
+          <SheetDescription className="sr-only">
+            Explore courses and access your Coursify account.
+          </SheetDescription>
+
           <Link
             href="/"
             onClick={closeSidebar}
@@ -68,6 +101,7 @@ export default function MobileNavSidebar({
           </Link>
         </SheetHeader>
 
+        {/* Main Navigation */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.15em] text-brand-text-muted">
             Main Navigation
@@ -136,35 +170,100 @@ export default function MobileNavSidebar({
           </motion.nav>
         </div>
 
-        <div className="border-t border-brand-border bg-brand-page-secondary/60 p-5">
-          <p className="mb-3 text-center text-xs text-brand-text-muted">
-            Get started with Coursify
-          </p>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href="/login"
-              onClick={closeSidebar}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-border bg-white text-sm font-semibold text-brand-text transition-colors hover:border-primary/30 hover:bg-brand-soft hover:text-primary"
+        {/* Authentication Footer */}
+        <div className="shrink-0 border-t border-brand-border bg-brand-page-secondary/60 p-5">
+          {!isInitialized ? (
+            /* Authentication Loading Skeleton */
+            <div
+              role="status"
+              aria-label="Checking authentication"
+              className="flex items-center gap-3 rounded-xl border border-brand-border bg-white p-3"
             >
-              <LogIn size={16} />
-              Login
-            </Link>
+              <div className="size-11 shrink-0 animate-pulse rounded-full bg-brand-soft motion-reduce:animate-none" />
 
-            <Link
-              href="/signup"
-              onClick={closeSidebar}
-              className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
-            >
-              <UserPlus size={16} />
-              Sign Up
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-24 animate-pulse rounded-md bg-brand-soft motion-reduce:animate-none" />
 
-              <ArrowUpRight
-                size={14}
-                className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-              />
-            </Link>
-          </div>
+                <div className="h-2.5 w-32 max-w-full animate-pulse rounded-md bg-brand-soft motion-reduce:animate-none" />
+              </div>
+            </div>
+          ) : isAuthenticated && user ? (
+            /* Authenticated User Profile */
+            <div className="space-y-3">
+              <p className="px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-brand-text-muted">
+                Your Account
+              </p>
+
+              <Link
+                href="/student/dashboard"
+                onClick={closeSidebar}
+                aria-label={`Open dashboard for ${user.name}`}
+                className="group flex items-center gap-3 rounded-xl border border-brand-border bg-white p-3 transition-colors duration-200 hover:border-primary/25 hover:bg-brand-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                {/* Profile Avatar */}
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-sm font-semibold tracking-wide text-primary">
+                  {userInitials ? (
+                    <span>{userInitials}</span>
+                  ) : (
+                    <UserRound size={20} strokeWidth={1.8} />
+                  )}
+                </span>
+
+                {/* User Information */}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-brand-text">
+                    {user.name}
+                  </span>
+
+                  <span className="mt-0.5 block truncate text-xs text-brand-text-muted">
+                    {user.email}
+                  </span>
+
+                  <span className="mt-1.5 block text-[11px] font-medium text-primary">
+                    Go to Dashboard
+                  </span>
+                </span>
+
+                <ChevronRight
+                  size={17}
+                  strokeWidth={1.8}
+                  className="shrink-0 text-brand-text-muted transition-colors group-hover:text-primary"
+                />
+              </Link>
+            </div>
+          ) : (
+            /* Guest Authentication */
+            <>
+              <p className="mb-3 text-center text-xs text-brand-text-muted">
+                Get started with Coursify
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/login"
+                  onClick={closeSidebar}
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-border bg-white text-sm font-semibold text-brand-text transition-colors hover:border-primary/30 hover:bg-brand-soft hover:text-primary"
+                >
+                  <LogIn size={16} />
+                  Login
+                </Link>
+
+                <Link
+                  href="/signup"
+                  onClick={closeSidebar}
+                  className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
+                >
+                  <UserPlus size={16} />
+                  Sign Up
+
+                  <ArrowUpRight
+                    size={14}
+                    className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                  />
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </SheetContent>
     </Sheet>

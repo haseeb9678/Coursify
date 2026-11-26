@@ -12,6 +12,9 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { useLogout } from "@/features/auth/hooks/use-logout";
+
 import type { StudentHeaderProps } from "@/features/student/types/student.types";
 
 import StudentBreadcrumb from "./StudentBreadcrumb";
@@ -19,12 +22,32 @@ import StudentSearchBar from "./StudentSearchBar";
 import StudentProfileMenu from "./StudentProfileMenu";
 
 export default function StudentHeader({
-  student,
   notificationCount = 0,
-  onLogout,
 }: StudentHeaderProps) {
   const { resolvedTheme, setTheme } = useTheme();
 
+  // Authentication state
+  const user = useAuthStore((state) => state.user);
+
+  const isAuthenticated = useAuthStore(
+    (state) => state.isAuthenticated,
+  );
+
+  const isInitialized = useAuthStore(
+    (state) => state.isInitialized,
+  );
+
+  // Logout mutation
+  const logoutMutation = useLogout();
+
+  // Handle user logout
+  const handleLogout = () => {
+    if (logoutMutation.isPending) return;
+
+    logoutMutation.mutate();
+  };
+
+  // Toggle application theme
   const toggleTheme = () => {
     setTheme(
       resolvedTheme === "dark" ? "light" : "dark",
@@ -113,11 +136,29 @@ export default function StudentHeader({
 
           {/* Student Profile */}
           <div className="flex shrink-0 items-center">
-            <StudentProfileMenu
-              student={student}
-              onLogout={onLogout}
-              
-            />
+            {!isInitialized ? (
+              /* Profile Loading Skeleton */
+              <div
+                role="status"
+                aria-label="Loading student profile"
+                className="flex items-center gap-2.5"
+              >
+                <div className="size-10 shrink-0 animate-pulse rounded-full bg-brand-soft motion-reduce:animate-none" />
+
+                <div className="hidden space-y-2 lg:block">
+                  <div className="h-3 w-24 animate-pulse rounded-md bg-brand-soft motion-reduce:animate-none" />
+
+                  <div className="h-2.5 w-16 animate-pulse rounded-md bg-brand-soft motion-reduce:animate-none" />
+                </div>
+              </div>
+            ) : isAuthenticated && user ? (
+              /* Authenticated Student Profile */
+              <StudentProfileMenu
+                student={user}
+                onLogout={handleLogout}
+                isLoggingOut={logoutMutation.isPending}
+              />
+            ) : null}
           </div>
         </div>
       </div>

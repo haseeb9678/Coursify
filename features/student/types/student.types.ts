@@ -1,12 +1,13 @@
-export interface StudentProfile {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string | null;
+import type { User } from "@/features/auth/types/auth.types";
+
+// Student header props
+export interface StudentHeaderProps {
+    notificationCount?: number;
 }
 
-export interface StudentHeaderProps {
-    student?: StudentProfile | null;
-    notificationCount?: number;
-    onLogout?: () => void | Promise<void>;
+// Student profile menu props
+export interface StudentProfileMenuProps {
+    student: User;
+    onLogout: () => void;
+    isLoggingOut?: boolean;
 }

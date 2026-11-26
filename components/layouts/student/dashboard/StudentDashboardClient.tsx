@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
 import DashboardWelcome from "./DashboardWelcome";
 import DashboardStats from "./DashboardStats";
 import LearningActivityChart from "./LearningActivityChart";
@@ -11,36 +9,33 @@ import ContinueLearning from "./ContinueLearning";
 import RecentActivity from "./RecentActivity";
 import DashboardSkeleton from "./DashboardSkeleton";
 
+import { useAuthStore } from "@/features/auth/store/auth.store";
+
 import type { StudentDashboardData } from "@/features/student/types/dashboard.types";
 import { sampleDashboardData } from "@/features/student/data/dashboard.data";
 
 interface StudentDashboardClientProps {
   data?: StudentDashboardData | null;
+  isLoading?: boolean;
 }
 
 export default function StudentDashboardClient({
   data,
+  isLoading = false,
 }: StudentDashboardClientProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  // Authentication state
+  const isUserLoading = useAuthStore(
+    (state) => state.isLoading,
+  );
 
-  // Temporary loading simulation until API integration.
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  // Use sample data until the backend is integrated.
-  const dashboard = data ?? sampleDashboardData;
-
-  const isDemo = data == null;
-
-  // Display dashboard skeleton while loading.
-  if (isLoading) {
+  // Display skeleton while user or dashboard data is loading.
+  if (isUserLoading || isLoading) {
     return <DashboardSkeleton />;
   }
+
+  // Use sample data until backend integration.
+  const dashboard = data ?? sampleDashboardData;
+  const isDemo = data == null;
 
   return (
     <section
@@ -51,24 +46,13 @@ export default function StudentDashboardClient({
         lg:space-y-6 lg:px-8 lg:py-8
       "
     >
-      {/* =====================================
-          WELCOME BANNER
-      ====================================== */}
+      {/* Welcome Banner */}
+      <DashboardWelcome />
 
-      <DashboardWelcome
-        studentName={dashboard.student.name}
-      />
-
-      {/* =====================================
-          STATISTICS OVERVIEW
-      ====================================== */}
-
+      {/* Statistics Overview */}
       <DashboardStats stats={dashboard.stats} />
 
-      {/* =====================================
-          MAIN ANALYTICS
-      ====================================== */}
-
+      {/* Main Analytics */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <LearningActivityChart
           activity={dashboard.learningActivity}
@@ -79,10 +63,7 @@ export default function StudentDashboardClient({
         />
       </div>
 
-      {/* =====================================
-          LEARNING PROGRESS
-      ====================================== */}
-
+      {/* Learning Progress */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <ContinueLearning
           courses={dashboard.continueLearning}
@@ -93,10 +74,7 @@ export default function StudentDashboardClient({
         />
       </div>
 
-      {/* =====================================
-          RECENT STUDENT ACTIVITY
-      ====================================== */}
-
+      {/* Recent Student Activity */}
       <div className="grid grid-cols-1 gap-4">
         <RecentActivity
           activities={dashboard.recentActivity}

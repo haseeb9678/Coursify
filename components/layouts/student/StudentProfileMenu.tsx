@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronDown, LogOut } from "lucide-react";
+
+import {
+  ChevronDown,
+  LogOut,
+  LoaderCircle,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -14,19 +19,18 @@ import {
 
 import { studentAccountNavigation } from "@/features/student/data/student-navigation.data";
 
-import type { StudentProfile } from "@/features/student/types/student.types";
-
-interface StudentProfileMenuProps {
-  student?: StudentProfile | null;
-  onLogout?: () => void | Promise<void>;
-}
+import type { StudentProfileMenuProps } from "@/features/student/types/student.types";
 
 export default function StudentProfileMenu({
   student,
   onLogout,
+  isLoggingOut = false,
 }: StudentProfileMenuProps) {
-  const name = student?.name?.trim() || "Student";
+  // User information
+  const name = student.name.trim() || "Student";
+  const role = student.role.toLowerCase();
 
+  // Generate profile initials
   const initials = name
     .split(/\s+/)
     .slice(0, 2)
@@ -34,20 +38,49 @@ export default function StudentProfileMenu({
     .join("")
     .toUpperCase();
 
+  // Handle logout
+  const handleLogout = () => {
+    if (isLoggingOut) return;
+
+    onLogout();
+  };
+
   return (
     <DropdownMenu>
+      {/* Profile Trigger */}
       <DropdownMenuTrigger
+        disabled={isLoggingOut}
         render={
           <button
             type="button"
-            aria-label="Open account menu"
-            className="group flex cursor-pointer items-center gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={
+              isLoggingOut
+                ? "Signing out"
+                : "Open account menu"
+            }
+            aria-busy={isLoggingOut}
+            className="
+              group flex cursor-pointer items-center gap-2.5
+              rounded-xl p-1.5 transition-colors
+              hover:bg-brand-soft
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-primary
+              disabled:cursor-not-allowed
+              disabled:opacity-70
+            "
           />
         }
       >
         {/* Avatar */}
         <div className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/15 bg-primary/10 text-xs font-semibold text-primary">
-          {student?.avatar ? (
+          {isLoggingOut ? (
+            <LoaderCircle
+              size={19}
+              strokeWidth={1.8}
+              className="animate-spin motion-reduce:animate-none"
+            />
+          ) : student.avatar ? (
             <Image
               src={student.avatar}
               alt={name}
@@ -60,14 +93,17 @@ export default function StudentProfileMenu({
           )}
         </div>
 
-        {/* Account information */}
+        {/* Account Information */}
         <div className="hidden max-w-28 text-left 2xl:block">
-          <p className="truncate text-xs font-semibold text-brand-text">
+          <p
+            title={name}
+            className="truncate text-xs font-semibold text-brand-text"
+          >
             {name}
           </p>
 
-          <p className="mt-0.5 text-[10px] text-brand-text-muted">
-            Student
+          <p className="mt-0.5 text-[10px] capitalize text-brand-text-muted">
+            {isLoggingOut ? "Signing out..." : role}
           </p>
         </div>
 
@@ -77,37 +113,48 @@ export default function StudentProfileMenu({
         />
       </DropdownMenuTrigger>
 
+      {/* Profile Dropdown */}
       <DropdownMenuContent
         align="end"
         sideOffset={12}
         className="w-64 rounded-xl border-brand-border bg-card p-1.5 shadow-lg"
       >
-        {/* Account details */}
+        {/* Account Details */}
         <div className="space-y-1 px-3 py-3">
-          <p className="truncate text-sm font-semibold text-brand-text">
+          <p
+            title={name}
+            className="truncate text-sm font-semibold text-brand-text"
+          >
             {name}
           </p>
 
-          {student?.email && (
-            <p className="truncate text-xs text-brand-text-muted">
-              {student.email}
-            </p>
-          )}
+          <p
+            title={student.email}
+            className="truncate text-xs text-brand-text-muted"
+          >
+            {student.email}
+          </p>
 
-          <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary">
-            Student account
+          <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium capitalize text-primary">
+            {role} account
           </span>
         </div>
 
         <DropdownMenuSeparator />
 
-        {/* Account navigation */}
+        {/* Account Navigation */}
         {studentAccountNavigation.map(
           ({ label, href, icon: Icon }) => (
             <DropdownMenuItem
               key={href}
+              disabled={isLoggingOut}
               render={<Link href={href} />}
-              className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-brand-text"
+              className="
+                flex cursor-pointer items-center gap-3
+                rounded-lg px-3 py-2.5
+                text-sm text-brand-text
+                transition-colors duration-200
+              "
             >
               <Icon
                 size={17}
@@ -122,14 +169,56 @@ export default function StudentProfileMenu({
 
         <DropdownMenuSeparator />
 
+        {/* Logout */}
         <DropdownMenuItem
-          disabled={!onLogout}
-          onClick={() => void onLogout?.()}
-          className="cursor-pointer gap-3 rounded-lg px-3 py-2.5 text-sm text-red-600 focus:bg-red-500/10 focus:text-red-600"
-        >
-          <LogOut size={17} strokeWidth={1.8} />
+          disabled={isLoggingOut}
+          onClick={handleLogout}
+          className="
+            flex cursor-pointer items-center gap-3
+            rounded-lg px-3 py-2.5
+            text-sm font-medium
+            text-red-600!
+            transition-colors duration-200
 
-          Sign out
+            hover:bg-red-500/10!
+            hover:text-red-600!
+
+            focus:bg-red-500/10!
+            focus:text-red-600!
+
+            data-highlighted:bg-red-500/10!
+            data-highlighted:text-red-600!
+
+            [&_svg]:text-red-600!
+
+            dark:text-red-400!
+            dark:hover:text-red-400!
+            dark:focus:text-red-400!
+            dark:data-highlighted:text-red-400!
+            dark:[&_svg]:text-red-400!
+
+            data-disabled:cursor-not-allowed
+            data-disabled:opacity-60
+            disabled:cursor-not-allowed
+            disabled:opacity-60
+          "
+        >
+          {isLoggingOut ? (
+            <LoaderCircle
+              size={17}
+              strokeWidth={1.8}
+              className="animate-spin motion-reduce:animate-none"
+            />
+          ) : (
+            <LogOut
+              size={17}
+              strokeWidth={1.8}
+            />
+          )}
+
+          <span>
+            {isLoggingOut ? "Signing out..." : "Sign out"}
+          </span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
