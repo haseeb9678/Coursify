@@ -12,14 +12,14 @@ import {
 
 import StudentSidebar from "./StudentSidebar";
 import StudentHeader from "./StudentHeader";
+import { User } from "@/features/auth/types/auth.types";
 
-import type { StudentProfile } from "@/features/student/types/student.types";
 
 interface StudentLayoutClientProps {
   children: ReactNode;
 
   defaultOpen?: boolean;
-  student?: StudentProfile | null;
+  student?: User | null;
   notificationCount?: number;
 }
 
