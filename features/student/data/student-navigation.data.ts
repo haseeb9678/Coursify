@@ -8,6 +8,11 @@ import {
     Settings,
 } from "lucide-react";
 
+import type {
+    DashboardNavigationGroup,
+    DashboardNavigationItem,
+} from "@/features/dashboard/types/dashboard.types";
+
 export const STUDENT_BASE_PATH = "/student";
 
 export const studentNavigation = [
@@ -26,7 +31,7 @@ export const studentNavigation = [
         href: `${STUDENT_BASE_PATH}/courses`,
         icon: Compass,
     },
-];
+] satisfies readonly DashboardNavigationItem[];
 
 export const studentLearningNavigation = [
     {
@@ -39,7 +44,7 @@ export const studentLearningNavigation = [
         href: `${STUDENT_BASE_PATH}/certificates`,
         icon: Award,
     },
-];
+] satisfies readonly DashboardNavigationItem[];
 
 export const studentPreferencesNavigation = [
     {
@@ -52,7 +57,7 @@ export const studentPreferencesNavigation = [
         href: `${STUDENT_BASE_PATH}/settings`,
         icon: Settings,
     },
-];
+] satisfies readonly DashboardNavigationItem[];
 
 // Used by the existing profile dropdown.
 export const studentAccountNavigation = [
@@ -62,7 +67,7 @@ export const studentAccountNavigation = [
         href: `${STUDENT_BASE_PATH}/settings`,
         icon: Settings,
     },
-];
+] satisfies readonly DashboardNavigationItem[];
 
 export const studentNavigationGroups = [
     {
@@ -77,4 +82,4 @@ export const studentNavigationGroups = [
         label: "Preferences",
         items: studentPreferencesNavigation,
     },
-];
+] satisfies readonly DashboardNavigationGroup[];

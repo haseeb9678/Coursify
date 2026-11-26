@@ -4,7 +4,12 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 
-export default function StudentSearchBar() {
+import type { DashboardSearchBarProps } from "@/features/dashboard/types/dashboard.types";
+
+export default function DashboardSearchBar({
+  placeholder,
+  searchRoute,
+}: DashboardSearchBarProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
 
@@ -12,11 +17,10 @@ export default function StudentSearchBar() {
     event.preventDefault();
 
     const value = query.trim();
-
     if (!value) return;
 
     router.push(
-      `/courses?search=${encodeURIComponent(value)}`,
+      `${searchRoute}?search=${encodeURIComponent(value)}`,
     );
   };
 
@@ -36,8 +40,8 @@ export default function StudentSearchBar() {
         type="search"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search courses..."
-        aria-label="Search courses"
+        placeholder={placeholder}
+        aria-label={placeholder}
         className="min-w-0 flex-1 bg-transparent text-sm text-brand-text outline-none placeholder:text-brand-text-muted/80 [&::-webkit-search-cancel-button]:hidden"
       />
 

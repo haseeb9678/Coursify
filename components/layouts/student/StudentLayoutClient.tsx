@@ -1,69 +1,28 @@
 "use client";
 
-import type {
-  ReactNode,
-  CSSProperties,
-} from "react";
+import type { ReactNode } from "react";
 
-import {
-  SidebarProvider,
-  SidebarInset,
-} from "@/components/ui/sidebar";
-
-import StudentSidebar from "./StudentSidebar";
-import StudentHeader from "./StudentHeader";
-import { User } from "@/features/auth/types/auth.types";
-
+import DashboardLayoutClient from "@/components/layouts/dashboard/DashboardLayoutClient";
+import { studentDashboardConfig } from "@/features/student/data/student-dashboard.config";
 
 interface StudentLayoutClientProps {
   children: ReactNode;
-
   defaultOpen?: boolean;
-  student?: User | null;
   notificationCount?: number;
 }
 
 export default function StudentLayoutClient({
   children,
   defaultOpen = true,
-  student,
   notificationCount = 0,
 }: StudentLayoutClientProps) {
   return (
-    <SidebarProvider
+    <DashboardLayoutClient
+      config={studentDashboardConfig}
       defaultOpen={defaultOpen}
-      style={
-        {
-          "--sidebar-width": "16rem",
-          "--sidebar-width-icon": "4rem",
-        } as CSSProperties
-      }
-      className="min-h-dvh w-full bg-background"
+      notificationCount={notificationCount}
     >
-      {/* Fixed Student Sidebar */}
-      <StudentSidebar
-       
-        notificationCount={notificationCount}
-      />
-
-      {/* Main Application Workspace */}
-      <SidebarInset className="min-h-dvh min-w-0 bg-background">
-
-        {/* Sticky Student Header */}
-        <StudentHeader
-          notificationCount={notificationCount}
-        />
-
-        {/* Dynamic Page Content */}
-        <div
-          id="student-content"
-          className="min-w-0 flex-1 bg-brand-page-secondary/40"
-        >
-          {children}
-        </div>
-
-       
-      </SidebarInset>
-    </SidebarProvider>
+      {children}
+    </DashboardLayoutClient>
   );
 }
