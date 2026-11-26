@@ -1,7 +1,8 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { useId, useState } from "react";
-import { useReducedMotion } from "motion/react";
+
 
 import {
   Area,
@@ -41,7 +42,7 @@ export default function LearningActivityChart({
   const [period, setPeriod] =
     useState<DashboardPeriod>("weekly");
 
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const gradientId = useId().replace(/:/g, "");
 

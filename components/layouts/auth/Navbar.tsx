@@ -1,14 +1,15 @@
-
 "use client";
+
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 
 import Link from "next/link";
 import { GraduationCap } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import DashboardThemeToggle from "@/components/layouts/dashboard/DashboardThemeToggle";
 
 
 const Navbar = () => {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
 
   return (

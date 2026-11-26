@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import Link from "next/link";
 
 import {
@@ -8,12 +9,12 @@ import {
   Sparkles,
 } from "lucide-react";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
 export default function DashboardWelcome() {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   // Authentication state
   const user = useAuthStore((state) => state.user);

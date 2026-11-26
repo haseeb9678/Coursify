@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import Image from "next/image";
 import type { PointerEvent } from "react";
 
@@ -14,7 +15,6 @@ import {
   motion,
   useMotionTemplate,
   useMotionValue,
-  useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
@@ -112,7 +112,7 @@ function useTilt(maxDeg: number, enabled: boolean) {
 }
 
 export default function GrowKnowledgeSection() {
-  const reduceMotion = useReducedMotion() ?? false;
+  const reduceMotion = useAccessibleMotion();
 
   const tilt = useTilt(5, !reduceMotion);
 

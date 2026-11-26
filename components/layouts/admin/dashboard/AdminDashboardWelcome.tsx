@@ -1,7 +1,8 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { useSyncExternalStore } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, LayoutDashboard, Sparkles } from "lucide-react";
 
@@ -27,7 +28,7 @@ export default function AdminDashboardWelcome({
     getClientSnapshot,
     getServerSnapshot,
   );
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
   const user = useAuthStore((state) => state.user);
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const firstName = user?.name.trim().split(/\s+/)[0] || "there";

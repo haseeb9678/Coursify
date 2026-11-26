@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,7 +26,6 @@ import {
   AnimatePresence,
   motion,
   useMotionValue,
-  useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
@@ -68,7 +68,7 @@ const learningBenefits = [
 export default function HeroSection({
   slides = heroSlides,
 }: HeroSectionProps) {
-  const shouldReduceMotion = useReducedMotion() ?? false;
+  const shouldReduceMotion = useAccessibleMotion();
 
   const displayedSlides =
     slides.length > 0 ? slides : heroSlides;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import type { PointerEvent } from "react";
@@ -19,7 +20,6 @@ import {
   motion,
   useMotionTemplate,
   useMotionValue,
-  useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
@@ -57,7 +57,7 @@ const CARDS_PER_SLIDE = 2;
 const CategoryCard = ({ category, index }: CategoryCardProps) => {
   const Icon = categoryIcons[category.iconName] ?? Code2;
 
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   // Mouse position
   const pointerX = useMotionValue(0);
@@ -186,7 +186,7 @@ const CategoryCard = ({ category, index }: CategoryCardProps) => {
 };
 
 const CategoriesSection = ({ categories }: CategoriesSectionProps) => {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [activeSlide, setActiveSlide] = useState(0);

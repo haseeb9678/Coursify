@@ -1,5 +1,6 @@
-
 "use client";
+
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
@@ -19,7 +20,6 @@ import {
 import {
   AnimatePresence,
   motion,
-  useReducedMotion,
 } from "motion/react";
 
 import type { CourseDetails } from "@/features/courses/data/course-details.data";
@@ -50,7 +50,7 @@ export default function CourseEnrollmentCard({
   const [isHighlighted, setIsHighlighted] =
     useState(false);
 
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const discount =
     course.originalPrice > course.price

@@ -1,11 +1,13 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GraduationCap } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import {
+  SidebarFooter,
   Sidebar,
   SidebarGroup,
   SidebarGroupContent,
@@ -17,6 +19,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar";
+import AccessibilityButton from "@/components/accessibility/AccessibilityButton";
 import {
   Tooltip,
   TooltipContent,
@@ -171,7 +174,7 @@ export default function DashboardSidebar({
   config,
   notificationCount = 0,
 }: DashboardSidebarProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
   const { state, isMobile } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
 
@@ -271,6 +274,18 @@ export default function DashboardSidebar({
               </SidebarGroup>
             ))}
           </DashboardScrollArea>
+
+          <SidebarFooter
+            className={cn(
+              "shrink-0 border-t border-brand-border",
+              isCollapsed ? "items-center px-1 py-2" : "px-2.5 py-3",
+            )}
+          >
+            <AccessibilityButton
+              variant="sidebar"
+              collapsed={isCollapsed}
+            />
+          </SidebarFooter>
         </>
       )}
 

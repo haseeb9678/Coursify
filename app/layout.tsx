@@ -6,6 +6,25 @@ import "./globals.css";
 import CustomCursor from "@/components/shared/CustomCursor";
 import AuthProvider from "@/providers/auth-provider";
 
+const accessibilityPreferenceBootstrap = `(() => {
+  try {
+    const raw = localStorage.getItem("coursify-accessibility-preferences");
+    const saved = raw ? JSON.parse(raw)?.state : null;
+    const root = document.documentElement;
+    const allowedScales = [100, 112.5, 125, 150, 200];
+    const scale = allowedScales.includes(saved?.fontScale) ? saved.fontScale : 100;
+    root.dataset.fontScale = String(scale);
+    root.dataset.highContrast = String(saved?.highContrast === true);
+    root.dataset.textSpacing = String(saved?.textSpacing === true);
+    root.dataset.highlightLinks = String(saved?.highlightLinks === true);
+    root.dataset.reduceMotion = String(saved?.reduceMotion === true);
+    root.dataset.readableFont = String(saved?.readableFont === true);
+    root.dataset.enhancedFocus = String(saved?.enhancedFocus === true);
+  } catch (error) {
+    console.error("Could not initialize saved accessibility preferences.", error);
+  }
+})();`;
+
 const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
@@ -47,6 +66,13 @@ export default function RootLayout({
       className={`${jakartaSans.variable} ${playfairDisplay.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: accessibilityPreferenceBootstrap,
+          }}
+        />
+      </head>
       <body
         className="min-h-screen flex flex-col font-sans antialiased"
         suppressHydrationWarning

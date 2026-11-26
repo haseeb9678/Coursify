@@ -1,7 +1,8 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 
@@ -16,7 +17,7 @@ export default function AdminDashboardCard({
   className,
   delay = 0,
 }: AdminDashboardCardProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   return (
     <motion.section

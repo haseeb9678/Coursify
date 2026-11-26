@@ -1,5 +1,6 @@
-
 "use client";
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
+
 
 import {
   CalendarClock,
@@ -14,7 +15,7 @@ import {
   HeartHandshake,
 } from "lucide-react";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
 
 interface Benefit {
@@ -54,7 +55,7 @@ const features: Feature[] = [
 ];
 
 export default function WhyChooseUsSection() {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   return (
     <section className="relative isolate overflow-hidden border-y border-brand-primary/[0.07] py-16 sm:py-20">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import {
   useCallback,
   useEffect,
@@ -17,7 +18,6 @@ import {
   motion,
   useMotionTemplate,
   useMotionValue,
-  useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
@@ -52,7 +52,7 @@ export default function TestimonialsSection({
   const [snapCount, setSnapCount] = useState(0);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   // Writes each slide's distance from the center as CSS vars (coverflow depth)
   const updateDepth = useCallback(
@@ -214,7 +214,7 @@ function TestimonialCard({
   testimonial: Testimonial;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const initials = testimonial.name
     .split(" ")

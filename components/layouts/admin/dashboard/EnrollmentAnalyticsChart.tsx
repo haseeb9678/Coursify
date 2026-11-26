@@ -1,7 +1,8 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { useId, useState } from "react";
-import { useReducedMotion } from "motion/react";
+
 import { useTheme } from "next-themes";
 import {
   Area,
@@ -80,7 +81,7 @@ export default function EnrollmentAnalyticsChart({
   analytics,
 }: EnrollmentAnalyticsChartProps) {
   const [period, setPeriod] = useState<AdminDashboardPeriod>("monthly");
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
   const { resolvedTheme } = useTheme();
   const theme = resolvedTheme === "dark" ? "dark" : "light";
   const gradientId = useId().replace(/:/g, "");

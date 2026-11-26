@@ -2,6 +2,7 @@ import Footer from "@/components/layouts/marketing/Footer";
 import Navbar from "@/components/layouts/marketing/Navbar";
 import { footerColumns } from "@/features/home/data/footer.data";
 import React from "react";
+import AccessibilityButton from "@/components/accessibility/AccessibilityButton";
 
 export default function MarketingLayout({
   children,
@@ -23,6 +24,7 @@ export default function MarketingLayout({
       <Footer
       columns={footerColumns}
       />
+      <AccessibilityButton variant="floating" />
     </div>
   );
 }

@@ -1,10 +1,10 @@
-
 "use client";
+
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 
 import { useState } from "react";
 import {
   motion,
-  useReducedMotion,
   type Variants,
 } from "motion/react";
 
@@ -53,7 +53,7 @@ const contentItemVariants: Variants = {
 export default function CourseDetailsClient({
   course,
 }: CourseDetailsClientProps) {
-  const shouldReduceMotion = useReducedMotion() ?? false;
+  const shouldReduceMotion = useAccessibleMotion();
 
   const [activeTab, setActiveTab] =
     useState<CourseTab>("overview");

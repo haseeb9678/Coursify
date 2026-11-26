@@ -1,6 +1,7 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
+
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { useTheme } from "next-themes";
 import { Cell, Pie, PieChart } from "recharts";
 
@@ -130,7 +131,7 @@ function DistributionTooltip({
 export default function UserDistributionChart({
   users,
 }: UserDistributionChartProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
   const { resolvedTheme } = useTheme();
   const theme: ChartTheme =
     resolvedTheme === "dark" ? "dark" : "light";

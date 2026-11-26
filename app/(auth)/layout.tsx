@@ -5,6 +5,7 @@ import Footer from "@/components/layouts/marketing/Footer";
 import { footerColumns } from "@/features/home/data/footer.data";
 import AuthNavbar from "@/components/layouts/auth/Navbar";
 import GuestGuard from "@/features/auth/guards/guest-guard";
+import AccessibilityButton from "@/components/accessibility/AccessibilityButton";
 
 export default function AuthLayout({
   children,
@@ -37,6 +38,7 @@ export default function AuthLayout({
 
       {/* Shared Footer */}
       <Footer columns={footerColumns} />
+      <AccessibilityButton variant="floating" />
     </div>
   );
 }

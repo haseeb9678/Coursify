@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import {
   useCallback,
   useEffect,
@@ -14,7 +15,6 @@ import {
   motion,
   useMotionTemplate,
   useMotionValue,
-  useReducedMotion,
   useSpring,
   useTransform,
 } from "motion/react";
@@ -42,7 +42,7 @@ interface SkillDomainCardProps {
 /* -------------------------------------------------------------------------- */
 
 function SkillDomainCard({ domain, index }: SkillDomainCardProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const pointerX = useMotionValue(0);
   const pointerY = useMotionValue(0);
@@ -213,7 +213,7 @@ export default function SkillDomainsSection({
   const [api, setApi] = useState<CarouselApi>();
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const progressRef = useRef<HTMLSpanElement>(null);
 

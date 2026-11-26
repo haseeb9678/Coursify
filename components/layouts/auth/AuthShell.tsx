@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import {
   createContext,
   useCallback,
@@ -14,7 +15,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   motion,
   MotionConfig,
-  useReducedMotion,
   type Variants,
 } from "motion/react";
 import { CheckCircle2, GraduationCap } from "lucide-react";
@@ -100,7 +100,7 @@ export function AuthShell({
 }: AuthShellProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useAccessibleMotion();
   const [leaving, setLeaving] = useState(false);
   const nextHref = useRef<string | null>(null);
   const hasNavigated = useRef(false);

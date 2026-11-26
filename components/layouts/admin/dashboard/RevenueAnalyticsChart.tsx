@@ -1,7 +1,8 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { useId, useState } from "react";
-import { useReducedMotion } from "motion/react";
+
 import {
   Area,
   AreaChart,
@@ -70,7 +71,7 @@ export default function RevenueAnalyticsChart({
   currency,
 }: RevenueAnalyticsChartProps) {
   const [period, setPeriod] = useState<AdminDashboardPeriod>("monthly");
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
   const gradientId = useId().replace(/:/g, "");
   const chartData = Array.isArray(analytics[period])
     ? analytics[period].filter((point) =>

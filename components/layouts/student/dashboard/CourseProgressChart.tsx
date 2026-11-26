@@ -1,6 +1,7 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
+
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { Pie, PieChart } from "recharts";
 
 import {
@@ -42,7 +43,7 @@ const chartConfig = {
 export default function CourseProgressChart({
   stats,
 }: CourseProgressChartProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const notStarted = Math.max(
     0,

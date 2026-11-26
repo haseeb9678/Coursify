@@ -1,10 +1,10 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { useEffect, useState } from "react";
 import {
   motion,
   useMotionValue,
-  useReducedMotion,
   useSpring,
 } from "motion/react";
 
@@ -12,7 +12,7 @@ const INTERACTIVE_SELECTOR =
   'a, button, input, textarea, select, [role="button"], [data-cursor-hover]';
 
 export default function CustomCursor() {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const [isVisible, setIsVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);

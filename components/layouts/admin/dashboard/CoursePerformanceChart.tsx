@@ -1,6 +1,7 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
+
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from "recharts";
 import type { CoursePerformanceItem } from "@/features/admin/types/dashboard.types";
 import {
@@ -74,7 +75,7 @@ function shortenCourseName(name: string): string {
 export default function CoursePerformanceChart({
   courses,
 }: CoursePerformanceChartProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
   const chartData = courses.filter(
     (course) =>
       Number.isFinite(course.enrollmentCount) &&

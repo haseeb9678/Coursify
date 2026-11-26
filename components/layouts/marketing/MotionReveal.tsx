@@ -1,7 +1,8 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 type MotionRevealProps = {
   children: ReactNode;
@@ -30,7 +31,7 @@ export default function MotionReveal({
   variant = "fadeUp",
   hover = false,
 }: MotionRevealProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   return (
     <motion.div

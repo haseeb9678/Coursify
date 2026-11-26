@@ -14,6 +14,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import AccessibilityButton from "@/components/accessibility/AccessibilityButton";
 import type {
   DashboardMobileNavProps,
   DashboardNavigationItem,
@@ -91,6 +92,7 @@ export default function DashboardMobileNav({
   config,
   notificationCount = 0,
 }: DashboardMobileNavProps) {
+  const { setOpenMobile } = useSidebar();
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore(
     (state) => state.isAuthenticated,
@@ -226,6 +228,13 @@ export default function DashboardMobileNav({
           </div>
         )}
       </DashboardScrollArea>
+
+      <div className="shrink-0 border-t border-brand-border p-3">
+        <AccessibilityButton
+          variant="sidebar"
+          onOpen={() => setOpenMobile(false)}
+        />
+      </div>
     </>
   );
 }

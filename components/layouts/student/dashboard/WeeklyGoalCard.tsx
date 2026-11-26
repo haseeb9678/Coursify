@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
+import { motion } from "motion/react";
 import { Flame, Target, Trophy } from "lucide-react";
 
 import DashboardCard from "./DashboardCard";
@@ -14,7 +15,7 @@ interface WeeklyGoalCardProps {
 export default function WeeklyGoalCard({
   goal,
 }: WeeklyGoalCardProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const hasGoal = goal.targetHours > 0;
 

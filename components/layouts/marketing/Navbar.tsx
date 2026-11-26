@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -8,7 +9,7 @@ import {
   ArrowUpRight,
   UserRound,
 } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import SearchBar from "./SearchBar";
 import MobileNavSidebar from "./MobileNavSidebar";
@@ -18,7 +19,7 @@ import { useAuthStore } from "@/features/auth/store/auth.store";
 
 const Navbar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   // Authentication state
   const user = useAuthStore((state) => state.user);

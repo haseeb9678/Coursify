@@ -411,3 +411,168 @@
     }
   }
 }
+
+/* Accessibility preferences are opt-in and leave the default theme unchanged. */
+  html[data-font-scale="100"] {
+    font-size: 100%;
+  }
+
+  html[data-font-scale="112.5"] {
+    font-size: 112.5%;
+  }
+
+  html[data-font-scale="125"] {
+    font-size: 125%;
+  }
+
+  html[data-font-scale="150"] {
+    font-size: 150%;
+  }
+
+  html[data-font-scale="200"] {
+    font-size: 200%;
+  }
+
+  html[data-readable-font="true"] :where(
+      body,
+      body *:not(svg):not(svg *):not(code):not(code *):not(pre):not(pre *)
+        :not(kbd):not(kbd *):not(samp):not(samp *)
+    ) {
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  html[data-text-spacing="true"] :where(
+      main p,
+      main li,
+      main blockquote,
+      main dd,
+      main dt,
+      [data-readable-text]
+    ) {
+    letter-spacing: 0.12em;
+    word-spacing: 0.16em;
+    line-height: 1.8;
+    margin-block-end: 1.5em;
+  }
+
+  html[data-highlight-links="true"] a:not([aria-current="page"]) {
+    text-decoration-line: underline;
+    text-decoration-thickness: 0.1em;
+    text-underline-offset: 0.2em;
+  }
+
+  html[data-enhanced-focus="true"] :where(
+      a,
+      button,
+      input,
+      textarea,
+      select,
+      [role="switch"],
+      [tabindex]:not([tabindex="-1"])
+    ):focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  html[data-high-contrast="true"] {
+    --brand-primary: #1d4ed8;
+    --brand-primary-hover: #1e40af;
+    --brand-soft: #dbeafe;
+    --brand-soft-border: #1d4ed8;
+    --brand-page: #ffffff;
+    --brand-page-secondary: #f8fafc;
+    --brand-white: #ffffff;
+    --brand-text: #0a0a0a;
+    --brand-text-muted: #262626;
+    --brand-border: #525252;
+    --background: #ffffff;
+    --foreground: #0a0a0a;
+    --card: #ffffff;
+    --card-foreground: #0a0a0a;
+    --popover: #ffffff;
+    --popover-foreground: #0a0a0a;
+    --primary: #1d4ed8;
+    --primary-foreground: #ffffff;
+    --secondary: #e5e7eb;
+    --secondary-foreground: #111827;
+    --muted: #f1f5f9;
+    --muted-foreground: #1f2937;
+    --accent: #dbeafe;
+    --accent-foreground: #1e3a8a;
+    --border: #525252;
+    --input: #525252;
+    --ring: #1d4ed8;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #0a0a0a;
+    --sidebar-primary: #1d4ed8;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #dbeafe;
+    --sidebar-accent-foreground: #1e3a8a;
+    --sidebar-border: #525252;
+    --sidebar-ring: #1d4ed8;
+  }
+
+  html.dark[data-high-contrast="true"] {
+    --brand-primary: #93c5fd;
+    --brand-primary-hover: #bfdbfe;
+    --brand-soft: #171717;
+    --brand-soft-border: #a3a3a3;
+    --brand-page: #000000;
+    --brand-page-secondary: #080808;
+    --brand-white: #050505;
+    --brand-text: #ffffff;
+    --brand-text-muted: #e5e5e5;
+    --brand-border: #a3a3a3;
+    --background: #000000;
+    --foreground: #ffffff;
+    --card: #050505;
+    --card-foreground: #ffffff;
+    --popover: #080808;
+    --popover-foreground: #ffffff;
+    --primary: #93c5fd;
+    --primary-foreground: #000000;
+    --secondary: #171717;
+    --secondary-foreground: #ffffff;
+    --muted: #171717;
+    --muted-foreground: #e5e5e5;
+    --accent: #171717;
+    --accent-foreground: #ffffff;
+    --border: #a3a3a3;
+    --input: #a3a3a3;
+    --ring: #93c5fd;
+    --sidebar: #050505;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #93c5fd;
+    --sidebar-primary-foreground: #000000;
+    --sidebar-accent: #171717;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #a3a3a3;
+    --sidebar-ring: #93c5fd;
+  }
+
+  html[data-high-contrast="true"] a {
+    text-decoration-line: underline;
+    text-decoration-thickness: 0.1em;
+    text-underline-offset: 0.2em;
+  }
+
+  html[data-reduce-motion="true"] *,
+  html[data-reduce-motion="true"] *::before,
+  html[data-reduce-motion="true"] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

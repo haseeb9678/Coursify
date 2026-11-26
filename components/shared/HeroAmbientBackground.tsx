@@ -1,7 +1,8 @@
-
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
+
+import { motion } from "motion/react";
 
 const highlightedBlocks = [
   { column: 1, row: 1, opacity: 0.07 },
@@ -16,7 +17,7 @@ const highlightedBlocks = [
 ];
 
 export default function HeroAmbientBackground() {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   return (
     <div

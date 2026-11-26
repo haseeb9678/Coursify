@@ -1,5 +1,6 @@
 "use client";
 
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -9,7 +10,7 @@ import {
   Play,
 } from "lucide-react";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 
 import DashboardCard from "./DashboardCard";
 import { LearningCourse } from "@/features/student/types/dashboard.types";
@@ -22,7 +23,7 @@ interface ContinueLearningProps {
 export default function ContinueLearning({
   courses,
 }: ContinueLearningProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   return (
     <DashboardCard

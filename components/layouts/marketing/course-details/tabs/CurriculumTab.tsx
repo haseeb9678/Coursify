@@ -1,10 +1,10 @@
-
 "use client";
+
+import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 
 import {
   AnimatePresence,
   motion,
-  useReducedMotion,
 } from "motion/react";
 
 import {
@@ -30,7 +30,7 @@ export default function CurriculumTab({
   expandedModules,
   onToggleModule,
 }: CurriculumTabProps) {
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useAccessibleMotion();
 
   const totalLessons = course.modules.reduce(
     (total, module) => total + module.lessons.length,

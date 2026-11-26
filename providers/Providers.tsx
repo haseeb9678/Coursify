@@ -7,6 +7,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
+import AccessibilityProvider from "@/components/accessibility/AccessibilityProvider";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -37,7 +38,7 @@ export default function Providers({ children }: ProvidersProps) {
         enableSystem
         storageKey="coursify-theme"
       >
-        {children}
+        <AccessibilityProvider>{children}</AccessibilityProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
