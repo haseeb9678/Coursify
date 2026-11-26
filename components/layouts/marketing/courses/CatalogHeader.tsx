@@ -1,7 +1,6 @@
 
 "use client";
 
-import Link from "next/link";
 import { motion } from "motion/react";
 import { Search, X, ChevronRight } from "lucide-react";
 
@@ -33,8 +32,8 @@ export default function CatalogHeader({
   const end = Math.min(page * pageSize, totalCourses);
 
   return (
-    <section className="relative overflow-hidden border-b border-gray-200 bg-[#FAFBFD] py-9 sm:py-12">
-      <div className="pointer-events-none absolute -right-20 -top-28 size-[440px] rounded-full bg-blue-500/[0.07] blur-[120px]" />
+    <section className="relative overflow-hidden border-b border-brand-border bg-brand-page-secondary py-9 sm:py-12">
+      <div className="pointer-events-none absolute -right-20 -top-28 size-[440px] rounded-full bg-primary/[0.07] blur-[120px]" />
 
       <div className="relative px-4 sm:px-6 xl:px-10 2xl:px-15">
         <Breadcrumb className="mb-6">
@@ -64,7 +63,7 @@ export default function CatalogHeader({
             </BreadcrumbSeparator>
 
             <BreadcrumbItem>
-              <BreadcrumbPage className="font-semibold text-gray-900">
+              <BreadcrumbPage className="font-semibold text-brand-text">
                 All Courses
               </BreadcrumbPage>
             </BreadcrumbItem>
@@ -78,17 +77,17 @@ export default function CatalogHeader({
             transition={{ duration: 0.45 }}
             className="space-y-2"
           >
-            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+            <h1 className="text-3xl font-extrabold tracking-tight text-brand-text sm:text-4xl">
               Explore All Courses
             </h1>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-brand-text-muted">
               Showing{" "}
-              <span className="font-bold text-gray-900">
+              <span className="font-bold text-brand-text">
                 {start}–{end}
               </span>{" "}
               of{" "}
-              <span className="font-bold text-gray-900">
+              <span className="font-bold text-brand-text">
                 {totalCourses}
               </span>{" "}
               courses
@@ -97,20 +96,21 @@ export default function CatalogHeader({
 
           {/* Search */}
           <div className="relative w-full lg:max-w-[400px]">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-text-muted" />
 
             <input
               value={search}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder="Search courses, skills, instructors..."
-              className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-11 text-sm outline-none transition-all placeholder:text-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+              aria-label="Search courses"
+              className="h-12 w-full rounded-xl border border-brand-border bg-card pl-11 pr-11 text-sm text-brand-text outline-none transition-all placeholder:text-brand-text-muted focus:border-primary focus:ring-4 focus:ring-primary/10"
             />
 
             {search && (
               <button
                 type="button"
                 onClick={() => onSearchChange("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-text-muted hover:text-brand-text"
                 aria-label="Clear search"
               >
                 <X className="h-4 w-4" />

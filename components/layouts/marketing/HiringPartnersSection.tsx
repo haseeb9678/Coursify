@@ -166,7 +166,7 @@ const companies: HiringPartner[] = [
 function CompanyLogo({ company }: { company: HiringPartner }) {
   return (
     <div
-      className="group flex h-16 w-44 shrink-0 cursor-default items-center justify-center rounded-xl border border-brand-border/80 bg-white px-5 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-brand-primary/40 hover:shadow-lg hover:shadow-blue-950/5 sm:h-[70px] sm:w-48"
+      className="group flex h-16 w-44 shrink-0 cursor-default items-center justify-center rounded-xl border border-brand-border/80 bg-white px-5 shadow-2xs transition-all duration-300 hover:-translate-y-1 hover:border-brand-primary/40 hover:shadow-lg hover:shadow-primary/5 sm:h-[70px] sm:w-48"
       title={company.name}
     >
       <div className="flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
@@ -178,7 +178,7 @@ function CompanyLogo({ company }: { company: HiringPartner }) {
 
 export default function HiringPartnersSection() {
   return (
-    <section className="relative overflow-x-clip border-y border-brand-border/60 bg-[#FAFBFD] py-14 sm:py-16 lg:py-20">
+    <section className="relative overflow-x-clip border-y border-brand-border/60 bg-brand-page-secondary py-14 sm:py-16 lg:py-20">
       <style>{`
         @keyframes hiring-marquee {
           from {

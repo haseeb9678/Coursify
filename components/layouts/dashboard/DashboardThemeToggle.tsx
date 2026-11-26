@@ -15,6 +15,7 @@ export default function DashboardThemeToggle() {
       type="button"
       onClick={toggleTheme}
       aria-label="Toggle color theme"
+      title="Toggle color theme"
       className="relative flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-brand-text-muted transition-colors duration-200 hover:bg-brand-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       <Sun

@@ -140,13 +140,13 @@ export function AuthShell({
   return (
     <MotionConfig reducedMotion="user">
       <FlipContext.Provider value={{ flipTo }}>
-        <section className="relative flex min-h-dvh items-center 
+        <section className="relative flex min-h-dvh items-center bg-background text-foreground
         justify-center overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
           {/* Soft background glow */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[420px]
-             -translate-x-1/2 rounded-full bg-blue-300/25 blur-[110px] sm:h-[560px] sm:w-[560px]"
+             -translate-x-1/2 rounded-full bg-primary/15 blur-[110px] sm:h-[560px] sm:w-[560px]"
           />
 
           {/* Perspective wrapper gives the flip its depth */}
@@ -182,33 +182,33 @@ export function AuthShell({
                 router.push(nextHref.current);
               }}
               style={{ transformOrigin: "center center" }}
-              className="grid overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_-20px_rgba(37,99,235,0.18)]
-               ring-1 ring-primary/10 will-change-transform lg:grid-cols-[1fr_1.1fr]" 
+              className="grid overflow-hidden rounded-3xl bg-card text-card-foreground shadow-xl shadow-primary/10
+               ring-1 ring-primary/10 transition-colors duration-300 will-change-transform lg:grid-cols-[1fr_1.1fr]" 
             >
               {/* LEFT: light brand panel (desktop only) */}
               <aside className="relative hidden flex-col justify-between overflow-hidden 
-              bg-gradient-to-br from-blue-100/80 via-sky-50 to-white p-10 lg:flex">
+              bg-gradient-to-br from-brand-soft via-background to-card p-10 lg:flex">
                 <div
                   aria-hidden="true"
-                  className="absolute -bottom-24 -right-20 h-72 w-72 rounded-full bg-blue-200/50"
+                  className="absolute -bottom-24 -right-20 h-72 w-72 rounded-full bg-primary/10"
                 />
                 <div
                   aria-hidden="true"
-                  className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-sky-200/60"
+                  className="absolute -bottom-8 -right-8 h-36 w-36 rounded-full bg-brand-accent/10"
                 />
 
                 <Link
                   href="/"
-                  className="relative flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900"
+                  className="relative flex items-center gap-2 text-lg font-bold tracking-tight text-brand-text"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                     <GraduationCap className="h-5 w-5" />
                   </span>
                   Coursify
                 </Link>
 
                 <div className="relative space-y-6">
-                  <h2 className="text-3xl font-bold leading-tight tracking-tight text-slate-900 xl:text-4xl">
+                  <h2 className="text-3xl font-bold leading-tight tracking-tight text-brand-text xl:text-4xl">
                     {panelTitle}
                   </h2>
 
@@ -216,9 +216,9 @@ export function AuthShell({
                     {panelPoints.map((point) => (
                       <li
                         key={point}
-                        className="flex items-center gap-3 text-sm text-slate-600"
+                        className="flex items-center gap-3 text-sm text-brand-text-muted"
                       >
-                        <CheckCircle2 className="h-5 w-5 shrink-0 text-blue-600" />
+                        <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
                         {point}
                       </li>
                     ))}
@@ -231,9 +231,9 @@ export function AuthShell({
                 {/* Mobile brand */}
                 <Link
                   href="/"
-                  className="mb-6 flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900 lg:hidden"
+                  className="mb-6 flex items-center gap-2 text-lg font-bold tracking-tight text-brand-text lg:hidden"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
                     <GraduationCap className="h-5 w-5" />
                   </span>
                   Coursify

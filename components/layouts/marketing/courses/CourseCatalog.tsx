@@ -46,7 +46,7 @@ export default function CourseCatalogClient() {
   };
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-background text-foreground">
       <CatalogHeader
         search={search}
         onSearchChange={handleSearch}
@@ -60,7 +60,7 @@ export default function CourseCatalogClient() {
           <div className="grid grid-cols-1 items-start gap-7 lg:grid-cols-12">
 
             {/* Desktop Sidebar */}
-            <aside className="sticky top-24 hidden rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-3 lg:block">
+            <aside className="sticky top-24 hidden rounded-xl border border-brand-border bg-card p-5 shadow-sm lg:col-span-3 lg:block">
               <CourseFilters
                 filters={filters}
                 onUpdateFilter={updateFilter}
@@ -88,12 +88,12 @@ export default function CourseCatalogClient() {
 
               {/* Results */}
               <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-brand-text-muted">
                   Browse our available learning programs
                 </p>
 
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
-                  <GraduationCap className="h-4 w-4 text-blue-600" />
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-text-muted">
+                  <GraduationCap className="h-4 w-4 text-primary" />
                   {filteredCourses.length} Courses
                 </span>
               </div>

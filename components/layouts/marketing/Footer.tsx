@@ -83,7 +83,7 @@ export default function Footer({
               <span className="relative flex items-center gap-2.5">
 
                 {/* Logo Icon */}
-                <span className="flex size-10 items-center justify-center rounded-xl bg-brand-primary text-white shadow-lg shadow-brand-primary/20 transition-all duration-300 group-hover:rotate-[-6deg] group-hover:scale-105">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-brand-primary text-primary-foreground shadow-lg shadow-brand-primary/20 transition-all duration-300 group-hover:rotate-[-6deg] group-hover:scale-105">
                   <GraduationCap size={23} strokeWidth={2.2} />
                 </span>
 
@@ -130,13 +130,13 @@ export default function Footer({
                   }}
                   disabled={!onSubscribe || isSubmitting}
                   placeholder="Enter your email"
-                  className="h-10 min-w-0 flex-1 rounded-md border border-[#CBD5E1] bg-white px-3.5 text-sm text-brand-text outline-none transition-colors placeholder:text-brand-text-muted focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="h-10 min-w-0 flex-1 rounded-md border border-brand-border bg-card px-3.5 text-sm text-brand-text outline-none transition-colors placeholder:text-brand-text-muted focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
                 />
 
                 <button
                   type="submit"
                   disabled={!onSubscribe || isSubmitting || !email.trim()}
-                  className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-brand-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-brand-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <Loader2 size={15} className="animate-spin" />
@@ -155,7 +155,9 @@ export default function Footer({
                   role="status"
                   aria-live="polite"
                   className={`mt-2 flex items-center gap-1.5 text-xs ${
-                    isSuccess ? "text-green-700" : "text-red-600"
+                    isSuccess
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
                   }`}
                 >
                   {isSuccess && <CheckCircle2 size={14} />}
@@ -215,7 +217,7 @@ export default function Footer({
                   rel="noopener noreferrer"
                   aria-label={social.label}
                   title={social.label}
-                  className="flex size-8 items-center justify-center rounded-md bg-brand-primary text-xs font-bold uppercase text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-primary-hover"
+                  className="flex size-8 items-center justify-center rounded-md bg-brand-primary text-xs font-bold uppercase text-primary-foreground transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-primary-hover"
                 >
                   {social.label.charAt(0)}
                 </a>

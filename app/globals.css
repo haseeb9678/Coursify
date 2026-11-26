@@ -10,6 +10,8 @@
 ======================================== */
 
 :root {
+  color-scheme: light;
+
   /* Brand */
   --brand-primary: #2563EB;
   --brand-primary-hover: #1D4ED8;
@@ -90,6 +92,8 @@
 ======================================== */
 
 .dark {
+  color-scheme: dark;
+
   /* ========================================
      BRAND COLORS
   ======================================== */
@@ -131,7 +135,7 @@
 
   /* Primary Actions */
   --primary: var(--brand-primary);
-  --primary-foreground: #0B1120;
+  --primary-foreground: #FFFFFF;
 
   /* Secondary Actions */
   --secondary: var(--brand-soft);
@@ -161,7 +165,7 @@
   --sidebar-foreground: var(--brand-text);
 
   --sidebar-primary: var(--brand-primary);
-  --sidebar-primary-foreground: #0B1120;
+  --sidebar-primary-foreground: #FFFFFF;
 
   --sidebar-accent: var(--brand-soft);
   --sidebar-accent-foreground: var(--brand-primary);
@@ -397,5 +401,15 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    body,
+    body * {
+      transition-property:
+        background-color, border-color, color, fill, stroke, box-shadow;
+      transition-duration: 220ms;
+      transition-timing-function: ease;
+    }
   }
 }

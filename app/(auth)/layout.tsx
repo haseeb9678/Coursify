@@ -12,7 +12,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="relative isolate flex min-h-screen flex-col overflow-x-clip scrollbar-hide">
+    <div className="relative isolate flex min-h-screen flex-col overflow-x-clip bg-background text-foreground scrollbar-hide">
       {/* Shared Header */}
       <AuthNavbar />
 

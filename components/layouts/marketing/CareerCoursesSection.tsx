@@ -185,7 +185,7 @@ const CareerCoursesSection = ({
                     className={`h-2 rounded-full transition-all duration-300 ${
                       selectedIndex === index
                         ? "w-6 bg-brand-primary"
-                        : "w-2 bg-slate-300 hover:bg-brand-primary/50"
+                        : "w-2 bg-brand-border hover:bg-brand-primary/50"
                     }`}
                   />
                 ))}
@@ -222,7 +222,7 @@ const CareerCoursesSection = ({
 <div className="mt-3 flex justify-center">
   <Link
     href="/courses"
-    className="group relative inline-flex items-center gap-2 overflow-hidden rounded-md bg-primary px-7 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
+    className="group relative inline-flex items-center gap-2 overflow-hidden rounded-md bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
   >
     {/* Light sweep */}
     <span
@@ -278,7 +278,7 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
         />
 
         {/* Category badge */}
-        <span className="absolute left-3 top-3 rounded-md bg-white/80 px-2.5 py-1 
+        <span className="absolute left-3 top-3 rounded-md bg-card/90 px-2.5 py-1 
         text-[11px] font-bold text-brand-primary shadow-sm backdrop-blur-sm">
           {course.category}
         </span>
@@ -344,7 +344,7 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
 
           <Link
             href={`/courses/${course.slug}`}
-            className="shrink-0 rounded-md bg-brand-soft px-3 py-2 text-xs font-bold text-brand-primary transition-colors hover:bg-brand-primary hover:text-white"
+            className="shrink-0 rounded-md bg-brand-soft px-3 py-2 text-xs font-bold text-brand-primary transition-colors hover:bg-brand-primary hover:text-primary-foreground"
           >
             Enroll Now
           </Link>

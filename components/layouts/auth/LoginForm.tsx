@@ -92,11 +92,11 @@ const LoginForm = () => {
         className="space-y-6"
       >
         <motion.div variants={formItem} className="space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-brand-text sm:text-3xl">
             Log in to Coursify
           </h1>
 
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-brand-text-muted">
             Good to see you again.
           </p>
         </motion.div>
@@ -133,7 +133,7 @@ const LoginForm = () => {
             labelAside={
               <Link
                 href="/forgot-password"
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-primary hover:underline"
               >
                 Forgot password?
               </Link>
@@ -151,12 +151,12 @@ const LoginForm = () => {
 
         <motion.p
           variants={formItem}
-          className="text-center text-sm text-slate-500"
+          className="text-center text-sm text-brand-text-muted"
         >
           New to Coursify?{" "}
           <FlipLink
             href="/signup"
-            className="font-semibold text-blue-600 hover:underline"
+            className="font-semibold text-primary hover:underline"
           >
             Create an account
           </FlipLink>

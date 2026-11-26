@@ -74,7 +74,7 @@ export default function MobileNavSidebar({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="flex w-[300px] flex-col overflow-hidden border-r border-brand-border bg-white p-0 sm:w-[360px]"
+        className="flex w-[300px] flex-col overflow-hidden border-r border-brand-border bg-card p-0 sm:w-[360px]"
       >
         {/* Sidebar Header */}
         <SheetHeader className="border-b border-brand-border px-5 py-6 text-left">
@@ -91,7 +91,7 @@ export default function MobileNavSidebar({
             onClick={closeSidebar}
             className="flex w-fit items-center gap-2"
           >
-            <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
               <GraduationCap size={23} strokeWidth={2.2} />
             </span>
 
@@ -145,7 +145,7 @@ export default function MobileNavSidebar({
                     onClick={closeSidebar}
                     className="group flex items-center gap-3 rounded-xl border border-transparent p-3 transition-all duration-200 hover:border-primary/15 hover:bg-brand-soft"
                   >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                       <Icon size={20} />
                     </span>
 
@@ -177,7 +177,7 @@ export default function MobileNavSidebar({
             <div
               role="status"
               aria-label="Checking authentication"
-              className="flex items-center gap-3 rounded-xl border border-brand-border bg-white p-3"
+              className="flex items-center gap-3 rounded-xl border border-brand-border bg-card p-3"
             >
               <div className="size-11 shrink-0 animate-pulse rounded-full bg-brand-soft motion-reduce:animate-none" />
 
@@ -198,7 +198,7 @@ export default function MobileNavSidebar({
                 href="/student/dashboard"
                 onClick={closeSidebar}
                 aria-label={`Open dashboard for ${user.name}`}
-                className="group flex items-center gap-3 rounded-xl border border-brand-border bg-white p-3 transition-colors duration-200 hover:border-primary/25 hover:bg-brand-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                className="group flex items-center gap-3 rounded-xl border border-brand-border bg-card p-3 transition-colors duration-200 hover:border-primary/25 hover:bg-brand-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {/* Profile Avatar */}
                 <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-sm font-semibold tracking-wide text-primary">
@@ -242,7 +242,7 @@ export default function MobileNavSidebar({
                 <Link
                   href="/login"
                   onClick={closeSidebar}
-                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-border bg-white text-sm font-semibold text-brand-text transition-colors hover:border-primary/30 hover:bg-brand-soft hover:text-primary"
+                  className="flex h-11 items-center justify-center gap-2 rounded-xl border border-brand-border bg-card text-sm font-semibold text-brand-text transition-colors hover:border-primary/30 hover:bg-brand-soft hover:text-primary"
                 >
                   <LogIn size={16} />
                   Login
@@ -251,7 +251,7 @@ export default function MobileNavSidebar({
                 <Link
                   href="/signup"
                   onClick={closeSidebar}
-                  className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
+                  className="group relative flex h-11 items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
                 >
                   <UserPlus size={16} />
                   Sign Up

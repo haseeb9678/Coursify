@@ -109,7 +109,7 @@ export default function WhyChooseUsSection() {
                       transition={{ duration: 0.25 }}
                       className="group flex items-start gap-4"
                     >
-                      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-brand-soft-border bg-white/80 text-brand-primary shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
+                      <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-brand-soft-border bg-card/90 text-brand-primary shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-md">
                         <Icon size={22} />
                       </div>
 
@@ -160,7 +160,7 @@ export default function WhyChooseUsSection() {
                     style={{ transformPerspective: 900 }}
                     className="group relative isolate flex min-h-[165px] h-full flex-col items-center
                      justify-center overflow-hidden rounded-2xl border border-primary/30
-                      bg-white/80 p-4 text-center shadow-[0_8px_30px_rgba(37,99,235,0.04)] 
+                      bg-card/90 p-4 text-center shadow-[0_8px_30px_rgba(37,99,235,0.04)] 
                       backdrop-blur-xl transition-all duration-300 hover:border-primary/80
                        hover:shadow-[0_20px_45px_rgba(37,99,235,0.12)] sm:min-h-[185px] sm:p-6"
                   >
@@ -181,7 +181,7 @@ export default function WhyChooseUsSection() {
                       }
                       transition={{ type: "spring", stiffness: 300 }}
                       className="relative mb-4 flex size-13 items-center justify-center
-                       rounded-2xl border border-brand-soft-border bg-gradient-to-br from-white  hover:border-primary/50
+                       rounded-2xl border border-brand-soft-border bg-gradient-to-br from-card  hover:border-primary/50
                        to-brand-soft text-brand-primary shadow-[0_6px_15px_rgba(37,99,235,0.10)]"
                     >
                       <Icon size={25} strokeWidth={1.8} />

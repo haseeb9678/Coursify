@@ -40,24 +40,24 @@ export default function CourseGrid({
           key="empty-state"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex min-h-[350px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50/50 px-5 text-center"
+          className="flex min-h-[350px] flex-col items-center justify-center rounded-xl border border-dashed border-brand-border bg-brand-page-secondary px-5 text-center"
         >
-          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-brand-soft text-primary">
             <FilterX className="h-6 w-6" />
           </div>
 
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-lg font-bold text-brand-text">
             No Courses Found
           </h3>
 
-          <p className="mt-2 max-w-sm text-sm text-gray-500">
+          <p className="mt-2 max-w-sm text-sm text-brand-text-muted">
            {` We couldn't find any courses matching your search or
             filters. Try adjusting your selection.`}
           </p>
 
           <Button
             onClick={resetFilters}
-            className="mt-5 rounded-lg bg-blue-600 hover:bg-blue-700"
+            className="mt-5 rounded-lg bg-primary text-primary-foreground hover:bg-brand-primary-hover"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Reset Filters

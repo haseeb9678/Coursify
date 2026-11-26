@@ -306,7 +306,7 @@ export default function SkillDomainsSection({
             onClick={() => api?.scrollPrev()}
             disabled={!canScrollPrev}
             aria-label="Previous skill domains"
-            className="absolute -left-5 top-1/2 z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-brand-border bg-card text-brand-text shadow-md transition-all duration-300 hover:scale-110 hover:border-brand-primary hover:bg-brand-primary hover:text-white disabled:pointer-events-none disabled:opacity-40 md:flex"
+            className="absolute -left-5 top-1/2 z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-brand-border bg-card text-brand-text shadow-md transition-all duration-300 hover:scale-110 hover:border-brand-primary hover:bg-brand-primary hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-40 md:flex"
           >
             <ChevronLeft size={20} />
           </button>
@@ -350,7 +350,7 @@ export default function SkillDomainsSection({
             onClick={() => api?.scrollNext()}
             disabled={!canScrollNext}
             aria-label="Next skill domains"
-            className="absolute -right-5 top-1/2 z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-brand-border bg-card text-brand-text shadow-md transition-all duration-300 hover:scale-110 hover:border-brand-primary hover:bg-brand-primary hover:text-white disabled:pointer-events-none disabled:opacity-40 md:flex"
+            className="absolute -right-5 top-1/2 z-20 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full border border-brand-border bg-card text-brand-text shadow-md transition-all duration-300 hover:scale-110 hover:border-brand-primary hover:bg-brand-primary hover:text-primary-foreground disabled:pointer-events-none disabled:opacity-40 md:flex"
           >
             <ChevronRight size={20} />
           </button>

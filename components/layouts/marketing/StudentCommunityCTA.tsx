@@ -35,10 +35,10 @@ const communityStats = [
 ];
 
 const studentInitials = [
-  { id: 1, initials: "SA", color: "bg-blue-100 text-blue-700" },
-  { id: 2, initials: "AM", color: "bg-violet-100 text-violet-700" },
-  { id: 3, initials: "RK", color: "bg-amber-100 text-amber-700" },
-  { id: 4, initials: "JM", color: "bg-emerald-100 text-emerald-700" },
+  { id: 1, initials: "SA", color: "bg-primary/10 text-primary" },
+  { id: 2, initials: "AM", color: "bg-violet-500/10 text-violet-700 dark:text-violet-300" },
+  { id: 3, initials: "RK", color: "bg-amber-500/10 text-amber-700 dark:text-amber-300" },
+  { id: 4, initials: "JM", color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" },
 ];
 
 export default function StudentCommunityCTA() {
@@ -49,11 +49,11 @@ export default function StudentCommunityCTA() {
       <div className="w-full px-4 sm:px-6">
 
         {/* Main CTA */}
-        <div className="relative isolate grid overflow-hidden rounded-3xl border border-brand-border/70 bg-[#F4F7FF] shadow-sm lg:min-h-[490px] lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="relative isolate grid overflow-hidden rounded-3xl border border-brand-border/70 bg-brand-soft shadow-sm lg:min-h-[490px] lg:grid-cols-[1.05fr_0.95fr]">
 
           {/* Decorative background */}
-          <div className="pointer-events-none absolute -left-32 -top-32 -z-10 size-[420px] rounded-full bg-blue-300/20 blur-[100px]" />
-          <div className="pointer-events-none absolute -bottom-40 left-1/3 -z-10 size-[400px] rounded-full bg-indigo-300/20 blur-[110px]" />
+          <div className="pointer-events-none absolute -left-32 -top-32 -z-10 size-[420px] rounded-full bg-primary/10 blur-[100px]" />
+          <div className="pointer-events-none absolute -bottom-40 left-1/3 -z-10 size-[400px] rounded-full bg-brand-accent/10 blur-[110px]" />
 
           {/* Content */}
           <MotionReveal
@@ -62,7 +62,7 @@ export default function StudentCommunityCTA() {
           >
 
             {/* Eyebrow */}
-            <div className="mb-6 flex w-fit items-center gap-2 rounded-full border border-blue-200/80 bg-white/80 px-3.5 py-2 text-xs font-bold tracking-wide text-brand-primary shadow-sm">
+            <div className="mb-6 flex w-fit items-center gap-2 rounded-full border border-brand-soft-border bg-card/80 px-3.5 py-2 text-xs font-bold tracking-wide text-brand-primary shadow-sm">
               <Sparkles size={14} />
               LEARN TOGETHER, GROW TOGETHER
             </div>
@@ -86,7 +86,7 @@ export default function StudentCommunityCTA() {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href="/signup"
-                className="group inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 hover:bg-brand-primary-hover hover:shadow-xl"
+                className="group inline-flex items-center gap-2 rounded-xl bg-brand-primary px-6 py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-brand-primary/20 transition-all duration-300 hover:-translate-y-1 hover:bg-brand-primary-hover hover:shadow-xl"
               >
                 Join Our Community
                 <ArrowRight
@@ -108,17 +108,17 @@ export default function StudentCommunityCTA() {
             </div>
 
             {/* Learner social proof */}
-            <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-blue-200/60 pt-7">
+            <div className="mt-10 flex flex-wrap items-center gap-4 border-t border-brand-soft-border pt-7">
               <div className="flex -space-x-3">
                 {studentInitials.map((student) => (
                   <div
                     key={student.id}
-                    className={`flex size-10 items-center justify-center rounded-full border-[3px] border-[#F4F7FF] text-[10px] font-extrabold ${student.color}`}
+                    className={`flex size-10 items-center justify-center rounded-full border-[3px] border-brand-soft text-[10px] font-extrabold ${student.color}`}
                   >
                     {student.initials}
                   </div>
                 ))}
-                <div className="flex size-10 items-center justify-center rounded-full border-[3px] border-[#F4F7FF] bg-brand-primary text-[10px] font-bold text-white">
+                <div className="flex size-10 items-center justify-center rounded-full border-[3px] border-brand-soft bg-brand-primary text-[10px] font-bold text-primary-foreground">
                   +K
                 </div>
               </div>
@@ -143,8 +143,8 @@ export default function StudentCommunityCTA() {
 
             {/* Image fallback */}
             {imageFailed ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-200 via-indigo-100 to-blue-50">
-                <div className="flex size-20 items-center justify-center rounded-3xl bg-white text-brand-primary shadow-xl">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-brand-soft via-background to-brand-page-secondary">
+                <div className="flex size-20 items-center justify-center rounded-3xl bg-card text-brand-primary shadow-xl">
                   <GraduationCap size={42} />
                 </div>
                 <p className="mt-4 text-sm font-bold text-brand-text">
@@ -168,7 +168,7 @@ export default function StudentCommunityCTA() {
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-transparent to-black/[0.04]" />
 
             {/* Floating card */}
-            <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-white/60 bg-white/90 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:bottom-8 sm:left-8 sm:right-auto sm:max-w-[290px] sm:p-5">
+            <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-brand-border/80 bg-card/95 p-4 shadow-xl shadow-black/10 backdrop-blur-xl sm:bottom-8 sm:left-8 sm:right-auto sm:max-w-[290px] sm:p-5">
               <div className="flex items-center gap-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-primary">
                   <BookOpen size={22} />
@@ -186,7 +186,7 @@ export default function StudentCommunityCTA() {
             </div>
 
             {/* Top image badge */}
-            <div className="absolute right-5 top-5 flex items-center gap-2 rounded-full border border-white/40 bg-white/90 px-3 py-2 text-xs font-bold text-brand-text shadow-lg backdrop-blur-md sm:right-8 sm:top-8">
+            <div className="absolute right-5 top-5 flex items-center gap-2 rounded-full border border-brand-border/80 bg-card/95 px-3 py-2 text-xs font-bold text-brand-text shadow-lg backdrop-blur-md sm:right-8 sm:top-8">
               <span className="size-2 rounded-full bg-emerald-500" />
               A community that inspires
             </div>
@@ -205,8 +205,8 @@ export default function StudentCommunityCTA() {
                 delay={index * 0.07}
                 hover
               >
-                <div className="group flex items-center gap-4 rounded-2xl border border-brand-border/70 bg-card p-5 transition-all duration-300 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/[0.05] sm:px-6">
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-primary transition-colors duration-300 group-hover:bg-brand-primary group-hover:text-white">
+                <div className="group flex items-center gap-4 rounded-2xl border border-brand-border/70 bg-card p-5 transition-all duration-300 hover:border-brand-primary/40 hover:shadow-lg hover:shadow-primary/5 sm:px-6">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand-primary transition-colors duration-300 group-hover:bg-brand-primary group-hover:text-primary-foreground">
                     <Icon size={22} />
                   </div>
 

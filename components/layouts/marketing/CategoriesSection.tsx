@@ -175,7 +175,7 @@ const CategoryCard = ({ category, index }: CategoryCardProps) => {
             style={{ z: depth(20) }}
             className="relative shrink-0"
           >
-            <span className="flex size-8 items-center justify-center rounded-full bg-brand-soft text-brand-primary transition-all duration-300 group-hover:bg-brand-primary group-hover:text-white sm:-translate-x-1.5 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-x-0 sm:group-focus-within:opacity-100">
+            <span className="flex size-8 items-center justify-center rounded-full bg-brand-soft text-brand-primary transition-all duration-300 group-hover:bg-brand-primary group-hover:text-primary-foreground sm:-translate-x-1.5 sm:opacity-0 sm:group-hover:translate-x-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-x-0 sm:group-focus-within:opacity-100">
               <ArrowRight size={16} />
             </span>
           </motion.div>

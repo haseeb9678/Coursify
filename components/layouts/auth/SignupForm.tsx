@@ -93,11 +93,11 @@ const SignupForm = () => {
         className="space-y-6"
       >
         <motion.div variants={formItem} className="space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+          <h1 className="text-2xl font-bold tracking-tight text-brand-text sm:text-3xl">
             Create your account
           </h1>
 
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-brand-text-muted">
             Free to start. No credit card needed.
           </p>
         </motion.div>
@@ -157,28 +157,28 @@ const SignupForm = () => {
           variants={formItem}
           className="space-y-3 text-center"
         >
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-brand-text-muted">
             Already have an account?{" "}
             <FlipLink
               href="/login"
-              className="font-semibold text-blue-600 hover:underline"
+              className="font-semibold text-primary hover:underline"
             >
               Log in
             </FlipLink>
           </p>
 
-          <p className="text-xs leading-relaxed text-slate-400">
+          <p className="text-xs leading-relaxed text-brand-text-muted">
             By signing up, you agree to our{" "}
             <a
               href="/terms"
-              className="underline hover:text-blue-600"
+              className="underline hover:text-primary"
             >
               Terms
             </a>{" "}
             and{" "}
             <a
               href="/privacy"
-              className="underline hover:text-blue-600"
+              className="underline hover:text-primary"
             >
               Privacy Policy
             </a>

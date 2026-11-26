@@ -144,7 +144,7 @@ function CourseCard({
     <motion.article
       whileHover={{ y: -4 }}
       transition={{ duration: 0.25 }}
-      className="group relative flex h-full min-h-[154px] flex-row overflow-hidden rounded-xl border border-primary/30 bg-white/90 shadow-sm backdrop-blur-xl transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 sm:min-h-0 sm:flex-col sm:bg-white/70 sm:p-5 sm:hover:shadow-primary/20 lg:p-6"
+      className="group relative flex h-full min-h-[154px] flex-row overflow-hidden rounded-xl border border-primary/30 bg-card/95 shadow-sm backdrop-blur-xl transition-all duration-300 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 sm:min-h-0 sm:flex-col sm:bg-card/80 sm:p-5 sm:hover:shadow-primary/20 lg:p-6"
     >
       {/* Decorative Background */}
       <div className="pointer-events-none absolute inset-x-0 top-0 hidden h-64 bg-gradient-to-b from-brand-primary/[0.10] via-brand-accent/[0.05] to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-100 sm:block" />
@@ -169,7 +169,7 @@ function CourseCard({
         {/* Category */}
         <span className="absolute left-1.5 top-1.5 
         max-w-[calc(100%-12px)] truncate rounded-full
-        border border-white/30 bg-white/95 px-2 py-1
+        border border-brand-border/70 bg-card/95 px-2 py-1
          text-[8px] font-bold uppercase tracking-wide text-brand-primary shadow-sm sm:left-3 sm:top-3 sm:px-3 sm:py-1.5 sm:text-[10px]">
           {course.category}
         </span>
@@ -215,7 +215,7 @@ function CourseCard({
         <div className="mt-2 border-t border-brand-border/70 pt-2 sm:mt-5 sm:border-0 sm:pt-0">
           <motion.span
             whileTap={{ scale: 0.98 }}
-            className="relative flex w-full max-w-max items-center justify-center gap-1.5 overflow-hidden rounded-lg border border-primary/50 px-2.5 py-2 text-[10px] font-semibold text-primary transition-all duration-300 group-hover:border-primary group-hover:bg-primary group-hover:text-white group-hover:shadow-lg group-hover:shadow-primary/20 sm:gap-2 sm:px-5 sm:py-3.5 sm:text-sm"
+            className="relative flex w-full max-w-max items-center justify-center gap-1.5 overflow-hidden rounded-lg border border-primary/50 px-2.5 py-2 text-[10px] font-semibold text-primary transition-all duration-300 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/20 sm:gap-2 sm:px-5 sm:py-3.5 sm:text-sm"
           >
             {/* Hover Light Sweep */}
             <span

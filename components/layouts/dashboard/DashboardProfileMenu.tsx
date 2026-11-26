@@ -144,7 +144,8 @@ export default function DashboardProfileMenu({
         <DropdownMenuItem
           disabled={isLoggingOut}
           onClick={handleLogout}
-          className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600! transition-colors duration-200 hover:bg-red-500/10! hover:text-red-600! focus:bg-red-500/10! focus:text-red-600! data-highlighted:bg-red-500/10! data-highlighted:text-red-600! [&_svg]:text-red-600! dark:text-red-400! dark:hover:text-red-400! dark:focus:text-red-400! dark:data-highlighted:text-red-400! dark:[&_svg]:text-red-400! data-disabled:cursor-not-allowed data-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60"
+          variant="destructive"
+          className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive transition-colors duration-200 data-highlighted:bg-destructive/10 data-highlighted:text-destructive [&_svg]:text-destructive data-disabled:cursor-not-allowed data-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoggingOut ? (
             <LoaderCircle

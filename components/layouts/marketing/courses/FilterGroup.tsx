@@ -28,12 +28,12 @@ export default function FilterGroup({
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
-        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-900"
+        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wider text-brand-text"
       >
         {title}
 
         <ChevronDown
-          className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+          className={`h-4 w-4 text-brand-text-muted transition-transform duration-200 ${
             isOpen ? "" : "-rotate-90"
           }`}
         />
@@ -52,7 +52,7 @@ export default function FilterGroup({
               {options.map((option) => (
                 <label
                   key={option.label}
-                  className="flex cursor-pointer items-center justify-between gap-3 text-sm text-gray-600 transition-colors hover:text-blue-600"
+                  className="flex cursor-pointer items-center justify-between gap-3 text-sm text-brand-text-muted transition-colors hover:text-primary"
                 >
                   <span className="flex items-center gap-2.5">
                     <Checkbox
@@ -66,7 +66,7 @@ export default function FilterGroup({
                   </span>
 
                   {option.count !== undefined && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-brand-text-muted">
                       ({option.count})
                     </span>
                   )}

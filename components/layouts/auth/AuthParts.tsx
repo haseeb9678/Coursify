@@ -42,12 +42,12 @@ const GitHubIcon = () => (
 /* ------------------------------------------------------------------ */
 
 const inputBase =
-  "h-12 w-full rounded-xl border bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus-visible:ring-4 disabled:cursor-not-allowed disabled:bg-slate-50";
+  "h-12 w-full rounded-xl border bg-card px-4 text-sm text-brand-text outline-none transition placeholder:text-brand-text-muted focus-visible:ring-4 disabled:cursor-not-allowed disabled:bg-brand-page-secondary";
 
 const inputState = (hasError: boolean) =>
   hasError
-    ? "border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500/10"
-    : "border-slate-200 hover:border-slate-300 focus-visible:border-blue-600 focus-visible:ring-blue-600/10";
+    ? "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/15"
+    : "border-brand-border hover:border-primary/50 focus-visible:border-primary focus-visible:ring-primary/10";
 
 /* ------------------------------------------------------------------ */
 /* Field (text / email / password with show-hide)                      */
@@ -84,7 +84,7 @@ export const Field = ({
   return (
     <motion.div variants={formItem} className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+        <label htmlFor={id} className="block text-sm font-medium text-brand-text">
           {label}
         </label>
         {labelAside}
@@ -109,7 +109,7 @@ export const Field = ({
             aria-label={show ? "Hide password" : "Show password"}
             aria-pressed={show}
             onClick={() => setShow((prev) => !prev)}
-            className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:text-slate-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/10"
+            className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-brand-text-muted transition hover:text-brand-text focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
@@ -137,7 +137,7 @@ export const Field = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18 }}
-            className="text-xs font-medium text-red-500"
+            className="text-xs font-medium text-destructive"
           >
             {error}
           </motion.p>
@@ -148,7 +148,7 @@ export const Field = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="text-xs text-slate-400"
+            className="text-xs text-brand-text-muted"
           >
             {hint}
           </motion.p>
@@ -179,7 +179,7 @@ export const SocialButtons = ({ onSelect }: { onSelect: (message: string) => voi
           type="button"
           whileTap={{ scale: 0.97 }}
           onClick={() => onSelect(`${provider.name} authentication is coming soon.`)}
-          className="flex h-12 items-center justify-center gap-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-600/10"
+          className="flex h-12 items-center justify-center gap-2.5 rounded-xl border border-brand-border bg-card text-sm font-semibold text-brand-text transition-colors hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10"
         >
           {provider.icon}
           {provider.name}
@@ -192,11 +192,11 @@ export const SocialButtons = ({ onSelect }: { onSelect: (message: string) => voi
 export const Divider = ({ children }: { children: ReactNode }) => (
   <motion.div
     variants={formItem}
-    className="flex items-center gap-3 text-xs text-slate-400"
+    className="flex items-center gap-3 text-xs text-brand-text-muted"
   >
-    <span className="h-px flex-1 bg-slate-200" />
+    <span className="h-px flex-1 bg-brand-border" />
     {children}
-    <span className="h-px flex-1 bg-slate-200" />
+    <span className="h-px flex-1 bg-brand-border" />
   </motion.div>
 );
 
@@ -216,7 +216,7 @@ export const FormMessage = ({ message }: { message: string }) => (
         transition={{ duration: 0.2 }}
         className="overflow-hidden"
       >
-        <div className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
+        <div className="rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
           {message}
         </div>
       </motion.div>
@@ -240,11 +240,11 @@ export const SubmitButton = ({
     whileHover={isSubmitting ? undefined : { y: -1 }}
     whileTap={isSubmitting ? undefined : { scale: 0.98 }}
     className="group relative flex h-12 w-full items-center justify-center gap-2
-      overflow-hidden rounded-xl bg-blue-600 text-sm font-semibold text-white
-      shadow-sm shadow-blue-600/20 transition-all duration-300
-      hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/25
+      overflow-hidden rounded-xl bg-primary text-sm font-semibold text-primary-foreground
+      shadow-sm shadow-primary/20 transition-all duration-300
+      hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/25
       focus-visible:outline-none focus-visible:ring-4
-      focus-visible:ring-blue-600/25
+      focus-visible:ring-primary/25
       disabled:cursor-not-allowed disabled:opacity-70"
   >
     {/* Light Sweep Effect */}

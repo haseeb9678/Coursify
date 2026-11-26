@@ -44,11 +44,7 @@ export default function CoursePagination({
               key={pageNumber}
               variant={page === pageNumber ? "default" : "outline"}
               onClick={() => onPageChange(pageNumber)}
-              className={`size-9 rounded-lg text-xs ${
-                page === pageNumber
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : ""
-              }`}
+              className="size-9 rounded-lg text-xs"
             >
               {pageNumber}
             </Button>
@@ -67,7 +63,7 @@ export default function CoursePagination({
         </div>
       )}
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-brand-text-muted">
         Showing {(page - 1) * pageSize + 1} to{" "}
         {Math.min(page * pageSize, totalCourses)} of {totalCourses} courses
       </p>

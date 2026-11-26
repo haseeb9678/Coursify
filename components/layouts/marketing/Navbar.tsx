@@ -12,6 +12,7 @@ import { motion, useReducedMotion } from "motion/react";
 
 import SearchBar from "./SearchBar";
 import MobileNavSidebar from "./MobileNavSidebar";
+import DashboardThemeToggle from "@/components/layouts/dashboard/DashboardThemeToggle";
 
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
@@ -37,7 +38,7 @@ const Navbar = () => {
   return (
     <>
       <motion.header
-        className="sticky top-0 z-50 w-full border-b border-brand-border bg-white/90 backdrop-blur-xl"
+        className="sticky top-0 z-50 w-full border-b border-brand-border bg-background/90 backdrop-blur-xl transition-colors duration-300"
         initial={shouldReduceMotion ? false : { opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -57,11 +58,11 @@ const Navbar = () => {
               transition={{ duration: 0.2 }}
             >
               <Link href="/" className="flex items-center gap-2">
-                <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-white shadow-sm sm:size-10">
+                <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm sm:size-10">
                   <GraduationCap size={23} strokeWidth={2.2} />
                 </span>
 
-                <span className="text-xl font-extrabold tracking-tight text-primary sm:text-2xl">
+                <span className="text-xl font-extrabold tracking-tight text-brand-text transition-colors sm:text-2xl">
                   Coursify
                 </span>
               </Link>
@@ -102,6 +103,7 @@ const Navbar = () => {
 
             {/* Authentication & Mobile Navigation */}
             <div className="flex shrink-0 items-center gap-3">
+              <DashboardThemeToggle />
 
               {isAuthenticated && user ? (
                 /* Authenticated User Profile */
@@ -152,7 +154,7 @@ const Navbar = () => {
                   >
                     <Link
                       href="/signup"
-                      className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
+                      className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all duration-300 hover:bg-brand-primary-hover hover:shadow-lg hover:shadow-primary/20"
                     >
                       <span
                         aria-hidden="true"
@@ -182,7 +184,7 @@ const Navbar = () => {
                     ? undefined
                     : { scale: 0.94 }
                 }
-                className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-border bg-white text-brand-text transition-all duration-200 hover:border-primary/30 hover:bg-brand-soft hover:text-primary lg:hidden"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-brand-border bg-card text-brand-text transition-all duration-200 hover:border-primary/30 hover:bg-brand-soft hover:text-primary lg:hidden"
               >
                 <Menu size={21} />
               </motion.button>

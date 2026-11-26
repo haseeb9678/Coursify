@@ -161,7 +161,7 @@ export default function TestimonialsSection({
             onClick={() => api?.scrollPrev()}
             disabled={!canScrollPrev}
             aria-label="Previous testimonials"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full border border-brand-border bg-white text-brand-text transition-all duration-200 hover:border-brand-primary hover:bg-brand-primary hover:text-white focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-brand-border disabled:hover:bg-white disabled:hover:text-brand-text"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full border border-brand-border bg-card text-brand-text transition-all duration-200 hover:border-brand-primary hover:bg-brand-primary hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-brand-border disabled:hover:bg-card disabled:hover:text-brand-text"
           >
             <ArrowLeft size={17} />
           </button>
@@ -193,7 +193,7 @@ export default function TestimonialsSection({
             onClick={() => api?.scrollNext()}
             disabled={!canScrollNext}
             aria-label="Next testimonials"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white transition-all duration-200 hover:bg-brand-primary-hover focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-primary-foreground transition-all duration-200 hover:bg-brand-primary-hover focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowRight size={17} />
           </button>
@@ -315,7 +315,7 @@ function TestimonialCard({
             <div className="flex items-center justify-between gap-3">
               <motion.div
                 style={{ z: depth(34) }}
-                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white shadow-lg shadow-brand-primary/30"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-primary-foreground shadow-lg shadow-brand-primary/30"
               >
                 <Quote size={18} className="fill-white/90" />
               </motion.div>
@@ -331,7 +331,7 @@ function TestimonialCard({
                     className={
                       index < testimonial.rating
                         ? "fill-amber-400 text-amber-400"
-                        : "text-gray-300"
+                        : "text-brand-border"
                     }
                   />
                 ))}
@@ -341,7 +341,7 @@ function TestimonialCard({
             {/* Review */}
             <motion.p
               style={{ z: depth(12) }}
-              className="text-sm leading-7 text-[#374151] sm:text-[15px]"
+              className="text-sm leading-7 text-brand-text sm:text-[15px]"
             >
               “{testimonial.review}”
             </motion.p>
@@ -350,9 +350,9 @@ function TestimonialCard({
           {/* Student Information (white panel floats above the card) */}
           <motion.div
             style={{ z: depth(24) }}
-            className="relative flex items-center gap-3.5 rounded-xl border border-white bg-white/90 p-3 shadow-sm backdrop-blur-sm"
+            className="relative flex items-center gap-3.5 rounded-xl border border-brand-border bg-card/95 p-3 shadow-sm backdrop-blur-sm"
           >
-            <div className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-brand-primary/10 text-sm font-bold text-brand-primary shadow-sm ring-1 ring-brand-soft-border sm:size-12">
+            <div className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-card bg-brand-primary/10 text-sm font-bold text-brand-primary shadow-sm ring-1 ring-brand-soft-border sm:size-12">
               {!imageFailed ? (
                 <Image
                   src={testimonial.avatar}

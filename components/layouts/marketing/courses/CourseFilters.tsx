@@ -37,16 +37,16 @@ export default function CourseFilters({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-        <div className="flex items-center gap-2 text-sm font-bold text-gray-900">
-          <SlidersHorizontal className="h-4 w-4 text-blue-600" />
+      <div className="flex items-center justify-between border-b border-brand-border pb-4">
+        <div className="flex items-center gap-2 text-sm font-bold text-brand-text">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
           Filter Courses
         </div>
 
         <button
           type="button"
           onClick={onReset}
-          className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-800"
+          className="text-xs font-semibold text-primary transition-colors hover:text-brand-primary-hover"
         >
           Reset All
         </button>
@@ -70,27 +70,27 @@ export default function CourseFilters({
 
       {/* Rating */}
       <div className="space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wider text-gray-900">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-text">
           Minimum Rating
         </p>
 
         {[4.5, 4.0, 3.5].map((rating) => (
           <label
             key={rating}
-            className="flex cursor-pointer items-center gap-2.5 text-sm text-gray-600"
+            className="flex cursor-pointer items-center gap-2.5 text-sm text-brand-text-muted"
           >
             <input
               type="radio"
               name="course-rating"
               checked={filters.rating === rating}
               onChange={() => onRatingChange(rating)}
-              className="h-4 w-4 accent-blue-600"
+              className="h-4 w-4 accent-primary"
             />
 
             <span className="flex items-center gap-1 text-amber-400">
               <Star className="h-3.5 w-3.5 fill-current" />
 
-              <span className="font-semibold text-gray-700">
+              <span className="font-semibold text-brand-text">
                 {rating.toFixed(1)} & up
               </span>
             </span>
@@ -101,7 +101,7 @@ export default function CourseFilters({
       <Separator />
 
       {/* Certificate */}
-      <label className="flex cursor-pointer items-center gap-2.5 text-sm text-gray-600">
+      <label className="flex cursor-pointer items-center gap-2.5 text-sm text-brand-text-muted">
         <Checkbox
           checked={filters.certificate}
           onCheckedChange={(checked) =>

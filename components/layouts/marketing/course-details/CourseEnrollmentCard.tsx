@@ -176,7 +176,7 @@ export default function CourseEnrollmentCard({
           {/* Preview Controls */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
             <span className="flex size-16 items-center justify-center rounded-full border border-white/25 bg-white/15 backdrop-blur-sm transition-transform duration-300 group-hover:scale-110 motion-reduce:transform-none">
-              <span className="flex size-12 items-center justify-center rounded-full bg-white text-primary shadow-lg">
+              <span className="flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                 <Play
                   size={21}
                   strokeWidth={1.5}
