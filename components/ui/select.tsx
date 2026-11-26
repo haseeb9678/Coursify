@@ -7,6 +7,23 @@ import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
 const Select = SelectPrimitive.Root
 
+const SelectPortalContainerContext =
+  React.createContext<React.RefObject<HTMLElement | null> | null>(null)
+
+function SelectPortalContainerProvider({
+  containerRef,
+  children,
+}: {
+  containerRef: React.RefObject<HTMLElement | null>
+  children: React.ReactNode
+}) {
+  return (
+    <SelectPortalContainerContext.Provider value={containerRef}>
+      {children}
+    </SelectPortalContainerContext.Provider>
+  )
+}
+
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
     <SelectPrimitive.Group
@@ -59,18 +76,20 @@ function SelectContent({
   className,
   children,
   side = "bottom",
-  sideOffset = 4,
+  sideOffset = 6,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
     SelectPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset" | "alignItemWithTrigger"
   >) {
+  const portalContainerRef = React.useContext(SelectPortalContainerContext)
+
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={portalContainerRef ?? undefined}>
       <SelectPrimitive.Positioner
         side={side}
         sideOffset={sideOffset}
@@ -192,6 +211,7 @@ export {
   SelectGroup,
   SelectItem,
   SelectLabel,
+  SelectPortalContainerProvider,
   SelectScrollDownButton,
   SelectScrollUpButton,
   SelectSeparator,

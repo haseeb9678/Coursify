@@ -140,15 +140,8 @@ export function AuthShell({
   return (
     <MotionConfig reducedMotion="user">
       <FlipContext.Provider value={{ flipTo }}>
-        <section className="relative flex min-h-dvh items-center bg-background text-foreground
+        <section className="relative isolate flex min-h-dvh items-center bg-transparent text-foreground
         justify-center overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
-          {/* Soft background glow */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[420px]
-             -translate-x-1/2 rounded-full bg-primary/15 blur-[110px] sm:h-[560px] sm:w-[560px]"
-          />
-
           {/* Perspective wrapper gives the flip its depth */}
           <div className="relative z-10 w-full max-w-md [perspective:1800px] lg:max-w-4xl">
             <motion.div

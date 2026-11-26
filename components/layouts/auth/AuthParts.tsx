@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Check, Circle, Eye, EyeOff, Loader2 } from "lucide-react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { formItem } from "./AuthShell";
 
@@ -62,6 +62,12 @@ type FieldProps = {
   disabled?: boolean;
   error?: string;
   hint?: string;
+  passwordValue?: string;
+  passwordRequirements?: readonly {
+    id: string;
+    label: string;
+    isMet: (password: string) => boolean;
+  }[];
   registration: UseFormRegisterReturn;
   labelAside?: ReactNode;
 };
@@ -75,11 +81,58 @@ export const Field = ({
   disabled,
   error,
   hint,
+  passwordValue,
+  passwordRequirements,
   registration,
   labelAside,
 }: FieldProps) => {
   const [show, setShow] = useState(false);
   const isPassword = type === "password";
+  const hasPasswordRequirements =
+    isPassword && passwordRequirements !== undefined;
+  const showPasswordStrength =
+    isPassword && passwordValue !== undefined && passwordValue.length > 0;
+  const passwordScore =
+    passwordValue && passwordRequirements
+      ? passwordRequirements.filter((requirement) =>
+          requirement.isMet(passwordValue),
+        ).length
+      : 0;
+  const passwordRequirementCount = passwordRequirements?.length ?? 0;
+  const showValidationError = Boolean(error) && !hasPasswordRequirements;
+  const strengthLevel =
+    passwordRequirementCount > 0 && passwordScore === passwordRequirementCount
+      ? {
+          label: "Strong",
+          color: "bg-emerald-500",
+          textColor: "text-emerald-600 dark:text-emerald-400",
+        }
+      : passwordScore === passwordRequirementCount - 1
+        ? {
+            label: "Good",
+            color: "bg-sky-500",
+            textColor: "text-sky-600 dark:text-sky-400",
+          }
+        : passwordScore >= Math.ceil(passwordRequirementCount / 2)
+          ? {
+              label: "Fair",
+              color: "bg-amber-500",
+              textColor: "text-amber-600 dark:text-amber-400",
+            }
+          : {
+              label: "Weak",
+              color: "bg-destructive",
+              textColor: "text-destructive",
+            };
+  const describedBy =
+    [
+      showValidationError ? `${id}-error` : null,
+      hint && !error ? `${id}-hint` : null,
+      hasPasswordRequirements ? `${id}-requirements` : null,
+      showPasswordStrength ? `${id}-strength` : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   return (
     <motion.div variants={formItem} className="space-y-1.5">
@@ -98,7 +151,7 @@ export const Field = ({
           placeholder={placeholder}
           disabled={disabled}
           aria-invalid={!!error}
-          aria-describedby={error ? `${id}-error` : undefined}
+          aria-describedby={describedBy}
           {...registration}
           className={`${inputBase} ${isPassword ? "pr-12" : ""} ${inputState(!!error)}`}
         />
@@ -127,8 +180,86 @@ export const Field = ({
         )}
       </div>
 
+      {hasPasswordRequirements && (
+        <ul
+          id={`${id}-requirements`}
+          aria-label="Password requirements"
+          className="grid grid-cols-1 gap-x-4 gap-y-1.5 min-[400px]:grid-cols-2"
+        >
+          {passwordRequirements.map((requirement) => {
+            const isMet = Boolean(
+              passwordValue && requirement.isMet(passwordValue),
+            );
+
+            return (
+              <li
+                key={requirement.id}
+                className={`flex items-center gap-2 text-xs transition-colors ${
+                  isMet
+                    ? "font-medium text-emerald-600 dark:text-emerald-400"
+                    : "text-brand-text-muted"
+                }`}
+              >
+                <motion.span
+                  key={isMet ? "met" : "unmet"}
+                  initial={{ scale: 0.75, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.16 }}
+                  aria-hidden="true"
+                  className={`flex size-4 shrink-0 items-center justify-center rounded-full ${
+                    isMet
+                      ? "bg-emerald-500/10"
+                      : "bg-brand-soft text-brand-text-muted"
+                  }`}
+                >
+                  {isMet ? <Check size={11} /> : <Circle size={9} />}
+                </motion.span>
+                <span>{requirement.label}</span>
+                <span className="sr-only">{isMet ? "Met" : "Not met"}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <AnimatePresence initial={false}>
+        {showPasswordStrength && hasPasswordRequirements && (
+          <motion.div
+            id={`${id}-strength`}
+            role="progressbar"
+            aria-label="Password strength"
+            aria-valuemin={0}
+            aria-valuemax={passwordRequirementCount}
+            aria-valuenow={passwordScore}
+            aria-valuetext={`${strengthLevel.label}: ${passwordScore} of ${passwordRequirementCount} requirements met`}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-2"
+          >
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-brand-text-muted">Password strength</span>
+              <span className={`font-semibold ${strengthLevel.textColor}`}>
+                {strengthLevel.label}
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-brand-soft">
+              <motion.div
+                initial={false}
+                animate={{
+                  width: `${(passwordScore / passwordRequirementCount) * 100}%`,
+                }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className={`h-full rounded-full transition-colors duration-200 ${strengthLevel.color}`}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait" initial={false}>
-        {error ? (
+        {showValidationError ? (
           <motion.p
             key="error"
             id={`${id}-error`}
@@ -148,6 +279,7 @@ export const Field = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
+            id={`${id}-hint`}
             className="text-xs text-brand-text-muted"
           >
             {hint}

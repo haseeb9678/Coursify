@@ -85,13 +85,13 @@ const adminNavigationGroups = [
         label: "Courses",
         href: `${adminBaseRoute}/courses`,
         icon: BookOpen,
-        implemented: false,
+        implemented: true,
       },
       {
         label: "Categories",
         href: `${adminBaseRoute}/categories`,
         icon: Tags,
-        implemented: false,
+        implemented: true,
       },
       {
         label: "Enrollments",
@@ -103,7 +103,7 @@ const adminNavigationGroups = [
         label: "Course Approvals",
         href: `${adminBaseRoute}/course-approvals`,
         icon: ShieldCheck,
-        implemented: false,
+        implemented: true,
       },
       {
         label: "Reviews",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -24,6 +24,7 @@ import {
 
 import {
   type SignupFormValues,
+  signupPasswordRequirements,
   signupSchema,
 } from "@/validation/auth/signup.schema";
 
@@ -40,6 +41,7 @@ const SignupForm = () => {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -52,6 +54,7 @@ const SignupForm = () => {
   });
 
   const isLoading = isSubmitting || registerMutation.isPending;
+  const passwordValue = useWatch({ control, name: "password" });
 
   // Handle user registration
   const onSubmit = async (values: SignupFormValues) => {
@@ -137,10 +140,11 @@ const SignupForm = () => {
             label="Password"
             type="password"
             autoComplete="new-password"
-            placeholder="At least 12 characters"
-            hint="Include uppercase, lowercase and a number."
+            placeholder="Create a password"
             disabled={isLoading}
             error={errors.password?.message}
+            passwordValue={passwordValue}
+            passwordRequirements={signupPasswordRequirements}
             registration={register("password")}
           />
 

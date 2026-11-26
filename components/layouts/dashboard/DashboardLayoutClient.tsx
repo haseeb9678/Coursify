@@ -28,6 +28,7 @@ export default function DashboardLayoutClient({
         } as CSSProperties
       }
       className="min-h-dvh w-full bg-background"
+      data-dashboard-panel={config.userRole.toLowerCase()}
     >
       <DashboardSidebar
         config={config}

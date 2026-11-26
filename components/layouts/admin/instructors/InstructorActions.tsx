@@ -4,21 +4,21 @@ import {
   Check,
   Eye,
   FileSearch,
-  MoreHorizontal,
   Presentation,
   Star,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { AdminInstructor } from "@/features/admin/types/management.types";
 import type { InstructorDetailsTab } from "./InstructorDetailsSheet";
+import {
+  AdminTableActionContent,
+  AdminTableActionTrigger,
+} from "@/components/layouts/admin/shared/AdminTableActionMenu";
 
 interface InstructorActionsProps {
   instructor: AdminInstructor;
@@ -37,19 +37,8 @@ export default function InstructorActions({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Actions for ${instructor.name}`}
-          />
-        }
-      >
-        <MoreHorizontal size={17} aria-hidden="true" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <AdminTableActionTrigger label={`Actions for ${instructor.name}`} />
+      <AdminTableActionContent className="w-56">
         <DropdownMenuItem onClick={() => onView(instructor, "overview")}>
           <Eye size={15} aria-hidden="true" />
           View instructor details
@@ -86,7 +75,7 @@ export default function InstructorActions({
             )}
           </>
         )}
-      </DropdownMenuContent>
+      </AdminTableActionContent>
     </DropdownMenu>
   );
 }

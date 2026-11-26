@@ -1,6 +1,13 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ADMIN_PAGE_SIZES,
   type PaginationMeta,
 } from "@/features/admin/types/management.types";
@@ -9,12 +16,14 @@ interface AdminTablePaginationProps {
   meta: PaginationMeta;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  isDisabled?: boolean;
 }
 
 export default function AdminTablePagination({
   meta,
   onPageChange,
   onPageSizeChange,
+  isDisabled = false,
 }: AdminTablePaginationProps) {
   const first = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
   const last = Math.min(meta.page * meta.limit, meta.total);
@@ -28,16 +37,39 @@ export default function AdminTablePagination({
         </span>
         <label className="flex items-center gap-2">
           Rows per page
-          <select
-            aria-label="Rows per page"
-            value={meta.limit}
-            onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            className="h-8 rounded-md border border-brand-border bg-background px-2 text-xs text-brand-text outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          <Select
+            value={String(meta.limit)}
+            disabled={isDisabled}
+            onValueChange={(value) => {
+              if (value === null) return;
+              const nextSize = Number(value);
+              if (ADMIN_PAGE_SIZES.some((size) => size === nextSize)) {
+                onPageSizeChange(nextSize);
+              }
+            }}
           >
-            {ADMIN_PAGE_SIZES.map((size) => (
-              <option key={size} value={size}>{size}</option>
-            ))}
-          </select>
+            <SelectTrigger
+            aria-label="Rows per page"
+              size="sm"
+              className="h-8 min-w-14 rounded-md border-brand-border bg-background px-2 text-xs text-brand-text"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent
+              align="end"
+              className="min-w-16 rounded-xl border-brand-border bg-popover p-1.5 text-popover-foreground shadow-lg"
+            >
+              {ADMIN_PAGE_SIZES.map((size) => (
+                <SelectItem
+                  key={size}
+                  value={String(size)}
+                  className="min-h-9 rounded-lg px-2.5 py-2 text-sm font-medium data-[highlighted]:bg-accent data-[selected]:bg-primary/10 data-[selected]:text-primary"
+                >
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
       </div>
 
@@ -50,7 +82,7 @@ export default function AdminTablePagination({
           variant="outline"
           size="icon-sm"
           aria-label="Previous page"
-          disabled={!meta.hasPrevious}
+          disabled={isDisabled || !meta.hasPrevious}
           onClick={() => onPageChange(meta.page - 1)}
         >
           <ChevronLeft size={15} aria-hidden="true" />
@@ -60,7 +92,7 @@ export default function AdminTablePagination({
           variant="outline"
           size="icon-sm"
           aria-label="Next page"
-          disabled={!meta.hasNext}
+          disabled={isDisabled || !meta.hasNext}
           onClick={() => onPageChange(meta.page + 1)}
         >
           <ChevronRight size={15} aria-hidden="true" />

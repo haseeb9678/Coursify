@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SelectPortalContainerProvider } from "@/components/ui/select";
 
 interface AdminDialogProps {
   open: boolean;
@@ -52,38 +53,39 @@ export default function AdminDialog({
       onClose={() => {
         if (open) onOpenChange(false);
       }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onOpenChange(false);
-      }}
-      className={`fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] ${sizes[size]} overflow-y-auto rounded-2xl border border-brand-border bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/50`}
+      className={`fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] ${sizes[size]} overflow-visible rounded-2xl border border-brand-border bg-card p-0 text-card-foreground shadow-2xl backdrop:bg-black/50`}
     >
-      <div className="flex items-start justify-between gap-4 border-b border-brand-border px-5 py-4">
-        <div>
-          <h2 id={titleId} className="text-base font-semibold text-brand-text">
-            {title}
-          </h2>
-          {description && (
-            <p id={descriptionId} className="mt-1 text-xs text-brand-text-muted">
-              {description}
-            </p>
+      <SelectPortalContainerProvider containerRef={dialogRef}>
+        <div className="max-h-[90dvh] overflow-y-auto rounded-2xl">
+          <div className="flex items-start justify-between gap-4 border-b border-brand-border px-5 py-4">
+            <div>
+              <h2 id={titleId} className="text-base font-semibold text-brand-text">
+                {title}
+              </h2>
+              {description && (
+                <p id={descriptionId} className="mt-1 text-xs text-brand-text-muted">
+                  {description}
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Close dialog"
+              onClick={() => onOpenChange(false)}
+            >
+              <X size={16} aria-hidden="true" />
+            </Button>
+          </div>
+          <div className="px-5 py-4">{children}</div>
+          {footer && (
+            <div className="flex justify-end gap-2 border-t border-brand-border px-5 py-4">
+              {footer}
+            </div>
           )}
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Close dialog"
-          onClick={() => onOpenChange(false)}
-        >
-          <X size={16} aria-hidden="true" />
-        </Button>
-      </div>
-      <div className="px-5 py-4">{children}</div>
-      {footer && (
-        <div className="flex justify-end gap-2 border-t border-brand-border px-5 py-4">
-          {footer}
-        </div>
-      )}
+      </SelectPortalContainerProvider>
     </dialog>
   );
 }

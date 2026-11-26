@@ -34,6 +34,9 @@ interface AdminDataTableProps<T> {
   visibleColumnIds: readonly string[];
   onVisibleColumnsChange: (columnIds: string[]) => void;
   isLoading?: boolean;
+  isPlaceholderData?: boolean;
+  isSelectionDisabled?: boolean;
+  isPaginationDisabled?: boolean;
   error?: string | null;
   emptyTitle?: string;
   emptyDescription?: string;
@@ -53,6 +56,9 @@ export default function AdminDataTable<T>({
   visibleColumnIds,
   onVisibleColumnsChange,
   isLoading = false,
+  isPlaceholderData = false,
+  isSelectionDisabled = false,
+  isPaginationDisabled = false,
   error = null,
   emptyTitle = "No records found",
   emptyDescription = "Try adjusting your search or filters.",
@@ -106,7 +112,10 @@ export default function AdminDataTable<T>({
       ) : rows.length === 0 && !isLoading ? (
         <AdminEmptyState title={emptyTitle} description={emptyDescription} />
       ) : (
-        <div className="overflow-x-auto">
+        <div
+          className={`overflow-x-auto ${isPlaceholderData ? "opacity-60" : ""}`}
+          aria-busy={isPlaceholderData}
+        >
           <table className="w-full min-w-[880px] border-collapse text-left text-xs">
             <thead className="bg-brand-page-secondary/70">
               <tr className="border-b border-brand-border">
@@ -114,6 +123,7 @@ export default function AdminDataTable<T>({
                   <span className="relative flex size-4">
                     <Checkbox
                       checked={allSelected}
+                      disabled={isSelectionDisabled}
                       aria-checked={partiallySelected ? "mixed" : allSelected}
                       onCheckedChange={(checked) =>
                         onToggleRows(rowIds, checked !== false)
@@ -181,6 +191,7 @@ export default function AdminDataTable<T>({
                       <td className="px-4 py-3.5">
                         <Checkbox
                           checked={selectedIds.has(id)}
+                          disabled={isSelectionDisabled}
                           onCheckedChange={(checked) => onToggleRows([id], checked === true)}
                           aria-label={`Select row ${id}`}
                         />
@@ -203,6 +214,7 @@ export default function AdminDataTable<T>({
         meta={pagination}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
+        isDisabled={isPaginationDisabled}
       />
     </section>
   );

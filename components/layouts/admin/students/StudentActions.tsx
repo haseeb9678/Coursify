@@ -1,15 +1,16 @@
 "use client";
 
-import { Award, BookOpen, Eye, GraduationCap, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Award, BookOpen, Eye, GraduationCap } from "lucide-react";
 import {
   DropdownMenu,
-  DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { AdminStudent } from "@/features/admin/types/management.types";
 import type { StudentDetailsTab } from "./StudentDetailsSheet";
+import {
+  AdminTableActionContent,
+  AdminTableActionTrigger,
+} from "@/components/layouts/admin/shared/AdminTableActionMenu";
 
 interface StudentActionsProps {
   student: AdminStudent;
@@ -19,19 +20,8 @@ interface StudentActionsProps {
 export default function StudentActions({ student, onView }: StudentActionsProps) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Actions for ${student.name}`}
-          />
-        }
-      >
-        <MoreHorizontal size={17} aria-hidden="true" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
+      <AdminTableActionTrigger label={`Actions for ${student.name}`} />
+      <AdminTableActionContent className="w-52">
         <DropdownMenuItem onClick={() => onView(student, "overview")}>
           <Eye size={15} aria-hidden="true" />
           View student details
@@ -48,7 +38,7 @@ export default function StudentActions({ student, onView }: StudentActionsProps)
           <Award size={15} aria-hidden="true" />
           View certificates
         </DropdownMenuItem>
-      </DropdownMenuContent>
+      </AdminTableActionContent>
     </DropdownMenu>
   );
 }
