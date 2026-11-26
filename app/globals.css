@@ -404,12 +404,10 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    body,
-    body * {
-      transition-property:
-        background-color, border-color, color, fill, stroke, box-shadow;
-      transition-duration: 220ms;
-      transition-timing-function: ease;
+    body {
+      transition:
+        background-color 220ms ease,
+        color 220ms ease;
     }
   }
 }
