@@ -83,7 +83,10 @@ export const sectionSchema = z.object({
 
 export const lessonSchema = z
   .object({
-    title: z.string().trim().min(3, "Enter a lesson title.").max(100),
+    title: z.string().trim().refine((title) => {
+      const length = Array.from(title).length;
+      return length >= 2 && length <= 180;
+    }, "Enter a lesson title between 2 and 180 characters."),
     description: z.string().trim().min(8, "Add a short lesson description.").max(500),
     type: z.enum(["VIDEO", "TEXT", "PDF"]),
     durationSeconds: z.number().int().positive().nullable(),

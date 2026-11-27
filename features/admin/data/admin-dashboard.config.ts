@@ -6,6 +6,8 @@ import {
   CreditCard,
   FileCheck2,
   LayoutDashboard,
+  Megaphone,
+  PanelsTopLeft,
   ReceiptText,
   Settings,
   ShieldCheck,
@@ -114,6 +116,13 @@ const adminNavigationGroups = [
     ],
   },
   {
+    label: "Website Management",
+    items: [
+      { label: "Hero Management", href: `${adminBaseRoute}/website/hero`, icon: PanelsTopLeft, implemented: true },
+      { label: "Promotional Popups", href: `${adminBaseRoute}/website/popups`, icon: Megaphone, implemented: true },
+    ],
+  },
+  {
     label: "Finance",
     items: [
       {
@@ -179,6 +188,9 @@ export const adminDashboardConfig = {
     students: "Students",
     instructors: "Instructors",
     courses: "Courses",
+    website: "Website Management",
+    hero: "Hero Management",
+    popups: "Promotional Popups",
     categories: "Categories",
     enrollments: "Enrollments",
     "course-approvals": "Course Approvals",

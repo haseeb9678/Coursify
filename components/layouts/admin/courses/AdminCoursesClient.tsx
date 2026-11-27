@@ -15,7 +15,6 @@ import {
   Send,
   Star,
   Trash2,
-  UsersRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import AdminConfirmDialog from "@/components/layouts/admin/shared/AdminConfirmDialog";
+import CourseLifecycleDialog, { type PendingCourseAction } from "./CourseLifecycleDialog";
 import AdminDataTable, {
   type AdminTableColumn,
 } from "@/components/layouts/admin/shared/AdminDataTable";
@@ -40,11 +39,14 @@ import AdminPageHeader from "@/components/layouts/admin/shared/AdminPageHeader";
 import AdminStatsGrid from "@/components/layouts/admin/shared/AdminStatsGrid";
 import AdminTableToolbar from "@/components/layouts/admin/shared/AdminTableToolbar";
 import CourseStatusBadge from "@/components/layouts/admin/courses/CourseStatusBadge";
-import LearningSampleNotice from "@/components/layouts/admin/learning/LearningSampleNotice";
+import AdminErrorState from "@/components/layouts/admin/shared/AdminErrorState";
 import { useAdminTableState } from "@/features/admin/hooks/use-admin-table-state";
-import { sampleAdminUsers } from "@/features/admin/data/users.data";
-import { sampleAdminInstructors } from "@/features/admin/data/instructors.data";
-import { useLearningDemoStore } from "@/features/admin/store/learning-demo.store";
+import {
+  useAdminCourseStats,
+  useAdminCourses,
+  useCourseCategoryOptions,
+  useCourseInstructorOptions,
+} from "@/features/admin/hooks/use-admin-learning";
 import type {
   AdminCourse,
   CourseLevel,
@@ -52,17 +54,15 @@ import type {
   CourseStatus,
 } from "@/features/admin/types/learning.types";
 import {
-  canTransitionCourseStatus,
-  filterLearningCourses,
+  canEditCourse,
+  getCourseAdminActions,
+  getCourseActionCopy,
+  type CourseAdminAction,
   formatCoursePrice,
-  getCourseReadinessIssues,
-  getCourseStats,
 } from "@/features/admin/utils/learning.utils";
 import {
   downloadCsv,
   formatManagementDate,
-  paginateRecords,
-  sortRecords,
 } from "@/features/admin/utils/management.utils";
 
 const initialVisibleColumns = [
@@ -71,7 +71,6 @@ const initialVisibleColumns = [
   "instructor",
   "level",
   "price",
-  "enrollments",
   "status",
   "createdAt",
   "updatedAt",
@@ -88,15 +87,6 @@ type CoursePageFilters = {
   pricing: CoursePricingType | "ALL";
 };
 
-type PendingCourseAction =
-  | {
-      kind: "transition";
-      course: AdminCourse;
-      status: CourseStatus;
-    }
-  | { kind: "delete"; course: AdminCourse }
-  | null;
-
 const levelLabel: Record<CourseLevel, string> = {
   BEGINNER: "Beginner",
   INTERMEDIATE: "Intermediate",
@@ -105,15 +95,6 @@ const levelLabel: Record<CourseLevel, string> = {
 
 export default function AdminCoursesClient() {
   const router = useRouter();
-  const courses = useLearningDemoStore((state) => state.courses);
-  const categories = useLearningDemoStore((state) => state.categories);
-  const sections = useLearningDemoStore((state) => state.sections);
-  const lessons = useLearningDemoStore((state) => state.lessons);
-  const reviews = useLearningDemoStore((state) => state.reviews);
-  const transitionCourse = useLearningDemoStore(
-    (state) => state.transitionCourse,
-  );
-  const deleteCourse = useLearningDemoStore((state) => state.deleteCourse);
   const table = useAdminTableState();
   const [filters, setFilters] = useState<CoursePageFilters>({
     search: "",
@@ -125,59 +106,42 @@ export default function AdminCoursesClient() {
     pricing: "ALL",
   });
   const [shownColumns, setShownColumns] = useState(initialVisibleColumns);
-  const [pendingAction, setPendingAction] = useState<PendingCourseAction>(null);
-
-  const instructorNames = useMemo(
-    () =>
-      new Map(
-        sampleAdminInstructors.map((profile) => [
-          profile.userId,
-          sampleAdminUsers.find((user) => user.id === profile.userId)?.name ??
-            "Sample instructor",
-        ]),
-      ),
-    [],
+  const [pendingAction, setPendingAction] = useState<PendingCourseAction | null>(null);
+  const filter = {
+    ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
+    ...(filters.categoryId !== "ALL" ? { categoryId: filters.categoryId } : {}),
+    ...(filters.instructorId !== "ALL" ? { instructorId: filters.instructorId } : {}),
+    ...(filters.status !== "ALL" ? { status: filters.status } : {}),
+    ...(filters.level !== "ALL" ? { level: filters.level } : {}),
+    ...(filters.language !== "ALL" ? { language: filters.language } : {}),
+    ...(filters.pricing !== "ALL" ? { pricingType: filters.pricing } : {}),
+  };
+  const sortFields: Record<string, string> = {
+    identity: "TITLE",
+    price: "PRICE",
+    createdAt: "CREATED_AT",
+    updatedAt: "UPDATED_AT",
+  };
+  const sort = table.sorting && sortFields[table.sorting.column]
+    ? {
+        field: sortFields[table.sorting.column],
+        direction: table.sorting.direction.toUpperCase() as "ASC" | "DESC",
+      }
+    : undefined;
+  const courseQuery = useAdminCourses(
+    { page: table.page, limit: table.pageSize },
+    filter,
+    sort,
   );
-  const filteredCourses = useMemo(
-    () =>
-      filterLearningCourses(
-        courses,
-        filters,
-        categories,
-        instructorNames,
-      ),
-    [categories, courses, filters, instructorNames],
-  );
-  const sortedCourses = useMemo(
-    () =>
-      sortRecords(filteredCourses, table.sorting, (course, column) => {
-        switch (column) {
-          case "identity":
-            return course.title;
-          case "category":
-            return categories.find((item) => item.id === course.categoryId)?.name ?? "";
-          case "instructor":
-            return instructorNames.get(course.instructorId) ?? "";
-          case "level":
-            return course.level;
-          case "price":
-            return course.pricing.priceMinorUnits;
-          case "enrollments":
-            return course.enrollmentCount;
-          case "status":
-            return course.status;
-          case "createdAt":
-            return course.createdAt;
-          case "updatedAt":
-            return course.updatedAt;
-          default:
-            return null;
-        }
-      }),
-    [categories, filteredCourses, instructorNames, table.sorting],
-  );
-  const page = paginateRecords(sortedCourses, table.page, table.pageSize);
-  const stats = getCourseStats(courses);
+  const statsQuery = useAdminCourseStats();
+  const categoriesQuery = useCourseCategoryOptions();
+  const instructorsQuery = useCourseInstructorOptions();
+  const courses = courseQuery.data?.items ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const instructors = instructorsQuery.data ?? [];
+  const stats = statsQuery.data;
+  const totalCourses = courseQuery.data?.meta.total ?? 0;
+  const filteredCourses = courses;
 
   const columns = useMemo<AdminTableColumn<AdminCourse>[]>(
     () => [
@@ -216,30 +180,24 @@ export default function AdminCoursesClient() {
       {
         id: "category",
         header: "Category",
-        sortValue: (course) =>
-          categories.find((item) => item.id === course.categoryId)?.name ?? "",
         cell: (course) => (
           <span className="whitespace-nowrap">
-            {categories.find((item) => item.id === course.categoryId)?.name ??
-              "Uncategorized"}
+            {course.categoryName ?? "—"}
           </span>
         ),
       },
       {
         id: "instructor",
         header: "Instructor",
-        sortValue: (course) =>
-          instructorNames.get(course.instructorId) ?? "",
         cell: (course) => (
           <span className="whitespace-nowrap">
-            {instructorNames.get(course.instructorId) ?? "Instructor unavailable"}
+            {course.instructorName ?? "—"}
           </span>
         ),
       },
       {
         id: "level",
         header: "Level",
-        sortValue: (course) => course.level,
         cell: (course) => levelLabel[course.level],
       },
       {
@@ -278,20 +236,8 @@ export default function AdminCoursesClient() {
           ),
       },
       {
-        id: "enrollments",
-        header: "Enrollments",
-        sortValue: (course) => course.enrollmentCount,
-        cell: (course) => (
-          <span className="inline-flex items-center gap-1.5 tabular-nums text-brand-text-muted">
-            <UsersRound size={13} aria-hidden="true" />
-            {course.enrollmentCount.toLocaleString()}
-          </span>
-        ),
-      },
-      {
         id: "status",
         header: "Status",
-        sortValue: (course) => course.status,
         cell: (course) => <CourseStatusBadge status={course.status} />,
       },
       {
@@ -322,21 +268,18 @@ export default function AdminCoursesClient() {
         cell: (course) => (
           <CourseActions
             course={course}
-            hasReviews={reviews.some((review) => review.courseId === course.id)}
             onView={() => router.push(`/admin/courses/${course.id}`)}
             onEdit={() => router.push(`/admin/courses/${course.id}/edit`)}
             onCurriculum={() =>
               router.push(`/admin/courses/${course.id}/curriculum`)
             }
-            onTransition={(status) =>
-              setPendingAction({ kind: "transition", course, status })
-            }
-            onDelete={() => setPendingAction({ kind: "delete", course })}
+            onAction={(action) => setPendingAction({ action, course })}
+            onNavigate={(href) => router.push(href)}
           />
         ),
       },
     ],
-    [categories, instructorNames, reviews, router],
+    [router],
   );
 
   const setFilter = <K extends keyof CoursePageFilters>(
@@ -373,9 +316,7 @@ export default function AdminCoursesClient() {
     const records =
       mode === "selected"
         ? filteredCourses.filter((course) => table.selectedIds.has(course.id))
-        : mode === "filtered"
-          ? filteredCourses
-          : courses;
+        : filteredCourses;
     if (records.length === 0) return;
     downloadCsv(
       `coursify-courses-${mode}`,
@@ -388,16 +329,14 @@ export default function AdminCoursesClient() {
         "Language",
         "Price",
         "Status",
-        "Enrollments",
         "Created",
         "Updated",
       ],
       records.map((course) => [
         course.title,
         course.slug,
-        categories.find((category) => category.id === course.categoryId)?.name ??
-          "",
-        instructorNames.get(course.instructorId) ?? "",
+        course.categoryName ?? "",
+        course.instructorName ?? "",
         course.level,
         course.language,
         course.pricing.type === "FREE"
@@ -407,63 +346,12 @@ export default function AdminCoursesClient() {
               course.pricing.currency,
             ),
         course.status,
-        course.enrollmentCount,
         course.createdAt,
         course.updatedAt,
       ]),
     );
-    toast.success(`Exported ${records.length} course records from sample data.`);
+    toast.success(`Exported ${records.length} loaded course records.`);
   };
-
-  const confirmAction = () => {
-    if (!pendingAction) return;
-    if (pendingAction.kind === "delete") {
-      if (!deleteCourse(pendingAction.course.id)) {
-        toast.error(
-          "Only draft courses without enrollments or review history can be deleted.",
-        );
-        return;
-      }
-      toast.success("Course removed from the temporary sample workspace.");
-      setPendingAction(null);
-      table.clearSelection();
-      return;
-    }
-
-    if (pendingAction.status === "PENDING_REVIEW") {
-      const readinessIssues = getCourseReadinessIssues(
-        pendingAction.course,
-        categories,
-        sections,
-        lessons,
-      );
-      if (readinessIssues.length > 0) {
-        toast.error(readinessIssues[0]);
-        return;
-      }
-    }
-
-    if (!transitionCourse(pendingAction.course.id, pendingAction.status)) {
-      toast.error(
-        "This course cannot make that status transition or is missing required content.",
-      );
-      return;
-    }
-    toast.success(
-      `${pendingAction.course.title} is now ${pendingAction.status.replaceAll("_", " ").toLowerCase()} in sample data.`,
-    );
-    setPendingAction(null);
-    table.clearSelection();
-  };
-
-  const statusTarget =
-    pendingAction?.kind === "transition" ? pendingAction.status : null;
-  const confirmDescription =
-    pendingAction?.kind === "delete"
-      ? `Remove ${pendingAction.course.title}? Only a draft without enrollments or review history can be safely deleted.`
-      : pendingAction?.kind === "transition"
-        ? `Move ${pendingAction.course.title} to ${pendingAction.status.replaceAll("_", " ").toLowerCase()}?`
-        : "";
 
   return (
     <section className="mx-auto w-full max-w-450 space-y-5 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -474,7 +362,7 @@ export default function AdminCoursesClient() {
           <>
             <AdminExportButton
               selectedCount={table.selectedIds.size}
-              filteredCount={filteredCourses.length}
+              filteredCount={totalCourses}
               onExport={exportCourses}
             />
             <Button
@@ -488,41 +376,40 @@ export default function AdminCoursesClient() {
           </>
         }
       />
-      <LearningSampleNotice />
       <AdminStatsGrid
         columns={5}
         stats={[
           {
             label: "Total courses",
-            value: stats.total,
+            value: stats?.totalCourses ?? "—",
             description: "Across all course statuses",
             icon: BookOpen,
             tone: "primary",
           },
           {
             label: "Published",
-            value: stats.published,
+            value: stats?.publishedCourses ?? "—",
             description: "Available to learners",
             icon: Star,
             tone: "green",
           },
           {
             label: "Drafts",
-            value: stats.drafts,
+            value: stats?.draftCourses ?? "—",
             description: "Not yet submitted for review",
             icon: Layers3,
             tone: "violet",
           },
           {
             label: "Pending review",
-            value: stats.pendingReview,
+            value: stats?.pendingReviewCourses ?? "—",
             description: "Waiting for an administrator",
             icon: CalendarDays,
             tone: "amber",
           },
           {
             label: "Archived",
-            value: stats.archived,
+            value: stats?.archivedCourses ?? "—",
             description: "No longer in active catalog",
             icon: Archive,
             tone: "red",
@@ -556,9 +443,9 @@ export default function AdminCoursesClient() {
               value={filters.instructorId}
               options={[
                 { value: "ALL", label: "All instructors" },
-                ...Array.from(instructorNames, ([id, name]) => ({
-                  value: id,
-                  label: name,
+                ...instructors.map((instructor) => ({
+                  value: instructor.id,
+                  label: instructor.name,
                 })),
               ]}
               onChange={(value) => setFilter("instructorId", value)}
@@ -622,11 +509,24 @@ export default function AdminCoursesClient() {
         }
       />
 
+      {courseQuery.isError && (
+        <AdminErrorState
+          title="Courses could not be loaded"
+          description={courseQuery.error.message}
+        />
+      )}
       <AdminDataTable
-        rows={page.items}
+        rows={courses}
         columns={columns}
         getRowId={(course) => course.id}
-        pagination={page.meta}
+        pagination={courseQuery.data?.meta ?? {
+          page: table.page,
+          limit: table.pageSize,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrevious: false,
+        }}
         onPageChange={(nextPage) => {
           table.clearSelection();
           table.setPage(nextPage);
@@ -639,47 +539,28 @@ export default function AdminCoursesClient() {
         onSort={(column) => {
           table.clearSelection();
           table.toggleSorting(column);
+          table.setPage(1);
         }}
         selectedIds={table.selectedIds}
         onToggleRows={table.toggleRows}
         visibleColumnIds={shownColumns}
         onVisibleColumnsChange={setShownColumns}
+        isLoading={courseQuery.isLoading}
+        isPlaceholderData={courseQuery.isPlaceholderData}
+        error={courseQuery.isError ? courseQuery.error.message : null}
         emptyTitle="No courses match these filters"
         emptyDescription="Try a different search or clear one or more filters."
       />
 
-      <AdminConfirmDialog
-        open={pendingAction !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingAction(null);
+      <CourseLifecycleDialog
+        pending={pendingAction}
+        onClose={() => setPendingAction(null)}
+        onComplete={({ action, course }) => {
+          table.clearSelection();
+          if (action === "restore" && course.status === "PUBLISHED") {
+            router.push(`/admin/courses/${course.id}/edit`);
+          }
         }}
-        title={
-          pendingAction?.kind === "delete"
-            ? "Delete draft course?"
-            : statusTarget === "ARCHIVED"
-              ? "Archive course?"
-              : statusTarget === "PENDING_REVIEW"
-                ? "Submit course for review?"
-                : statusTarget === "PUBLISHED"
-                  ? "Publish course?"
-                  : "Confirm status change"
-        }
-        description={confirmDescription}
-        confirmLabel={
-          pendingAction?.kind === "delete"
-            ? "Delete course"
-            : statusTarget === "PENDING_REVIEW"
-              ? "Submit for review"
-              : statusTarget === "PUBLISHED"
-                ? "Publish"
-                : statusTarget === "ARCHIVED"
-                  ? "Archive"
-                  : "Confirm"
-        }
-        isDestructive={
-          pendingAction?.kind === "delete" || statusTarget === "ARCHIVED"
-        }
-        onConfirm={confirmAction}
       />
     </section>
   );
@@ -687,25 +568,21 @@ export default function AdminCoursesClient() {
 
 function CourseActions({
   course,
-  hasReviews,
   onView,
   onEdit,
   onCurriculum,
-  onTransition,
-  onDelete,
+  onAction,
+  onNavigate,
 }: {
   course: AdminCourse;
-  hasReviews: boolean;
   onView: () => void;
   onEdit: () => void;
   onCurriculum: () => void;
-  onTransition: (status: CourseStatus) => void;
-  onDelete: () => void;
+  onAction: (action: CourseAdminAction) => void;
+  onNavigate: (href: string) => void;
 }) {
-  const canDelete =
-    course.status === "DRAFT" &&
-    course.enrollmentCount === 0 &&
-    !hasReviews;
+  const actions = getCourseAdminActions(course);
+  const icons = { submit: Send, publish: Globe, archive: Archive, withdraw: Archive, restore: Pencil, featured: Star, delete: Trash2 };
   return (
     <DropdownMenu>
       <AdminTableActionTrigger label={`Actions for ${course.title}`} />
@@ -714,7 +591,7 @@ function CourseActions({
           <Eye size={14} aria-hidden="true" />
           View course
         </DropdownMenuItem>
-        {course.status !== "ARCHIVED" && (
+        {canEditCourse(course.status) && (
           <DropdownMenuItem onClick={onEdit}>
             <Pencil size={14} aria-hidden="true" />
             Edit course
@@ -722,46 +599,40 @@ function CourseActions({
         )}
         <DropdownMenuItem onClick={onCurriculum}>
           <BookOpen size={14} aria-hidden="true" />
-          Manage curriculum
+          {canEditCourse(course.status) ? "Manage curriculum" : "View curriculum"}
         </DropdownMenuItem>
-        {canTransitionCourseStatus(course.status, "PENDING_REVIEW") && (
-          <DropdownMenuItem
-            onClick={() => onTransition("PENDING_REVIEW")}
-          >
-            <Send size={14} aria-hidden="true" />
-            Submit for review
-          </DropdownMenuItem>
-        )}
-        {canTransitionCourseStatus(course.status, "PUBLISHED") && (
-          <DropdownMenuItem onClick={() => onTransition("PUBLISHED")}>
+        {course.status === "PUBLISHED" && (
+          <DropdownMenuItem onClick={() => onNavigate(`/courses/${course.slug}`)}>
             <Globe size={14} aria-hidden="true" />
-            Publish course
+            View public course
           </DropdownMenuItem>
         )}
-        {canTransitionCourseStatus(course.status, "ARCHIVED") && (
-          <DropdownMenuItem onClick={() => onTransition("ARCHIVED")}>
-            <Archive size={14} aria-hidden="true" />
-            Archive course
+        {course.status === "PENDING_REVIEW" && (
+          <DropdownMenuItem onClick={() => onNavigate(`/admin/course-approvals?courseId=${course.id}`)}>
+            <Eye size={14} aria-hidden="true" />
+            Review course
           </DropdownMenuItem>
         )}
-        {course.status === "DRAFT" && (
-          <>
-            <DropdownMenuSeparator />
+        {course.status === "REJECTED" && (
+          <DropdownMenuItem onClick={() => onNavigate(`/admin/courses/${course.id}#review-history`)}>
+            <Eye size={14} aria-hidden="true" />
+            View feedback and history
+          </DropdownMenuItem>
+        )}
+        {actions.length > 0 && <DropdownMenuSeparator />}
+        {actions.map((action) => {
+          const Icon = icons[action];
+          return (
             <DropdownMenuItem
-              disabled={!canDelete}
-              title={
-                canDelete
-                  ? undefined
-                  : "Courses with enrollments or review history cannot be deleted."
-              }
-              onClick={onDelete}
-              className="text-destructive focus:text-destructive"
+              key={action}
+              onClick={() => onAction(action)}
+              className={action === "delete" ? "text-destructive focus:text-destructive" : undefined}
             >
-              <Trash2 size={14} aria-hidden="true" />
-              Delete draft
+              <Icon size={14} aria-hidden="true" />
+              {getCourseActionCopy(action, course).label}
             </DropdownMenuItem>
-          </>
-        )}
+          );
+        })}
       </AdminTableActionContent>
     </DropdownMenu>
   );

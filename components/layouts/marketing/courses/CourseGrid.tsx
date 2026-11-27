@@ -7,7 +7,7 @@ import { FilterX, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CourseCard from "./CourseCard";
 
-import type { CatalogCourse } from "@/features/courses/data/catalog-courses.data";
+import type { CatalogCourse } from "@/features/courses/types/catalog.types";
 
 interface CourseGridProps {
   courses: CatalogCourse[];

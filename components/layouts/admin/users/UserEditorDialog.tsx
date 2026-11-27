@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { toast } from "sonner";
+
+import { useRef, type FormEvent, useEffect, useId, useState } from "react";
 import type { ReactNode } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
@@ -110,10 +112,12 @@ export default function UserEditorDialog({
     onOpenChange(nextOpen);
   };
 
+  const submitting = useRef(false);
   const save = handleSubmit(async (values) => {
     if (!user) {
       const parsed = createUserSchema.safeParse(values);
       if (!parsed.success) {
+        toast.error(parsed.error.issues[0]?.message ?? "Check the highlighted user fields.");
         for (const issue of parsed.error.issues) {
           const field = issue.path[0];
           if (
@@ -148,6 +152,7 @@ export default function UserEditorDialog({
     }
 
     if (updatedUser.name === undefined && updatedUser.email === undefined) {
+      toast.error("Make at least one profile change before saving.");
       setError("root", {
         type: "manual",
         message: "Make at least one profile change before saving.",
@@ -159,13 +164,25 @@ export default function UserEditorDialog({
       reset();
       handleOpenChange(false);
     }
-  });
+  }, () => toast.error("Check the highlighted user fields."));
 
   const isSaving = isSubmitting || isPending;
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await save(event);
+    } finally {
+      submitting.current = false;
+    }
+  };
 
   return (
     <AdminDialog
       open={open}
+      busy={isSaving}
       onOpenChange={handleOpenChange}
       title={user ? "Edit user" : "Add user"}
       description={
@@ -183,13 +200,13 @@ export default function UserEditorDialog({
           >
             Cancel
           </Button>
-          <Button type="submit" form="admin-user-editor" disabled={isSaving}>
-            {isSaving ? "Saving..." : user ? "Save changes" : "Add user"}
+          <Button type="submit" form="admin-user-editor" busy={isSaving}>
+            {user ? "Save changes" : "Add user"}
           </Button>
         </>
       }
     >
-      <form id="admin-user-editor" onSubmit={save} className="space-y-4">
+      <form id="admin-user-editor" onSubmit={submit} className="space-y-4">
         <Field id={nameId} label="Full name" error={errors.name?.message}>
           <Input
             id={nameId}

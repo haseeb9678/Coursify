@@ -1,7 +1,8 @@
 import Footer from "@/components/layouts/marketing/Footer";
 import Navbar from "@/components/layouts/marketing/Navbar";
 import { footerColumns } from "@/features/home/data/footer.data";
-import React from "react";
+import React, { Suspense } from "react";
+import WebsitePromotionManager from "@/features/website/WebsitePromotionManager";
 import AccessibilityButton from "@/components/accessibility/AccessibilityButton";
 
 export default function MarketingLayout({
@@ -25,6 +26,7 @@ export default function MarketingLayout({
       columns={footerColumns}
       />
       <AccessibilityButton variant="floating" />
+      <Suspense fallback={null}><WebsitePromotionManager /></Suspense>
     </div>
   );
 }

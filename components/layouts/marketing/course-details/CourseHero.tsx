@@ -81,17 +81,17 @@ export default function CourseHero({
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs sm:text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-brand-text">
-                  {course.rating.toFixed(1)}
+                  {course.rating?.toFixed(1) ?? "—"}
                 </span>
 
                 <span className="flex items-center gap-0.5 text-amber-400">
                   {Array.from({ length: 5 }).map((_, index) => (
-                    <Star key={index} size={14} className="fill-current" />
+                    <Star key={index} size={14} fill={course.rating === undefined ? "none" : "currentColor"} />
                   ))}
                 </span>
 
                 <span className="text-brand-text-muted">
-                  ({course.reviewCount.toLocaleString()} ratings)
+                  {course.reviewCount === undefined ? "Ratings unavailable" : `(${course.reviewCount.toLocaleString()} ratings)`}
                 </span>
               </div>
 
@@ -99,19 +99,26 @@ export default function CourseHero({
 
               <div className="flex items-center gap-1.5 font-semibold text-brand-text">
                 <Users size={15} className="text-primary" />
-                {course.students} students enrolled
+                {course.students === undefined ? "Enrollment count unavailable" : `${course.students} students enrolled`}
               </div>
             </div>
 
             <div className="flex items-center gap-3 pt-1">
               <div className="relative size-11 shrink-0 overflow-hidden rounded-full border-2 border-background shadow-sm">
-                <Image
-                  src={course.instructor.image}
-                  alt={course.instructor.name}
-                  fill
-                  sizes="44px"
-                  className="object-cover"
-                />
+                {course.instructor.image ? (
+                  <Image
+                    src={course.instructor.image}
+                    alt={course.instructor.name}
+                    fill
+                    unoptimized
+                    sizes="44px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-brand-soft text-primary" aria-hidden="true">
+                    <Users size={19} />
+                  </div>
+                )}
               </div>
 
               <div className="min-w-0">
@@ -145,7 +152,7 @@ export default function CourseHero({
                 <QuickInfo
                   icon={<Clock3 size={16} />}
                   label="Duration"
-                  value={course.duration}
+                  value={course.duration ?? "Not listed"}
                 />
 
                 <QuickInfo
@@ -157,7 +164,7 @@ export default function CourseHero({
                 <QuickInfo
                   icon={<Award size={16} />}
                   label="Certificate"
-                  value={course.certificate ? "Included" : "Not included"}
+                  value={course.certificate === undefined ? "Not listed" : course.certificate ? "Included" : "Not included"}
                 />
 
                 <QuickInfo

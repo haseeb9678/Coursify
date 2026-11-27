@@ -1,5 +1,6 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import { LoaderCircle } from "lucide-react"
 import { cn } from "cn"
 
 const buttonVariants = cva(
@@ -43,8 +44,11 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  busy = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { busy?: boolean }) {
   return (
     <ButtonPrimitive
       data-slot="button"
@@ -52,7 +56,12 @@ function Button({
       data-variant={variant}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+      disabled={disabled || busy}
+      aria-busy={busy || props["aria-busy"]}
+    >
+      {busy && <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" />}
+      {busy && size?.startsWith("icon") ? null : children}
+    </ButtonPrimitive>
   )
 }
 

@@ -12,12 +12,15 @@ import { cn } from "cn";
 export function AdminTableActionTrigger({
   label,
   disabled = false,
+  busy = false,
 }: {
   label: string;
   disabled?: boolean;
+  busy?: boolean;
 }) {
   return (
     <DropdownMenuTrigger
+      disabled={disabled || busy}
       render={
         <Button
           type="button"
@@ -25,7 +28,7 @@ export function AdminTableActionTrigger({
           size="icon"
           className="size-9 rounded-xl border-brand-border bg-card text-brand-text shadow-sm transition-colors hover:border-primary/40 hover:bg-brand-soft hover:text-primary"
           aria-label={label}
-          disabled={disabled}
+          busy={busy}
         />
       }
     >

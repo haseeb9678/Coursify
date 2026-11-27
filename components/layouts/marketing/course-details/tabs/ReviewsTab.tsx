@@ -3,13 +3,12 @@ import { Star } from "lucide-react";
 import type { CourseDetails } from "@/features/courses/data/course-details.data";
 
 export default function ReviewsTab({ course }: { course: CourseDetails }) {
-  const ratingDistribution = [
-    { rating: 5, percentage: "85%" },
-    { rating: 4, percentage: "10%" },
-    { rating: 3, percentage: "3%" },
-    { rating: 2, percentage: "1%" },
-    { rating: 1, percentage: "1%" },
-  ];
+  const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => ({
+    rating,
+    percentage: course.reviews.length
+      ? `${(course.reviews.filter((review) => review.rating === rating).length / course.reviews.length) * 100}%`
+      : "0%",
+  }));
 
   return (
     <div className="space-y-6">
@@ -26,17 +25,17 @@ export default function ReviewsTab({ course }: { course: CourseDetails }) {
       <div className="flex flex-col gap-5 rounded-2xl border border-brand-border bg-brand-page-secondary/70 p-5 sm:flex-row sm:items-center sm:p-6">
         <div className="text-center sm:min-w-36">
           <p className="text-5xl font-extrabold tracking-tight text-brand-text">
-            {course.rating.toFixed(1)}
+            {course.rating?.toFixed(1) ?? "—"}
           </p>
 
           <div className="mt-2 flex justify-center gap-0.5 text-amber-400">
             {Array.from({ length: 5 }).map((_, index) => (
-              <Star key={index} size={15} className="fill-current" />
+              <Star key={index} size={15} fill={course.rating === undefined ? "none" : "currentColor"} />
             ))}
           </div>
 
           <p className="mt-1 text-[10px] text-brand-text-muted">
-            {course.reviewCount.toLocaleString()} ratings
+            {course.reviewCount === undefined ? "Ratings unavailable" : `${course.reviewCount.toLocaleString()} ratings`}
           </p>
         </div>
 
@@ -61,6 +60,10 @@ export default function ReviewsTab({ course }: { course: CourseDetails }) {
           ))}
         </div>
       </div>
+
+      {course.reviews.length === 0 && (
+        <p className="text-sm text-brand-text-muted">Student reviews are unavailable.</p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {course.reviews.map((review) => (

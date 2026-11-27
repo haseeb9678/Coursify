@@ -16,6 +16,7 @@ interface UsersStatsProps {
   stats: AdminUserStats | undefined;
   isPending: boolean;
   error?: string;
+  isRetrying: boolean;
   onRetry: () => void;
 }
 
@@ -23,6 +24,7 @@ export default function UsersStats({
   stats,
   isPending,
   error,
+  isRetrying,
   onRetry,
 }: UsersStatsProps) {
   if (!stats && isPending) {
@@ -52,7 +54,7 @@ export default function UsersStats({
         <p className="text-sm text-brand-text">
           User statistics could not be loaded. {error}
         </p>
-        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+        <Button type="button" variant="outline" size="sm" busy={isRetrying} onClick={onRetry}>
           Retry statistics
         </Button>
       </div>
@@ -98,7 +100,7 @@ export default function UsersStats({
           className="flex flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
         >
           <p className="text-xs text-brand-text">{error}</p>
-          <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
+          <Button type="button" variant="ghost" size="sm" busy={isRetrying} onClick={onRetry}>
             Retry statistics
           </Button>
         </div>

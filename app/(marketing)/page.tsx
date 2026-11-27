@@ -1,23 +1,15 @@
 
 import CareerCoursesSection from "@/components/layouts/marketing/CareerCoursesSection";
-import CategoriesSection from "@/components/layouts/marketing/CategoriesSection";
 import FAQSection from "@/components/layouts/marketing/FAQSection";
-import FeaturedCoursesSection from "@/components/layouts/marketing/FeaturedCoursesSection";
+import HomeLearningSections from "@/components/layouts/marketing/HomeLearningSections";
 import GrowKnowledgeSection from "@/components/layouts/marketing/GrowKnowledgeSection";
-import Hero from "@/components/layouts/marketing/Hero";
+import PublicHeroSection from "@/features/website/PublicHeroSection";
 import HiringPartnersSection from "@/components/layouts/marketing/HiringPartnersSection";
 import SkillDomainsSection from "@/components/layouts/marketing/SkillDomainsSection";
 import TestimonialsSection from "@/components/layouts/marketing/TestimonialsSection";
 import WhyChooseUsSection from "@/components/layouts/marketing/WhyChooseUsSection";
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
 
-import {
-  careerCourses,
-  careerTracks,
-} from "@/features/courses/data/career-courses.data";
-
-import { categories } from "@/features/courses/data/categories.data";
-import { featuredCourses } from "@/features/courses/data/data.courses";
 import { skillDomains } from "@/features/courses/data/skill-domains.data";
 import { testimonials } from "@/features/home/data/testimonials.data";
 import { faqs } from "@/features/home/data/faqs.data";
@@ -26,19 +18,13 @@ export default function HomePage() {
   return (
     <div className="flex w-full flex-col hide-scrollbar">
       <MotionReveal>
-        <Hero />
+        <PublicHeroSection />
       </MotionReveal>
       <MotionReveal>
-        <FeaturedCoursesSection courses={featuredCourses} />
+        <HomeLearningSections />
       </MotionReveal>
       <MotionReveal>
-        <CategoriesSection categories={categories} />
-      </MotionReveal>
-      <MotionReveal>
-        <CareerCoursesSection
-          courses={careerCourses}
-          tracks={careerTracks}
-        />
+        <CareerCoursesSection />
       </MotionReveal>
       <MotionReveal>
         <WhyChooseUsSection />

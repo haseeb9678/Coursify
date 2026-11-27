@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { SelectPortalContainerProvider } from "@/components/ui/select";
 
@@ -12,6 +13,7 @@ interface AdminDialogProps {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
+  busy?: boolean;
   size?: "sm" | "md" | "lg";
 }
 
@@ -29,6 +31,7 @@ export default function AdminDialog({
   children,
   footer,
   size = "md",
+  busy = false,
 }: AdminDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -48,7 +51,7 @@ export default function AdminDialog({
       aria-describedby={description ? descriptionId : undefined}
       onCancel={(event) => {
         event.preventDefault();
-        onOpenChange(false);
+        if (!busy) onOpenChange(false);
       }}
       onClose={() => {
         if (open) onOpenChange(false);
@@ -73,6 +76,7 @@ export default function AdminDialog({
               variant="ghost"
               size="icon-sm"
               aria-label="Close dialog"
+              disabled={busy}
               onClick={() => onOpenChange(false)}
             >
               <X size={16} aria-hidden="true" />
@@ -86,6 +90,7 @@ export default function AdminDialog({
           )}
         </div>
       </SelectPortalContainerProvider>
+      {open && <Toaster />}
     </dialog>
   );
 }

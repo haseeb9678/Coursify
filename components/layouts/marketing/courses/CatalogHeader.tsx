@@ -13,12 +13,15 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 interface CatalogHeaderProps {
   search: string;
   onSearchChange: (value: string) => void;
   totalCourses: number;
   page: number;
   pageSize: number;
+  isLoading: boolean;
 }
 
 export default function CatalogHeader({
@@ -27,6 +30,7 @@ export default function CatalogHeader({
   totalCourses,
   page,
   pageSize,
+  isLoading,
 }: CatalogHeaderProps) {
   const start = totalCourses === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, totalCourses);
@@ -81,17 +85,21 @@ export default function CatalogHeader({
               Explore All Courses
             </h1>
 
-            <p className="text-sm text-brand-text-muted">
-              Showing{" "}
-              <span className="font-bold text-brand-text">
-                {start}–{end}
-              </span>{" "}
-              of{" "}
-              <span className="font-bold text-brand-text">
-                {totalCourses}
-              </span>{" "}
-              courses
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-5 w-44" aria-hidden="true" />
+            ) : (
+              <p className="text-sm text-brand-text-muted">
+                Showing{" "}
+                <span className="font-bold text-brand-text">
+                  {start}–{end}
+                </span>{" "}
+                of{" "}
+                <span className="font-bold text-brand-text">
+                  {totalCourses}
+                </span>{" "}
+                courses
+              </p>
+            )}
           </motion.div>
 
           {/* Search */}

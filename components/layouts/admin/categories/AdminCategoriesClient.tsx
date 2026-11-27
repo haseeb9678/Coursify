@@ -5,23 +5,21 @@ import Image from "next/image";
 import {
   BookOpen,
   Boxes,
-  BrainCircuit,
   BriefcaseBusiness,
+  Camera,
+  ChartNoAxesColumn,
   CheckCircle2,
-  Cloud,
   Code2,
-  Database,
   Megaphone,
+  PenTool,
   Pencil,
   Plus,
-  ShieldCheck,
-  Smartphone,
   Tags,
   Trash2,
-  Workflow,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
+import { getGraphQLErrorMessage } from "@/lib/graphql/error";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -52,35 +50,30 @@ import AdminStatsGrid from "@/components/layouts/admin/shared/AdminStatsGrid";
 import AdminStatusBadge from "@/components/layouts/admin/shared/AdminStatusBadge";
 import AdminTableToolbar from "@/components/layouts/admin/shared/AdminTableToolbar";
 import CategoryFormDialog from "@/components/layouts/admin/categories/CategoryFormDialog";
-import LearningSampleNotice from "@/components/layouts/admin/learning/LearningSampleNotice";
+import AdminErrorState from "@/components/layouts/admin/shared/AdminErrorState";
 import { useAdminTableState } from "@/features/admin/hooks/use-admin-table-state";
-import { useLearningDemoStore } from "@/features/admin/store/learning-demo.store";
+import {
+  useAdminCategories,
+  useAdminCategoryStats,
+  useCreateAdminCategory,
+  useDeleteAdminCategory,
+  useUpdateAdminCategory,
+  useUpdateAdminCategoryStatus,
+} from "@/features/admin/hooks/use-admin-learning";
 import type {
   AdminCategory,
-  AdminCourse,
   CategoryInput,
   CategoryStatus,
 } from "@/features/admin/types/learning.types";
-import {
-  categoryCourseCount,
-  filterLearningCategories,
-  getCategoryStats,
-} from "@/features/admin/utils/learning.utils";
-import { downloadCsv, formatManagementDate, paginateRecords, sortRecords } from "@/features/admin/utils/management.utils";
+import { downloadCsv, formatManagementDate } from "@/features/admin/utils/management.utils";
 
 const categoryIcons: Record<string, LucideIcon> = {
-  code: Code2,
-  mobile: Smartphone,
-  data: Database,
-  ai: BrainCircuit,
-  security: ShieldCheck,
-  cloud: Cloud,
-  design: Tags,
-  software: Boxes,
-  business: BriefcaseBusiness,
-  marketing: Megaphone,
-  fundamentals: BookOpen,
-  devops: Workflow,
+  PenTool,
+  Code2,
+  Megaphone,
+  BriefcaseBusiness,
+  Camera,
+  ChartNoAxesColumn,
 };
 
 const visibleColumns = [
@@ -93,14 +86,6 @@ const visibleColumns = [
 ];
 
 export default function AdminCategoriesClient() {
-  const categories = useLearningDemoStore((state) => state.categories);
-  const courses = useLearningDemoStore((state) => state.courses);
-  const addCategory = useLearningDemoStore((state) => state.addCategory);
-  const updateCategory = useLearningDemoStore((state) => state.updateCategory);
-  const setCategoryStatus = useLearningDemoStore(
-    (state) => state.setCategoryStatus,
-  );
-  const deleteCategory = useLearningDemoStore((state) => state.deleteCategory);
   const table = useAdminTableState();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<CategoryStatus | "ALL">("ALL");
@@ -114,28 +99,32 @@ export default function AdminCategoriesClient() {
   );
   const [deleteTarget, setDeleteTarget] = useState<AdminCategory | null>(null);
 
-  const filteredCategories = useMemo(
-    () => filterLearningCategories(categories, { search, status }),
-    [categories, search, status],
-  );
-  const sortedCategories = useMemo(
-    () =>
-      sortRecords(filteredCategories, table.sorting, (category, column) => {
-        if (column === "name") return category.name;
-        if (column === "createdAt") return category.createdAt;
-        if (column === "courses") {
-          return categoryCourseCount(category.id, courses);
+  const filter = {
+    ...(search.trim() ? { search: search.trim() } : {}),
+    ...(status !== "ALL" ? { status } : {}),
+  };
+  const sortFields: Record<string, string> = {
+    identity: "NAME",
+    createdAt: "CREATED_AT",
+    courses: "COURSE_COUNT",
+  };
+  const categoryQuery = useAdminCategories(
+    { page: table.page, limit: table.pageSize },
+    filter,
+    table.sorting
+      ? {
+          field: sortFields[table.sorting.column] ?? "CREATED_AT",
+          direction: table.sorting.direction.toUpperCase() as "ASC" | "DESC",
         }
-        return null;
-      }),
-    [courses, filteredCategories, table.sorting],
+      : undefined,
   );
-  const page = paginateRecords(
-    sortedCategories,
-    table.page,
-    table.pageSize,
-  );
-  const stats = getCategoryStats(categories, courses);
+  const statsQuery = useAdminCategoryStats();
+  const createCategory = useCreateAdminCategory();
+  const editCategory = useUpdateAdminCategory();
+  const changeCategoryStatus = useUpdateAdminCategoryStatus();
+  const removeCategory = useDeleteAdminCategory();
+  const categories = categoryQuery.data?.items ?? [];
+  const stats = statsQuery.data;
 
   const columns = useMemo<AdminTableColumn<AdminCategory>[]>(
     () => [
@@ -185,10 +174,10 @@ export default function AdminCategoriesClient() {
       {
         id: "courses",
         header: "Courses",
-        sortValue: (category) => categoryCourseCount(category.id, courses),
+        sortValue: (category) => category.courseCount ?? 0,
         cell: (category) => (
           <span className="tabular-nums">
-            {categoryCourseCount(category.id, courses)}
+            {category.courseCount ?? 0}
           </span>
         ),
       },
@@ -215,18 +204,23 @@ export default function AdminCategoriesClient() {
         cell: (category) => (
           <CategoryActions
             category={category}
-            courseCount={categoryCourseCount(category.id, courses)}
+            statusBusy={changeCategoryStatus.isPending && changeCategoryStatus.variables?.id === category.id}
+            disabled={changeCategoryStatus.isPending}
+            courseCount={category.courseCount ?? 0}
             onView={() => setDetailsCategory(category)}
             onEdit={() => {
               setEditingCategory(category);
               setIsFormOpen(true);
             }}
             onToggleStatus={() => {
-              const nextStatus =
-                category.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-              setCategoryStatus(category.id, nextStatus);
-              toast.success(
-                `${category.name} is now ${nextStatus.toLowerCase()}.`,
+              if (changeCategoryStatus.isPending) return;
+              const nextStatus = category.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+              changeCategoryStatus.mutate(
+                { id: category.id, status: nextStatus },
+                {
+                  onSuccess: () => toast.success(`${category.name} is now ${nextStatus.toLowerCase()}.`),
+                  onError: (error) => toast.error(getGraphQLErrorMessage(error)),
+                },
               );
             }}
             onDelete={() => setDeleteTarget(category)}
@@ -234,7 +228,7 @@ export default function AdminCategoriesClient() {
         ),
       },
     ],
-    [courses, setCategoryStatus],
+    [changeCategoryStatus],
   );
 
   const updateFilter = (nextSearch: string, nextStatus: string) => {
@@ -249,12 +243,10 @@ export default function AdminCategoriesClient() {
   const exportCategories = (mode: AdminExportMode) => {
     const records =
       mode === "selected"
-        ? filteredCategories.filter((category) =>
+        ? categories.filter((category) =>
             table.selectedIds.has(category.id),
           )
-        : mode === "filtered"
-          ? filteredCategories
-          : categories;
+        : categories;
     if (records.length === 0) return;
     downloadCsv(
       `coursify-categories-${mode}`,
@@ -264,42 +256,55 @@ export default function AdminCategoriesClient() {
         category.slug,
         category.description,
         category.status,
-        categoryCourseCount(category.id, courses),
+        category.courseCount ?? 0,
         category.createdAt,
       ]),
     );
-    toast.success(`Exported ${records.length} category records from sample data.`);
+    toast.success(`Exported ${records.length} category records.`);
   };
 
-  const saveCategory = (input: CategoryInput) => {
-    const saved = editingCategory
-      ? updateCategory(editingCategory.id, input)
-      : addCategory(input);
-    if (!saved) {
-      toast.error("That category slug is already in use.");
+  const saveCategory = async (input: CategoryInput) => {
+    const backendInput = {
+      name: input.name,
+      slug: input.slug,
+      description: input.description,
+      status: input.status,
+      iconName: input.iconKey,
+      iconColor: editingCategory?.iconColor ?? "#2563EB",
+      iconBackground: editingCategory?.iconBackground ?? "#DBEAFE",
+      imageUrl: input.imageDataUrl,
+    };
+    try {
+      if (editingCategory) {
+        await editCategory.mutateAsync({ ...backendInput, id: editingCategory.id });
+      } else {
+        await createCategory.mutateAsync(backendInput);
+      }
+      toast.success(`Category ${editingCategory ? "updated" : "created"}.`);
+      setEditingCategory(null);
+      return true;
+    } catch (error) {
+      toast.error(getGraphQLErrorMessage(error));
       return false;
     }
-    toast.success(
-      `${saved.name} ${editingCategory ? "updated" : "created"} in sample data.`,
-    );
-    setEditingCategory(null);
-    return true;
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return;
-    if (!deleteCategory(deleteTarget.id)) {
-      toast.error("Categories assigned to courses cannot be deleted.");
-      return;
+    try {
+      await removeCategory.mutateAsync(deleteTarget.id);
+      toast.success(`${deleteTarget.name} was deleted.`);
+      setDeleteTarget(null);
+      table.clearSelection();
+    } catch (error) {
+      toast.error(getGraphQLErrorMessage(error));
     }
-    toast.success(`${deleteTarget.name} was removed from sample data.`);
-    setDeleteTarget(null);
-    table.clearSelection();
   };
 
   const onSort = (column: string) => {
     table.clearSelection();
     table.toggleSorting(column);
+    table.setPage(1);
   };
 
   return (
@@ -311,7 +316,7 @@ export default function AdminCategoriesClient() {
           <>
             <AdminExportButton
               selectedCount={table.selectedIds.size}
-              filteredCount={filteredCategories.length}
+              filteredCount={categoryQuery.data?.meta.total ?? 0}
               onExport={exportCategories}
             />
             <Button
@@ -328,33 +333,32 @@ export default function AdminCategoriesClient() {
           </>
         }
       />
-      <LearningSampleNotice />
       <AdminStatsGrid
         stats={[
           {
             label: "Total categories",
-            value: stats.total,
+            value: stats?.totalCategories ?? "—",
             description: "Available catalog topics",
             icon: Tags,
             tone: "primary",
           },
           {
             label: "Active categories",
-            value: stats.active,
+            value: stats?.activeCategories ?? "—",
             description: "Shown in course forms",
             icon: CheckCircle2,
             tone: "green",
           },
           {
             label: "Inactive categories",
-            value: stats.inactive,
+            value: stats?.inactiveCategories ?? "—",
             description: "Hidden from new courses",
             icon: Boxes,
             tone: "amber",
           },
           {
             label: "Categorized courses",
-            value: stats.categorizedCourses,
+            value: stats?.categorizedCourses ?? "—",
             description: "Courses with a category",
             icon: BookOpen,
             tone: "violet",
@@ -385,11 +389,24 @@ export default function AdminCategoriesClient() {
         }
       />
 
+      {categoryQuery.isError && (
+        <AdminErrorState
+          title="Categories could not be loaded"
+          description={categoryQuery.error.message}
+        />
+      )}
       <AdminDataTable
-        rows={page.items}
+        rows={categories}
         columns={columns}
         getRowId={(category) => category.id}
-        pagination={page.meta}
+        pagination={categoryQuery.data?.meta ?? {
+          page: table.page,
+          limit: table.pageSize,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrevious: false,
+        }}
         onPageChange={(nextPage) => {
           table.clearSelection();
           table.setPage(nextPage);
@@ -404,6 +421,9 @@ export default function AdminCategoriesClient() {
         onToggleRows={table.toggleRows}
         visibleColumnIds={shownColumns}
         onVisibleColumnsChange={setShownColumns}
+        isLoading={categoryQuery.isLoading}
+        isPlaceholderData={categoryQuery.isPlaceholderData}
+        error={categoryQuery.isError ? categoryQuery.error.message : null}
         emptyTitle="No categories found"
         emptyDescription="Try a different search or clear the status filter."
       />
@@ -421,9 +441,7 @@ export default function AdminCategoriesClient() {
       />
       <CategoryDetailsSheet
         category={detailsCategory}
-        courses={courses.filter(
-          (course) => course.categoryId === detailsCategory?.id,
-        )}
+        courseCount={detailsCategory?.courseCount ?? 0}
         onOpenChange={(open) => {
           if (!open) setDetailsCategory(null);
         }}
@@ -434,7 +452,7 @@ export default function AdminCategoriesClient() {
           if (!open) setDeleteTarget(null);
         }}
         title="Delete category?"
-        description={`Delete ${deleteTarget?.name ?? "this category"} from sample data? This action cannot be undone.`}
+        description={`Delete ${deleteTarget?.name ?? "this category"}? This action cannot be undone.`}
         confirmLabel="Delete category"
         isDestructive
         onConfirm={confirmDelete}
@@ -446,6 +464,8 @@ export default function AdminCategoriesClient() {
 function CategoryActions({
   category,
   courseCount,
+  statusBusy,
+  disabled,
   onView,
   onEdit,
   onToggleStatus,
@@ -453,6 +473,8 @@ function CategoryActions({
 }: {
   category: AdminCategory;
   courseCount: number;
+  statusBusy: boolean;
+  disabled: boolean;
   onView: () => void;
   onEdit: () => void;
   onToggleStatus: () => void;
@@ -460,7 +482,7 @@ function CategoryActions({
 }) {
   return (
     <DropdownMenu>
-      <AdminTableActionTrigger label={`Actions for ${category.name}`} />
+      <AdminTableActionTrigger label={`Actions for ${category.name}`} busy={statusBusy} disabled={disabled} />
       <AdminTableActionContent className="w-52">
         <DropdownMenuItem onClick={onView}>View details</DropdownMenuItem>
         <DropdownMenuItem onClick={onEdit}>
@@ -491,11 +513,11 @@ function CategoryActions({
 
 function CategoryDetailsSheet({
   category,
-  courses,
+  courseCount,
   onOpenChange,
 }: {
   category: AdminCategory | null;
-  courses: readonly AdminCourse[];
+  courseCount: number;
   onOpenChange: (open: boolean) => void;
 }) {
   const Icon = category ? categoryIcons[category.iconKey] ?? Tags : Tags;
@@ -540,23 +562,11 @@ function CategoryDetailsSheet({
             </p>
             <div className="rounded-lg border border-brand-border bg-background p-3">
               <p className="text-xs font-medium text-brand-text">
-                {courses.length} associated{" "}
-                {courses.length === 1 ? "course" : "courses"}
+                {courseCount} associated{" "}
+                {courseCount === 1 ? "course" : "courses"}
               </p>
-              {courses.length > 0 && (
-                <ul className="mt-2 space-y-1.5">
-                  {courses.slice(0, 8).map((course) => (
-                    <li
-                      key={course.id}
-                      className="truncate text-xs text-brand-text-muted"
-                    >
-                      {course.title}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
-            {courses.length > 0 && (
+            {courseCount > 0 && (
               <p className="rounded-lg bg-muted px-3 py-2 text-xs text-brand-text-muted">
                 This category cannot be deleted while courses are assigned to it.
                 Reassign or remove those courses first.

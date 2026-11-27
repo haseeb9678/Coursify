@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { toast } from "sonner";
+
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
-import { ImagePlus, X } from "lucide-react";
+import { X } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,22 +38,16 @@ interface CategoryFormDialogProps {
   category: AdminCategory | null;
   categories: readonly AdminCategory[];
   onOpenChange: (open: boolean) => void;
-  onSave: (input: CategoryInput) => boolean;
+  onSave: (input: CategoryInput) => boolean | Promise<boolean>;
 }
 
 const iconOptions = [
-  { value: "code", label: "Code" },
-  { value: "mobile", label: "Mobile" },
-  { value: "data", label: "Data" },
-  { value: "ai", label: "Artificial intelligence" },
-  { value: "security", label: "Security" },
-  { value: "cloud", label: "Cloud" },
-  { value: "design", label: "Design" },
-  { value: "software", label: "Software" },
-  { value: "business", label: "Business" },
-  { value: "marketing", label: "Marketing" },
-  { value: "fundamentals", label: "Fundamentals" },
-  { value: "devops", label: "DevOps" },
+  { value: "PenTool", label: "Design" },
+  { value: "Code2", label: "Code" },
+  { value: "Megaphone", label: "Marketing" },
+  { value: "BriefcaseBusiness", label: "Business" },
+  { value: "Camera", label: "Photography" },
+  { value: "ChartNoAxesColumn", label: "Data" },
 ];
 
 const textareaClassName =
@@ -67,7 +63,6 @@ export default function CategoryFormDialog({
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     Boolean(category),
   );
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     register,
     control,
@@ -91,12 +86,14 @@ export default function CategoryFormDialog({
     onOpenChange(nextOpen);
   };
 
+  const submitting = useRef(false);
   const save = handleSubmit(async (values) => {
     const duplicateSlug = categories.some(
       (item) =>
         item.id !== category?.id && item.slug.toLowerCase() === values.slug,
     );
     if (duplicateSlug) {
+      toast.error("That slug is already in use.");
       setError("slug", {
         type: "manual",
         message: "That slug is already in use.",
@@ -104,45 +101,24 @@ export default function CategoryFormDialog({
       return;
     }
 
-    if (onSave(values)) handleOpenChange(false);
-  });
+    if (await onSave(values)) handleOpenChange(false);
+  }, () => toast.error("Check the highlighted category fields."));
 
-  const selectImage = (file: File | undefined) => {
-    if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("imageDataUrl", {
-        type: "manual",
-        message: "Choose a JPG, PNG, or WebP image.",
-      });
-      return;
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await save(event);
+    } finally {
+      submitting.current = false;
     }
-    if (file.size > 4 * 1024 * 1024) {
-      setError("imageDataUrl", {
-        type: "manual",
-        message: "Choose an image smaller than 4 MB.",
-      });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setValue("imageDataUrl", reader.result, { shouldDirty: true });
-        clearErrors("imageDataUrl");
-      }
-    };
-    reader.onerror = () => {
-      setError("imageDataUrl", {
-        type: "manual",
-        message: "The image preview could not be read.",
-      });
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
     <AdminDialog
       open={open}
+      busy={isSubmitting}
       onOpenChange={handleOpenChange}
       title={category ? "Edit category" : "Create category"}
       description="Category details organize courses in the learning catalog."
@@ -157,17 +133,13 @@ export default function CategoryFormDialog({
           >
             Cancel
           </Button>
-          <Button type="submit" form="category-form" disabled={isSubmitting}>
-            {isSubmitting
-              ? "Saving..."
-              : category
-                ? "Save changes"
-                : "Create category"}
+          <Button type="submit" form="category-form" busy={isSubmitting}>
+            {category ? "Save changes" : "Create category"}
           </Button>
         </>
       }
     >
-      <form id="category-form" onSubmit={save} className="space-y-4">
+      <form id="category-form" onSubmit={submit} className="space-y-4">
         <FormField id="category-name" label="Category name" error={errors.name?.message}>
           <Input
             id="category-name"
@@ -272,28 +244,24 @@ export default function CategoryFormDialog({
         </div>
 
         <div className="space-y-2">
-          <span className="text-xs font-medium text-brand-text">Category image</span>
+          <span className="text-xs font-medium text-brand-text">Category image URL</span>
           <div className="flex flex-wrap items-center gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              aria-label="Choose category image"
-              className="sr-only"
-              onChange={(event) => selectImage(event.target.files?.[0])}
+            <Controller
+              name="imageDataUrl"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="url"
+                  aria-label="Category image URL"
+                  placeholder="https://example.com/category.jpg"
+                  value={field.value ?? ""}
+                  onChange={(event) => {
+                    field.onChange(event.target.value || null);
+                    clearErrors("imageDataUrl");
+                  }}
+                />
+              )}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <ImagePlus size={15} aria-hidden="true" />
-              Choose image
-            </Button>
-            <p className="text-[11px] text-brand-text-muted">
-              JPG, PNG, or WebP up to 4 MB. Preview only; not uploaded.
-            </p>
           </div>
           <Controller
             name="imageDataUrl"
@@ -319,7 +287,6 @@ export default function CategoryFormDialog({
                     onClick={() => {
                       field.onChange(null);
                       clearErrors("imageDataUrl");
-                      if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
                   >
                     <X size={14} aria-hidden="true" />

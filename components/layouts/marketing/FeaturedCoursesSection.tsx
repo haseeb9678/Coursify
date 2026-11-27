@@ -9,17 +9,20 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
+import { FeaturedCoursesSkeleton } from "./MarketingCourseSkeletons";
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
-import type { FeaturedCourse } from "@/features/courses/types/course.types";
-import { ArrowUpRight, Flame, Star } from "lucide-react";
+import type { PublicCourse } from "@/features/courses/types/public-api.types";
+import { ArrowUpRight, Flame } from "lucide-react";
 import { motion } from "motion/react";
 
 interface FeaturedCoursesSectionProps {
-  courses: FeaturedCourse[];
+  courses: PublicCourse[];
+  isLoading?: boolean;
 }
 
 const FeaturedCoursesSection = ({
   courses,
+  isLoading = false,
 }: FeaturedCoursesSectionProps) => {
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -53,7 +56,7 @@ const FeaturedCoursesSection = ({
           <div className="flex flex-col items-center justify-center gap-4 text-center">
             <span className="flex items-center justify-center gap-2 rounded-full border border-primary/30 bg-brand-soft px-6 py-3 text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
               <Flame className="h-5 w-5" />
-              Top Rated Courses
+              Featured Courses
             </span>
 
             <h2 className="max-w-2xl text-2xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-3xl lg:text-4xl">
@@ -66,7 +69,9 @@ const FeaturedCoursesSection = ({
 
           {/* Course Carousel */}
           <div className="min-w-0">
-            {courses.length > 0 ? (
+            {isLoading ? (
+              <FeaturedCoursesSkeleton />
+            ) : courses.length > 0 ? (
               <>
                 <Carousel
                   setApi={setApi}
@@ -137,7 +142,7 @@ function CourseCard({
   course,
   rank,
 }: {
-  course: FeaturedCourse;
+  course: PublicCourse;
   rank: number;
 }) {
   return (
@@ -153,16 +158,23 @@ function CourseCard({
 
       {/* Thumbnail */}
       <Link
-        href={`/courses/${course.id}`}
+        href={`/courses/${course.slug}`}
         className="relative block min-h-[154px] w-[116px] shrink-0 overflow-hidden bg-brand-page-secondary sm:h-48 sm:min-h-0 sm:w-full sm:rounded-xl lg:h-56"
       >
-        <Image
-          src={course.thumbnail}
-          alt={course.title}
-          fill
-          sizes="(max-width: 639px) 116px, (max-width: 1023px) 50vw, 33vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
-        />
+        {course.thumbnailUrl ? (
+          <Image
+            src={course.thumbnailUrl}
+            alt={course.title}
+            fill
+            unoptimized
+            sizes="(max-width: 639px) 116px, (max-width: 1023px) 50vw, 33vw"
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-brand-primary" aria-hidden="true">
+            <Flame size={28} />
+          </div>
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
 
@@ -171,7 +183,7 @@ function CourseCard({
         max-w-[calc(100%-12px)] truncate rounded-full
         border border-brand-border/70 bg-card/95 px-2 py-1
          text-[8px] font-bold uppercase tracking-wide text-brand-primary shadow-sm sm:left-3 sm:top-3 sm:px-3 sm:py-1.5 sm:text-[10px]">
-          {course.category}
+          {course.category.name}
         </span>
       </Link>
 
@@ -182,11 +194,11 @@ function CourseCard({
 
           {/* Category for Mobile */}
           <span className="block truncate text-[9px] font-bold uppercase tracking-wider text-brand-primary sm:hidden">
-            {course.category}
+            {course.category.name}
           </span>
 
           {/* Course Title */}
-          <Link href={`/courses/${course.id}`}>
+          <Link href={`/courses/${course.slug}`}>
             <h3 className="line-clamp-2 text-sm font-bold leading-4 text-card-foreground transition-colors group-hover:text-brand-primary sm:min-h-12 sm:text-lg sm:leading-6 lg:text-xl">
               {course.title}
             </h3>
@@ -194,27 +206,17 @@ function CourseCard({
 
           {/* Instructor */}
           <p className="truncate text-xs text-brand-text-muted sm:text-xs">
-            By {course.instructor}
+            By {course.instructor.name}
           </p>
-
-          {/* Rating */}
-          <div className="flex flex-wrap items-center gap-1 text-[10px] sm:gap-1.5 sm:text-sm">
-            <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400 sm:h-4 sm:w-4" />
-
-            <span className="font-bold text-card-foreground">
-              {course.rating.toFixed(1)}
-            </span>
-
-            <span className="text-brand-text-muted">
-              ({course.reviewCount.toLocaleString()})
-            </span>
-          </div>
+          <p className="line-clamp-2 text-[11px] leading-5 text-brand-text-muted">
+            {course.shortDescription}
+          </p>
         </div>
 
         {/* CTA */}
         <div className="mt-2 border-t border-brand-border/70 pt-2 sm:mt-5 sm:border-0 sm:pt-0">
-          <motion.span
-            whileTap={{ scale: 0.98 }}
+          <Link
+            href={`/courses/${course.slug}`}
             className="relative flex w-full max-w-max items-center justify-center gap-1.5 overflow-hidden rounded-lg border border-primary/50 px-2.5 py-2 text-[10px] font-semibold text-primary transition-all duration-300 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/20 sm:gap-2 sm:px-5 sm:py-3.5 sm:text-sm"
           >
             {/* Hover Light Sweep */}
@@ -226,7 +228,7 @@ function CourseCard({
             <span className="relative">Check course</span>
 
             <ArrowUpRight className="relative h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 sm:h-[17px] sm:w-[17px]" />
-          </motion.span>
+          </Link>
         </div>
 
         {/* Rank counter (bottom of card) */}

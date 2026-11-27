@@ -12,8 +12,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getGraphQLErrorMessage } from "@/lib/graphql/error";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -41,28 +41,28 @@ import AdminPageHeader from "@/components/layouts/admin/shared/AdminPageHeader";
 import AdminStatsGrid from "@/components/layouts/admin/shared/AdminStatsGrid";
 import AdminTableToolbar from "@/components/layouts/admin/shared/AdminTableToolbar";
 import CourseStatusBadge from "@/components/layouts/admin/courses/CourseStatusBadge";
-import LearningSampleNotice from "@/components/layouts/admin/learning/LearningSampleNotice";
+import AdminErrorState from "@/components/layouts/admin/shared/AdminErrorState";
 import { useAdminTableState } from "@/features/admin/hooks/use-admin-table-state";
-import { sampleAdminInstructors } from "@/features/admin/data/instructors.data";
-import { sampleAdminUsers } from "@/features/admin/data/users.data";
 import { useAuthStore } from "@/features/auth/store/auth.store";
-import { useLearningDemoStore } from "@/features/admin/store/learning-demo.store";
+import {
+  useAdminApprovalDetails,
+  useAdminApprovalStats,
+  useAdminCourseApprovals,
+  useCourseCategoryOptions,
+  useDecideCourseReview,
+} from "@/features/admin/hooks/use-admin-learning";
 import type {
   AdminCourse,
   CourseApprovalFilters,
-  CourseReviewDecision,
 } from "@/features/admin/types/learning.types";
-import {
-  courseReviewChecklist,
-  filterCourseApprovals,
-  getCourseApprovalStats,
-} from "@/features/admin/utils/learning.utils";
 import {
   downloadCsv,
   formatManagementDate,
-  paginateRecords,
   sortRecords,
 } from "@/features/admin/utils/management.utils";
+import type { CourseReviewRecord } from "@/features/admin/types/learning-api.types";
+
+type ApprovalFilters = Pick<CourseApprovalFilters, "search" | "categoryId" | "status">;
 
 type ApprovalStatusFilter =
   | "ALL"
@@ -71,7 +71,7 @@ type ApprovalStatusFilter =
   | "REJECTED";
 
 type PendingDecision = {
-  decision: CourseReviewDecision;
+  decision: "APPROVED" | "REJECTED";
   course: AdminCourse;
 } | null;
 
@@ -85,47 +85,39 @@ const visibleColumns = [
   "actions",
 ];
 
-export default function AdminCourseApprovalsClient() {
+export default function AdminCourseApprovalsClient({ initialCourseId }: { initialCourseId?: string }) {
   const router = useRouter();
-  const courses = useLearningDemoStore((state) => state.courses);
-  const categories = useLearningDemoStore((state) => state.categories);
-  const reviews = useLearningDemoStore((state) => state.reviews);
-  const reviewChecklists = useLearningDemoStore(
-    (state) => state.reviewChecklists,
-  );
-  const toggleReviewChecklist = useLearningDemoStore(
-    (state) => state.toggleReviewChecklist,
-  );
-  const reviewCourse = useLearningDemoStore((state) => state.reviewCourse);
   const reviewerId = useAuthStore((state) => state.user?.id ?? null);
   const table = useAdminTableState();
-  const [filters, setFilters] = useState<CourseApprovalFilters>({
+  const [filters, setFilters] = useState<ApprovalFilters>({
     search: "",
     categoryId: "ALL",
     status: "ALL",
-    submittedWithin: "ALL",
   });
   const [shownColumns, setShownColumns] = useState(visibleColumns);
-  const [activeCourse, setActiveCourse] = useState<AdminCourse | null>(null);
+  const [activeCourseId, setActiveCourseId] = useState(initialCourseId ?? "");
   const [pendingDecision, setPendingDecision] = useState<PendingDecision>(null);
   const [feedback, setFeedback] = useState("");
 
-  const instructorNames = useMemo(
-    () =>
-      new Map(
-        sampleAdminInstructors.map((profile) => [
-          profile.userId,
-          sampleAdminUsers.find((user) => user.id === profile.userId)?.name ??
-            "Sample instructor",
-        ]),
-      ),
-    [],
+  const filter = {
+    ...(filters.search.trim() ? { search: filters.search.trim() } : {}),
+    ...(filters.categoryId !== "ALL" ? { categoryId: filters.categoryId } : {}),
+    ...(filters.status !== "ALL" ? { status: filters.status } : {}),
+  };
+  const approvalQuery = useAdminCourseApprovals(
+    { page: table.page, limit: table.pageSize },
+    filter,
   );
-  const approvalCourses = useMemo(
-    () =>
-      filterCourseApprovals(courses, filters, categories, instructorNames),
-    [categories, courses, filters, instructorNames],
-  );
+  const statsQuery = useAdminApprovalStats();
+  const categoriesQuery = useCourseCategoryOptions();
+  const approvalDetailsQuery = useAdminApprovalDetails(activeCourseId, "always");
+  const decideReview = useDecideCourseReview();
+  const courses = approvalQuery.data?.items ?? [];
+  const activeCourse = approvalDetailsQuery.data?.course ?? courses.find((course) => course.id === activeCourseId);
+  const canRecordDecision = activeCourse?.status === "PENDING_REVIEW" &&
+    approvalDetailsQuery.isSuccess && !approvalDetailsQuery.isFetching && !decideReview.isPending;
+  const categories = categoriesQuery.data ?? [];
+  const approvalCourses = courses;
   const sortedCourses = useMemo(
     () =>
       sortRecords(approvalCourses, table.sorting, (course, column) => {
@@ -133,9 +125,9 @@ export default function AdminCourseApprovalsClient() {
           case "course":
             return course.title;
           case "category":
-            return categories.find((item) => item.id === course.categoryId)?.name ?? "";
+            return course.categoryName ?? "";
           case "instructor":
-            return instructorNames.get(course.instructorId) ?? "";
+            return course.instructorName ?? "";
           case "status":
             return course.status;
           case "submittedAt":
@@ -146,20 +138,14 @@ export default function AdminCourseApprovalsClient() {
             return null;
         }
       }),
-    [approvalCourses, categories, instructorNames, table.sorting],
+    [approvalCourses, table.sorting],
   );
-  const page = paginateRecords(sortedCourses, table.page, table.pageSize);
-  const stats = getCourseApprovalStats(courses, reviews);
-  const selectedChecklist = activeCourse
-    ? reviewChecklists[activeCourse.id] ?? []
-    : [];
-  const checklistComplete =
-    selectedChecklist.length === courseReviewChecklist.length;
-  const feedbackValid = feedback.trim().length >= 10;
+  const stats = statsQuery.data;
+  const feedbackValid = feedback.trim().length >= 20;
 
-  const setFilter = <K extends keyof CourseApprovalFilters>(
+  const setFilter = <K extends keyof ApprovalFilters>(
     key: K,
-    value: CourseApprovalFilters[K],
+    value: ApprovalFilters[K],
   ) => {
     setFilters((current) => ({ ...current, [key]: value }));
     table.setPage(1);
@@ -170,7 +156,6 @@ export default function AdminCourseApprovalsClient() {
       search: "",
       categoryId: "ALL",
       status: "ALL",
-      submittedWithin: "ALL",
     });
     table.setPage(1);
     table.clearSelection();
@@ -178,8 +163,7 @@ export default function AdminCourseApprovalsClient() {
   const filtersActive =
     Boolean(filters.search.trim()) ||
     filters.categoryId !== "ALL" ||
-    filters.status !== "ALL" ||
-    filters.submittedWithin !== "ALL";
+    filters.status !== "ALL";
 
   const columns = useMemo<AdminTableColumn<AdminCourse>[]>(
     () => [
@@ -202,19 +186,15 @@ export default function AdminCourseApprovalsClient() {
       {
         id: "category",
         header: "Category",
-        sortValue: (course) =>
-          categories.find((item) => item.id === course.categoryId)?.name ?? "",
-        cell: (course) =>
-          categories.find((item) => item.id === course.categoryId)?.name ??
-          "Uncategorized",
+        sortValue: (course) => course.categoryName ?? "",
+        cell: (course) => course.categoryName ?? "—",
       },
       {
         id: "instructor",
         header: "Instructor",
         sortValue: (course) =>
-          instructorNames.get(course.instructorId) ?? "",
-        cell: (course) =>
-          instructorNames.get(course.instructorId) ?? "Instructor unavailable",
+          course.instructorName ?? "",
+        cell: (course) => course.instructorName ?? "—",
       },
       {
         id: "status",
@@ -255,7 +235,7 @@ export default function AdminCourseApprovalsClient() {
                 <DropdownMenuItem
                   onClick={() => {
                     setFeedback("");
-                    setActiveCourse(course);
+                    setActiveCourseId(course.id);
                   }}
                 >
                   <ClipboardCheck size={14} aria-hidden="true" />
@@ -274,7 +254,7 @@ export default function AdminCourseApprovalsClient() {
         ),
       },
     ],
-    [categories, instructorNames, router],
+    [router],
   );
 
   const exportCourses = (mode: AdminExportMode) => {
@@ -295,75 +275,56 @@ export default function AdminCourseApprovalsClient() {
       ["Course", "Category", "Instructor", "Status", "Submitted", "Updated"],
       records.map((course) => [
         course.title,
-        categories.find((item) => item.id === course.categoryId)?.name ?? "",
-        instructorNames.get(course.instructorId) ?? "",
+        course.categoryName ?? "",
+        course.instructorName ?? "",
         course.status,
         course.submittedAt,
         course.updatedAt,
       ]),
     );
-    toast.success(`Exported ${records.length} sample review records.`);
+    toast.success(`Exported ${records.length} loaded review records.`);
   };
 
-  const openDecision = (decision: CourseReviewDecision) => {
-    if (!activeCourse) return;
+  const closeCourse = () => {
+    setActiveCourseId("");
+    setFeedback("");
+    if (initialCourseId) router.replace("/admin/course-approvals");
+  };
+
+  const openDecision = (decision: "APPROVED" | "REJECTED") => {
+    if (!activeCourse || !canRecordDecision) return;
     if (!reviewerId) {
       toast.error("Your authenticated admin profile is not available.");
       return;
     }
-    if (decision === "APPROVED" && !checklistComplete) {
-      toast.error("Complete each manual review checklist item before approval.");
-      return;
-    }
     if (decision !== "APPROVED" && !feedbackValid) {
-      toast.error("Add at least 10 characters of reviewer feedback.");
+      toast.error("Add at least 20 characters of reviewer feedback.");
       return;
     }
     setPendingDecision({ decision, course: activeCourse });
   };
 
-  const confirmDecision = () => {
+  const confirmDecision = async () => {
     if (!pendingDecision || !reviewerId) {
       toast.error("Your authenticated admin profile is not available.");
       return;
     }
-    const saved = reviewCourse(
-      pendingDecision.course.id,
-      reviewerId,
-      pendingDecision.decision,
-      feedback.trim(),
-    );
-    if (!saved) {
-      toast.error("This submission is no longer waiting for review.");
-      return;
+    try {
+      await decideReview.mutateAsync({
+        decision: pendingDecision.decision === "APPROVED" ? "approve" : "reject",
+        courseId: pendingDecision.course.id,
+        feedback: feedback.trim(),
+      });
+      toast.success(
+        `${pendingDecision.course.title} was ${pendingDecision.decision.toLowerCase()}.`,
+      );
+      setPendingDecision(null);
+      closeCourse();
+      table.clearSelection();
+    } catch (error) {
+      toast.error(getGraphQLErrorMessage(error));
     }
-    const label =
-      pendingDecision.decision === "APPROVED"
-        ? "approved"
-        : pendingDecision.decision === "REJECTED"
-          ? "rejected"
-          : "returned for changes";
-    toast.success(
-      `${pendingDecision.course.title} was ${label} in the sample workspace.`,
-    );
-    setPendingDecision(null);
-    setActiveCourse(null);
-    setFeedback("");
-    table.clearSelection();
   };
-
-  const recentReviewActivity = useMemo(
-    () =>
-      reviews
-        .slice()
-        .sort(
-          (left, right) =>
-            new Date(right.createdAt).getTime() -
-            new Date(left.createdAt).getTime(),
-        )
-        .slice(0, 5),
-    [reviews],
-  );
 
   return (
     <section className="mx-auto w-full max-w-450 space-y-5 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
@@ -373,39 +334,38 @@ export default function AdminCourseApprovalsClient() {
         actions={
           <AdminExportButton
             selectedCount={table.selectedIds.size}
-            filteredCount={approvalCourses.length}
+            filteredCount={approvalQuery.data?.meta.total ?? 0}
             onExport={exportCourses}
           />
         }
       />
-      <LearningSampleNotice />
       <AdminStatsGrid
         stats={[
           {
             label: "Awaiting review",
-            value: stats.pendingReviews,
+            value: stats?.pendingReviews ?? "—",
             description: "Submissions requiring attention",
             icon: Clock3,
             tone: "amber",
           },
           {
             label: "Approved",
-            value: stats.approvedCourses,
+            value: stats?.approvedCourses ?? "—",
             description: "Ready for publication",
             icon: Check,
             tone: "green",
           },
           {
             label: "Changes requested",
-            value: stats.rejectedCourses,
+            value: stats?.rejectedCourses ?? "—",
             description: "Returned to course authors",
             icon: MessageSquareText,
             tone: "red",
           },
           {
             label: "Reviewed this month",
-            value: stats.reviewedThisMonth,
-            description: "Sample review history",
+            value: stats?.reviewedThisMonth ?? "—",
+            description: "Recorded backend decisions",
             icon: ShieldCheck,
             tone: "violet",
           },
@@ -448,32 +408,27 @@ export default function AdminCourseApprovalsClient() {
                 )
               }
             />
-            <AdminFilterSelect
-              label="Filter by submission date"
-              value={filters.submittedWithin}
-              options={[
-                { value: "ALL", label: "Any submission date" },
-                { value: "30_DAYS", label: "Last 30 days" },
-                { value: "12_MONTHS", label: "Last 12 months" },
-              ]}
-              onChange={(value) => {
-                if (
-                  value === "ALL" ||
-                  value === "30_DAYS" ||
-                  value === "12_MONTHS"
-                ) {
-                  setFilter("submittedWithin", value);
-                }
-              }}
-            />
           </>
         }
       />
+      {approvalQuery.isError && (
+        <AdminErrorState
+          title="Course approvals could not be loaded"
+          description={approvalQuery.error.message}
+        />
+      )}
       <AdminDataTable
-        rows={page.items}
+        rows={sortedCourses}
         columns={columns}
         getRowId={(course) => course.id}
-        pagination={page.meta}
+        pagination={approvalQuery.data?.meta ?? {
+          page: table.page,
+          limit: table.pageSize,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrevious: false,
+        }}
         onPageChange={(nextPage) => {
           table.clearSelection();
           table.setPage(nextPage);
@@ -491,61 +446,17 @@ export default function AdminCourseApprovalsClient() {
         onToggleRows={table.toggleRows}
         visibleColumnIds={shownColumns}
         onVisibleColumnsChange={setShownColumns}
+        isLoading={approvalQuery.isLoading}
+        isPlaceholderData={approvalQuery.isPlaceholderData}
+        error={approvalQuery.isError ? approvalQuery.error.message : null}
         emptyTitle="No submissions match these filters"
         emptyDescription="Try a different search or clear the current filters."
       />
 
-      <section className="rounded-xl border border-brand-border bg-card p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-brand-text">
-          Recent review activity
-        </h2>
-        {recentReviewActivity.length === 0 ? (
-          <p className="mt-3 text-xs text-brand-text-muted">
-            No sample review decisions have been recorded.
-          </p>
-        ) : (
-          <ul className="mt-3 divide-y divide-brand-border">
-            {recentReviewActivity.map((review) => {
-              const reviewedCourse = courses.find(
-                (course) => course.id === review.courseId,
-              );
-              return (
-                <li
-                  key={review.id}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-brand-text">
-                      {reviewedCourse?.title ?? "Course unavailable"}
-                    </p>
-                    <p className="mt-1 text-[11px] text-brand-text-muted">
-                      {review.feedback || "No feedback recorded"}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <ReviewDecisionBadge decision={review.decision} />
-                    <time
-                      dateTime={review.createdAt}
-                      className="text-[11px] text-brand-text-muted"
-                    >
-                      {formatManagementDate(review.createdAt)}
-                    </time>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
 
       <Sheet
-        open={activeCourse !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setActiveCourse(null);
-            setFeedback("");
-          }
-        }}
+        open={activeCourseId !== ""}
+        onOpenChange={(open) => { if (!open) closeCourse(); }}
       >
         <SheetContent
           side="right"
@@ -554,10 +465,14 @@ export default function AdminCourseApprovalsClient() {
           <SheetHeader className="border-b border-brand-border pr-14">
             <SheetTitle>Review course submission</SheetTitle>
             <SheetDescription>
-              Check each item manually. This sample workflow does not claim to
-              automatically verify course quality.
+              Review backend readiness checks and record a decision for this submission.
             </SheetDescription>
           </SheetHeader>
+          {!activeCourse && (
+            <p className="p-5 text-sm text-brand-text-muted" role={approvalDetailsQuery.isError ? "alert" : "status"}>
+              {approvalDetailsQuery.isError ? getGraphQLErrorMessage(approvalDetailsQuery.error) : "Loading submission..."}
+            </p>
+          )}
           {activeCourse && (
             <div className="space-y-5 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -566,12 +481,9 @@ export default function AdminCourseApprovalsClient() {
                     {activeCourse.title}
                   </h3>
                   <p className="mt-1 text-xs text-brand-text-muted">
-                    {categories.find(
-                      (category) => category.id === activeCourse.categoryId,
-                    )?.name ?? "Uncategorized"}
+                    {activeCourse.categoryName ?? "—"}
                     {" · "}
-                    {instructorNames.get(activeCourse.instructorId) ??
-                      "Instructor unavailable"}
+                    {activeCourse.instructorName ?? "—"}
                   </p>
                 </div>
                 <CourseStatusBadge status={activeCourse.status} />
@@ -586,36 +498,48 @@ export default function AdminCourseApprovalsClient() {
                 <p className="mt-2 text-[11px] text-brand-text-muted">
                   Submitted {formatManagementDate(activeCourse.submittedAt)}
                 </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => router.push(`/admin/courses/${activeCourse.id}/curriculum`)}
+                >
+                  View curriculum
+                </Button>
               </div>
-              <fieldset className="space-y-3">
-                <legend className="text-sm font-semibold text-brand-text">
-                  Manual review checklist
-                </legend>
-                <div className="space-y-2">
-                  {courseReviewChecklist.map((item) => {
-                    const checked = selectedChecklist.includes(item.id);
-                    return (
-                      <label
-                        key={item.id}
-                        className="flex cursor-pointer items-start gap-3 rounded-lg border border-brand-border p-3 text-xs text-brand-text transition-colors hover:bg-brand-page-secondary"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={() =>
-                            toggleReviewChecklist(activeCourse.id, item.id)
-                          }
-                          aria-label={item.label}
-                          className="mt-0.5"
-                        />
-                        <span>{item.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-                <p className="text-[11px] text-brand-text-muted" aria-live="polite">
-                  {selectedChecklist.length} of {courseReviewChecklist.length} items reviewed.
-                </p>
-              </fieldset>
+              <section aria-live="polite" className="space-y-2">
+                <h4 className="text-sm font-semibold text-brand-text">Backend readiness checks</h4>
+                {approvalDetailsQuery.isLoading ? (
+                  <p className="text-xs text-brand-text-muted">Checking course readiness…</p>
+                ) : approvalDetailsQuery.isError ? (
+                  <p role="alert" className="text-xs text-destructive">
+                    {approvalDetailsQuery.error.message}
+                  </p>
+                ) : approvalDetailsQuery.data?.readinessErrors.length ? (
+                  <ul className="space-y-1 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
+                    {approvalDetailsQuery.data.readinessErrors.map((message) => (
+                      <li key={message}>{message}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-emerald-700 dark:text-emerald-400">
+                    Backend readiness checks passed.
+                  </p>
+                )}
+                {approvalDetailsQuery.data?.recentReviews.map((review) => (
+                  <div key={review.id} className="rounded-lg border border-brand-border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <ReviewDecisionBadge decision={review.decision} />
+                      <time className="text-[11px] text-brand-text-muted">
+                        {formatManagementDate(review.createdAt)}
+                      </time>
+                    </div>
+                    <p className="mt-2 text-xs text-brand-text-muted">
+                      {review.reviewer.name}: {review.feedback || "No feedback recorded."}
+                    </p>
+                  </div>
+                ))}
+              </section>
               <div className="space-y-2">
                 <label
                   htmlFor="reviewer-feedback"
@@ -623,13 +547,14 @@ export default function AdminCourseApprovalsClient() {
                 >
                   Reviewer feedback
                   <span className="ml-1 font-normal text-brand-text-muted">
-                    (required for rejection or requested changes)
+                    (required for rejection; at least 20 characters)
                   </span>
                 </label>
                 <textarea
                   id="reviewer-feedback"
                   rows={4}
                   maxLength={1200}
+                  disabled={!canRecordDecision}
                   value={feedback}
                   onChange={(event) => setFeedback(event.target.value)}
                   placeholder="Share actionable feedback with the course author."
@@ -648,7 +573,7 @@ export default function AdminCourseApprovalsClient() {
                 <Button
                   type="button"
                   variant="destructive"
-                  disabled={!reviewerId || !feedbackValid}
+                  disabled={!reviewerId || !canRecordDecision || !feedbackValid}
                   onClick={() => openDecision("REJECTED")}
                 >
                   <X size={14} aria-hidden="true" />
@@ -656,16 +581,11 @@ export default function AdminCourseApprovalsClient() {
                 </Button>
                 <Button
                   type="button"
-                  variant="outline"
-                  disabled={!reviewerId || !feedbackValid}
-                  onClick={() => openDecision("CHANGES_REQUESTED")}
-                >
-                  <MessageSquareText size={14} aria-hidden="true" />
-                  Request changes
-                </Button>
-                <Button
-                  type="button"
-                  disabled={!reviewerId || !checklistComplete}
+                  disabled={
+                    !reviewerId ||
+                    !canRecordDecision ||
+                    (approvalDetailsQuery.data?.readinessErrors.length ?? 0) > 0
+                  }
                   onClick={() => openDecision("APPROVED")}
                 >
                   <Check size={14} aria-hidden="true" />
@@ -687,7 +607,7 @@ export default function AdminCourseApprovalsClient() {
             ? "Approve this course?"
             : pendingDecision?.decision === "REJECTED"
               ? "Reject this course?"
-              : "Request course changes?"
+              : "Record this decision?"
         }
         description={
           pendingDecision
@@ -699,7 +619,7 @@ export default function AdminCourseApprovalsClient() {
             ? "Approve course"
             : pendingDecision?.decision === "REJECTED"
               ? "Reject course"
-              : "Request changes"
+              : "Confirm"
         }
         isDestructive={pendingDecision?.decision === "REJECTED"}
         onConfirm={confirmDecision}
@@ -722,7 +642,7 @@ function isApprovalStatus(
 function ReviewDecisionBadge({
   decision,
 }: {
-  decision: CourseReviewDecision;
+  decision: CourseReviewRecord["decision"];
 }) {
   const text =
     decision === "APPROVED"

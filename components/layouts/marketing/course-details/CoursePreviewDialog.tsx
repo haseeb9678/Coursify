@@ -19,7 +19,7 @@ export default function CoursePreviewDialog({
 }: CoursePreviewDialogProps) {
   return (
     <AnimatePresence>
-      {open && (
+      {open && course.previewVideoUrl && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
@@ -47,13 +47,16 @@ export default function CoursePreviewDialog({
             </button>
 
             <div className="relative aspect-video">
-              <Image
-                src={course.previewImage}
-                alt={course.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 672px"
-                className="object-cover"
-              />
+              {course.previewImage && (
+                <Image
+                  src={course.previewImage}
+                  alt={course.title}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 672px"
+                  className="object-cover"
+                />
+              )}
 
               <div className="absolute inset-0 flex items-center justify-center bg-black/40">
                 <div className="text-center text-white">
@@ -63,9 +66,14 @@ export default function CoursePreviewDialog({
                     Course preview
                   </h3>
 
-                  <p className="mt-1 text-xs text-white/80">
-                    Connect your course preview video when it is ready.
-                  </p>
+                  <a
+                    href={course.previewVideoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-block text-xs text-white/80 underline hover:text-white"
+                  >
+                    Watch preview video
+                  </a>
                 </div>
               </div>
             </div>

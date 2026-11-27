@@ -8,6 +8,7 @@ import {
   ArrowUp,
   BookOpen,
   Clock3,
+  Eye,
   FileText,
   Film,
   GripVertical,
@@ -16,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getGraphQLErrorMessage } from "@/lib/graphql/error";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -32,8 +34,11 @@ import AdminErrorState from "@/components/layouts/admin/shared/AdminErrorState";
 import AdminPageHeader from "@/components/layouts/admin/shared/AdminPageHeader";
 import AdminStatsGrid from "@/components/layouts/admin/shared/AdminStatsGrid";
 import CourseStatusBadge from "@/components/layouts/admin/courses/CourseStatusBadge";
-import LearningSampleNotice from "@/components/layouts/admin/learning/LearningSampleNotice";
-import { useLearningDemoStore } from "@/features/admin/store/learning-demo.store";
+import {
+  useAdminCourse,
+  useAdminCurriculum,
+  useCurriculumMutation,
+} from "@/features/admin/hooks/use-admin-learning";
 import type {
   CourseLesson,
   CourseSection,
@@ -43,6 +48,7 @@ import type {
   SectionInput,
 } from "@/features/admin/types/learning.types";
 import {
+  canEditCourse,
   formatLearningDuration,
   getCurriculumStats,
 } from "@/features/admin/utils/learning.utils";
@@ -62,7 +68,7 @@ type LessonDraft = {
   isPreview: boolean;
   content: string;
   mediaUrl: string;
-  resources: LessonInput["resources"];
+  resources: ({ id?: string } & LessonInput["resources"][number])[];
 };
 type PendingDelete =
   | { kind: "section"; section: CourseSection }
@@ -88,24 +94,57 @@ export default function CurriculumBuilderClient({
   courseId: string;
 }) {
   const router = useRouter();
-  const course = useLearningDemoStore((state) =>
-    state.courses.find((item) => item.id === courseId),
+  const courseQuery = useAdminCourse(courseId);
+  const curriculumQuery = useAdminCurriculum(courseId);
+  const curriculumMutation = useCurriculumMutation();
+  const course = courseQuery.data;
+  const rawSections = curriculumQuery.data?.sections ?? [];
+  const allSections: CourseSection[] = rawSections.map((section) => ({
+    id: section.id,
+    courseId: section.courseId,
+    title: section.title,
+    description: section.description,
+    position: section.position,
+    createdAt: section.createdAt,
+    updatedAt: section.updatedAt,
+  }));
+  const allLessons: CourseLesson[] = rawSections.flatMap((section) =>
+    section.lessons.map((lesson) => ({
+      id: lesson.id,
+      sectionId: lesson.sectionId,
+      title: lesson.title,
+      description: lesson.description,
+      type: lesson.type,
+      durationSeconds: lesson.durationSeconds,
+      position: lesson.position,
+      isPreview: lesson.isPreview,
+      content: lesson.content,
+      mediaUrl: lesson.videoUrl ?? lesson.documentUrl ?? "",
+      resources: lesson.resources.map(({ id, title, type, url }) => ({ id, title, type, url })),
+      createdAt: lesson.createdAt,
+      updatedAt: lesson.updatedAt,
+    })),
   );
-  const allSections = useLearningDemoStore((state) => state.sections);
-  const allLessons = useLearningDemoStore((state) => state.lessons);
-  const addSection = useLearningDemoStore((state) => state.addSection);
-  const updateSection = useLearningDemoStore((state) => state.updateSection);
-  const deleteSection = useLearningDemoStore((state) => state.deleteSection);
-  const moveSection = useLearningDemoStore((state) => state.moveSection);
-  const addLesson = useLearningDemoStore((state) => state.addLesson);
-  const updateLesson = useLearningDemoStore((state) => state.updateLesson);
-  const deleteLesson = useLearningDemoStore((state) => state.deleteLesson);
-  const moveLesson = useLearningDemoStore((state) => state.moveLesson);
   const [sectionDraft, setSectionDraft] = useState<SectionDraft | null>(null);
+  const [viewingLesson, setViewingLesson] = useState<CourseLesson | null>(null);
   const [lessonDraft, setLessonDraft] = useState<LessonDraft | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
   const [formError, setFormError] = useState("");
-  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [lessonTitleError, setLessonTitleError] = useState("");
+  const actionLock = useRef(false);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+
+  const runAction = async (key: string, action: () => Promise<void>) => {
+    if (actionLock.current || isReadOnly) return;
+    actionLock.current = true;
+    setBusyAction(key);
+    try {
+      await action();
+    } finally {
+      actionLock.current = false;
+      setBusyAction(null);
+    }
+  };
 
   const sections = useMemo(
     () =>
@@ -126,14 +165,22 @@ export default function CurriculumBuilderClient({
     [allLessons, sectionIds],
   );
   const stats = getCurriculumStats(sections, lessons);
-  const isReadOnly = course?.status === "ARCHIVED";
+  const isReadOnly = !canEditCourse(course?.status);
 
-  if (!course) {
+  if (courseQuery.isLoading || curriculumQuery.isLoading) {
+    return (
+      <main className="mx-auto w-full max-w-3xl px-4 py-8" aria-live="polite">
+        <p className="text-sm text-brand-text-muted">Loading curriculum…</p>
+      </main>
+    );
+  }
+
+  if (courseQuery.isError || !course) {
     return (
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
         <AdminErrorState
           title="Course not found"
-          description="This sample course may have been removed or its ID is invalid."
+          description={courseQuery.error?.message ?? "The course could not be found."}
         />
         <div className="flex justify-center">
           <Button
@@ -147,14 +194,25 @@ export default function CurriculumBuilderClient({
       </main>
     );
   }
+  if (curriculumQuery.isError) {
+    return (
+      <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
+        <AdminErrorState
+          title="Curriculum could not be loaded"
+          description={curriculumQuery.error.message}
+        />
+        <div className="flex justify-center">
+          <Button type="button" variant="outline" onClick={() => router.push(`/admin/courses/${course.id}`)}>
+            Return to course
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   const wasReviewed = course.status !== "DRAFT";
   const showSaved = (message: string) => {
-    toast.success(
-      wasReviewed
-        ? `${message} The course returned to draft and must be reviewed again.`
-        : message,
-    );
+    toast.success(wasReviewed ? `${message} Submit the updated course for review when ready.` : message);
   };
   const openNewSection = () => {
     setFormError("");
@@ -168,37 +226,92 @@ export default function CurriculumBuilderClient({
       description: section.description,
     });
   };
-  const saveSection = () => {
+  const reorderSectionBy = async (sectionIndex: number, offset: -1 | 1) => {
+    const targetIndex = sectionIndex + offset;
+    if (targetIndex < 0 || targetIndex >= sections.length) return;
+    const ordered = [...sections];
+    const [section] = ordered.splice(sectionIndex, 1);
+    ordered.splice(targetIndex, 0, section);
+    try {
+      await curriculumMutation.mutateAsync({
+        action: "reorder-sections",
+        courseId: course.id,
+        ids: ordered.map((item) => item.id),
+      });
+      showSaved("Section order updated.");
+    } catch (error) {
+      toast.error(getGraphQLErrorMessage(error));
+    }
+  };
+  const reorderLessonBy = async (
+    sectionId: string,
+    lessonIndex: number,
+    offset: -1 | 1,
+  ) => {
+    const sectionLessons = lessons
+      .filter((lesson) => lesson.sectionId === sectionId)
+      .sort((left, right) => left.position - right.position);
+    const targetIndex = lessonIndex + offset;
+    if (targetIndex < 0 || targetIndex >= sectionLessons.length) return;
+    const ordered = [...sectionLessons];
+    const [lesson] = ordered.splice(lessonIndex, 1);
+    ordered.splice(targetIndex, 0, lesson);
+    try {
+      await curriculumMutation.mutateAsync({
+        action: "reorder-lessons",
+        sectionId,
+        ids: ordered.map((item) => item.id),
+      });
+      showSaved("Lesson order updated.");
+    } catch (error) {
+      toast.error(getGraphQLErrorMessage(error));
+    }
+  };
+  const saveSection = async () => {
     if (!sectionDraft) return;
     const parsed = sectionSchema.safeParse({
       title: sectionDraft.title,
       description: sectionDraft.description,
     });
     if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? "Check the section fields.");
+      const message = parsed.error.issues[0]?.message ?? "Check the section fields.";
+      setFormError(message);
+      toast.error(message);
       return;
     }
-    if (sectionDraft.id) {
-      const saved = updateSection(sectionDraft.id, parsed.data);
-      if (!saved) {
-        setFormError("This section is no longer available.");
-        return;
+    try {
+      if (sectionDraft.id) {
+        await curriculumMutation.mutateAsync({
+          action: "update-section",
+          id: sectionDraft.id,
+          ...parsed.data,
+        });
+        showSaved("Section updated.");
+      } else {
+        await curriculumMutation.mutateAsync({
+          action: "create-section",
+          courseId: course.id,
+          ...parsed.data,
+        });
+        showSaved("Section added.");
       }
-      showSaved("Section updated in sample data.");
-    } else {
-      addSection(course.id, parsed.data);
-      showSaved("Section added to sample data.");
+      setSectionDraft(null);
+      setFormError("");
+    } catch (error) {
+      const message = getGraphQLErrorMessage(error);
+      setFormError(message);
+      toast.error(message);
     }
-    setSectionDraft(null);
-    setFormError("");
   };
 
   const openNewLesson = (sectionId: string) => {
     setFormError("");
+    setLessonTitleError("");
     setLessonDraft(emptyLessonDraft(sectionId));
   };
   const openEditLesson = (lesson: CourseLesson) => {
     setFormError("");
+    setLessonTitleError("");
     setLessonDraft({
       id: lesson.id,
       sectionId: lesson.sectionId,
@@ -212,15 +325,18 @@ export default function CurriculumBuilderClient({
       isPreview: lesson.isPreview,
       content: lesson.content,
       mediaUrl: lesson.mediaUrl,
-      resources: lesson.resources.map(({ title, type, url }) => ({
+      resources: lesson.resources.map(({ id, title, type, url }) => ({
+        id,
         title,
         type,
         url,
       })),
     });
   };
-  const saveLesson = () => {
+  const saveLesson = async () => {
     if (!lessonDraft) return;
+    setFormError("");
+    setLessonTitleError("");
     const minutes = lessonDraft.durationMinutes.trim()
       ? Number(lessonDraft.durationMinutes)
       : null;
@@ -228,9 +344,14 @@ export default function CurriculumBuilderClient({
       minutes !== null &&
       (!Number.isInteger(minutes) || minutes < 1 || minutes > 6000)
     ) {
-      setFormError("Duration must be a whole number between 1 and 6000 minutes.");
+      const message = "Duration must be a whole number between 1 and 6000 minutes.";
+      setFormError(message);
+      toast.error(message);
       return;
     }
+    const resourceInput: LessonInput["resources"] = lessonDraft.resources.map(
+      ({ title, type, url }) => ({ title, type, url }),
+    );
     const input: LessonInput = {
       title: lessonDraft.title,
       description: lessonDraft.description,
@@ -239,63 +360,85 @@ export default function CurriculumBuilderClient({
       isPreview: lessonDraft.isPreview,
       content: lessonDraft.content,
       mediaUrl: lessonDraft.mediaUrl,
-      resources: lessonDraft.resources,
+      resources: resourceInput,
     };
     const parsed = lessonSchema.safeParse(input);
     if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? "Check the lesson fields.");
-      return;
-    }
-    if (lessonDraft.id) {
-      const saved = updateLesson(lessonDraft.id, parsed.data);
-      if (!saved) {
-        setFormError("This lesson is no longer available.");
-        return;
+      const issue = parsed.error.issues[0];
+      toast.error(issue?.message ?? "Check the lesson fields.");
+      if (issue?.path[0] === "title") {
+        setLessonTitleError(issue.message);
+      } else {
+        setFormError(issue?.message ?? "Check the lesson fields.");
       }
-      showSaved("Lesson updated in sample data.");
-    } else {
-      addLesson(lessonDraft.sectionId, parsed.data);
-      showSaved("Lesson added to sample data.");
-    }
-    setLessonDraft(null);
-    setFormError("");
-  };
-
-  const selectPdf = (file: File | undefined) => {
-    if (!file || !lessonDraft) return;
-    if (file.type !== "application/pdf") {
-      setFormError("Choose a PDF file.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setFormError("Choose a PDF smaller than 5 MB.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      if (typeof dataUrl !== "string") {
-        setFormError("The PDF preview could not be read.");
-        return;
+    try {
+      const savedLesson = await curriculumMutation.mutateAsync({
+        action: lessonDraft.id ? "update-lesson" : "create-lesson",
+        id: lessonDraft.id ?? undefined,
+        sectionId: lessonDraft.sectionId,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        type: parsed.data.type,
+        content: parsed.data.content,
+        videoUrl: parsed.data.type === "VIDEO" ? parsed.data.mediaUrl : null,
+        documentUrl: parsed.data.type === "PDF" ? parsed.data.mediaUrl : null,
+        durationSeconds: parsed.data.durationSeconds,
+        isPreview: parsed.data.isPreview,
+      });
+      if (!savedLesson || typeof savedLesson !== "object" || !("id" in savedLesson)) {
+        throw new Error("The lesson was saved without a returned ID.");
       }
-      const matchingPdf = lessonDraft.resources.findIndex(
-        (resource) => resource.type === "PDF",
-      );
-      const nextResources = [...lessonDraft.resources];
-      const resource = {
-        title: file.name,
-        type: "PDF" as const,
-        url: dataUrl,
-      };
-      if (matchingPdf < 0) nextResources.push(resource);
-      else nextResources[matchingPdf] = resource;
-      setLessonDraft((current) =>
-        current ? { ...current, mediaUrl: dataUrl, resources: nextResources } : current,
-      );
+      const priorResources = lessonDraft.id
+        ? allLessons.find((lesson) => lesson.id === lessonDraft.id)?.resources ?? []
+        : [];
+      const retained = new Set<string>();
+      const orderedResourceIds: string[] = [];
+      for (const resource of lessonDraft.resources) {
+        if (resource.id) {
+          await curriculumMutation.mutateAsync({
+            action: "update-resource",
+            id: resource.id,
+            title: resource.title,
+            type: resource.type,
+            url: resource.url,
+          });
+          retained.add(resource.id);
+          orderedResourceIds.push(resource.id);
+        } else {
+          const created = await curriculumMutation.mutateAsync({
+            action: "create-resource",
+            lessonId: savedLesson.id,
+            title: resource.title,
+            type: resource.type,
+            url: resource.url,
+          });
+          if (created && typeof created === "object" && "id" in created) {
+            orderedResourceIds.push(created.id);
+          }
+        }
+      }
+      for (const resource of priorResources) {
+        if (!retained.has(resource.id) && !lessonDraft.resources.some((item) => item.id === resource.id)) {
+          await curriculumMutation.mutateAsync({ action: "delete-resource", id: resource.id });
+        }
+      }
+      if (orderedResourceIds.length > 0) {
+        await curriculumMutation.mutateAsync({
+          action: "reorder-resources",
+          lessonId: savedLesson.id,
+          ids: orderedResourceIds,
+        });
+      }
+      showSaved(lessonDraft.id ? "Lesson updated." : "Lesson added.");
+      setLessonDraft(null);
       setFormError("");
-    };
-    reader.onerror = () => setFormError("The PDF preview could not be read.");
-    reader.readAsDataURL(file);
+    } catch (error) {
+      const message = getGraphQLErrorMessage(error);
+      setFormError(message);
+      toast.error(message);
+    }
   };
 
   const addResource = () => {
@@ -326,26 +469,23 @@ export default function CurriculumBuilderClient({
       return { ...current, resources };
     });
   };
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!pendingDelete) return;
-    const removed =
-      pendingDelete.kind === "section"
-        ? deleteSection(pendingDelete.section.id)
-        : deleteLesson(pendingDelete.lesson.id);
-    if (!removed) {
-      toast.error(
+    try {
+      await curriculumMutation.mutateAsync(
         pendingDelete.kind === "section"
-          ? "Delete the section's lessons before removing the section."
-          : "This lesson could not be removed.",
+          ? { action: "delete-section", id: pendingDelete.section.id }
+          : { action: "delete-lesson", id: pendingDelete.lesson.id },
       );
-      return;
+      showSaved(
+        pendingDelete.kind === "section"
+          ? "Section removed."
+          : "Lesson removed.",
+      );
+      setPendingDelete(null);
+    } catch (error) {
+      toast.error(getGraphQLErrorMessage(error));
     }
-    showSaved(
-      pendingDelete.kind === "section"
-        ? "Section removed from sample data."
-        : "Lesson removed from sample data.",
-    );
-    setPendingDelete(null);
   };
 
   return (
@@ -374,11 +514,10 @@ export default function CurriculumBuilderClient({
           All courses
         </Button>
       </div>
-      <LearningSampleNotice />
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-brand-border bg-card px-4 py-3">
         <CourseStatusBadge status={course.status} />
         <span className="text-xs text-brand-text-muted">
-          Editing curriculum updates the course&apos;s review status when applicable.
+          Only draft and changes-requested courses can be edited.
         </span>
       </div>
       <AdminStatsGrid
@@ -415,7 +554,7 @@ export default function CurriculumBuilderClient({
       />
       {isReadOnly && (
         <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
-          Archived courses are read-only. Restore is not part of this sample workflow.
+          Curriculum editing is available only for drafts and courses returned for changes.
         </div>
       )}
       {!isReadOnly && (
@@ -483,11 +622,9 @@ export default function CurriculumBuilderClient({
                         variant="ghost"
                         size="icon-sm"
                         aria-label={`Move section ${section.title} up`}
-                        disabled={index === 0}
-                        onClick={() => {
-                          moveSection(section.id, -1);
-                          showSaved("Section order updated.");
-                        }}
+                        disabled={busyAction !== null || index === 0}
+                        busy={busyAction === `section-${section.id}--1`}
+                        onClick={() => void runAction(`section-${section.id}--1`, () => reorderSectionBy(index, -1))}
                       >
                         <ArrowUp size={15} aria-hidden="true" />
                       </Button>
@@ -496,11 +633,9 @@ export default function CurriculumBuilderClient({
                         variant="ghost"
                         size="icon-sm"
                         aria-label={`Move section ${section.title} down`}
-                        disabled={index === sections.length - 1}
-                        onClick={() => {
-                          moveSection(section.id, 1);
-                          showSaved("Section order updated.");
-                        }}
+                        disabled={busyAction !== null || index === sections.length - 1}
+                        busy={busyAction === `section-${section.id}-1`}
+                        onClick={() => void runAction(`section-${section.id}-1`, () => reorderSectionBy(index, 1))}
                       >
                         <ArrowDown size={15} aria-hidden="true" />
                       </Button>
@@ -585,18 +720,26 @@ export default function CurriculumBuilderClient({
                           </div>
                         </div>
                       </div>
-                      {!isReadOnly && (
+                      {isReadOnly ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`View lesson ${lesson.title}`}
+                          onClick={() => setViewingLesson(lesson)}
+                        >
+                          <Eye size={14} aria-hidden="true" />
+                        </Button>
+                      ) : (
                         <div className="flex shrink-0 items-center gap-1">
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon-sm"
                             aria-label={`Move lesson ${lesson.title} up`}
-                            disabled={lessonIndex === 0}
-                            onClick={() => {
-                              moveLesson(lesson.id, -1);
-                              showSaved("Lesson order updated.");
-                            }}
+                            disabled={busyAction !== null || lessonIndex === 0}
+                            busy={busyAction === `lesson-${lesson.id}--1`}
+                            onClick={() => void runAction(`lesson-${lesson.id}--1`, () => reorderLessonBy(section.id, lessonIndex, -1))}
                           >
                             <ArrowUp size={14} aria-hidden="true" />
                           </Button>
@@ -605,11 +748,9 @@ export default function CurriculumBuilderClient({
                             variant="ghost"
                             size="icon-sm"
                             aria-label={`Move lesson ${lesson.title} down`}
-                            disabled={lessonIndex === sectionLessons.length - 1}
-                            onClick={() => {
-                              moveLesson(lesson.id, 1);
-                              showSaved("Lesson order updated.");
-                            }}
+                            disabled={busyAction !== null || lessonIndex === sectionLessons.length - 1}
+                            busy={busyAction === `lesson-${lesson.id}-1`}
+                            onClick={() => void runAction(`lesson-${lesson.id}-1`, () => reorderLessonBy(section.id, lessonIndex, 1))}
                           >
                             <ArrowDown size={14} aria-hidden="true" />
                           </Button>
@@ -651,7 +792,8 @@ export default function CurriculumBuilderClient({
       )}
 
       <AdminDialog
-        open={sectionDraft !== null}
+        open={!isReadOnly && sectionDraft !== null}
+        busy={busyAction === "section"}
         onOpenChange={(open) => {
           if (!open) {
             setSectionDraft(null);
@@ -665,11 +807,17 @@ export default function CurriculumBuilderClient({
             <Button
               type="button"
               variant="outline"
+              disabled={busyAction !== null}
               onClick={() => setSectionDraft(null)}
             >
               Cancel
             </Button>
-            <Button type="button" onClick={saveSection}>
+            <Button
+              type="button"
+              disabled={busyAction !== null}
+              busy={busyAction === "section"}
+              onClick={() => void runAction("section", saveSection)}
+            >
               Save section
             </Button>
           </>
@@ -712,7 +860,8 @@ export default function CurriculumBuilderClient({
       </AdminDialog>
 
       <AdminDialog
-        open={lessonDraft !== null}
+        open={!isReadOnly && lessonDraft !== null}
+        busy={busyAction === "lesson"}
         onOpenChange={(open) => {
           if (!open) {
             setLessonDraft(null);
@@ -727,11 +876,17 @@ export default function CurriculumBuilderClient({
             <Button
               type="button"
               variant="outline"
+              disabled={busyAction !== null}
               onClick={() => setLessonDraft(null)}
             >
               Cancel
             </Button>
-            <Button type="button" onClick={saveLesson}>
+            <Button
+              type="button"
+              disabled={busyAction !== null}
+              busy={busyAction === "lesson"}
+              onClick={() => void runAction("lesson", saveLesson)}
+            >
               Save lesson
             </Button>
           </>
@@ -740,18 +895,17 @@ export default function CurriculumBuilderClient({
         {lessonDraft && (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Lesson title" id="lesson-title" error={formError}>
+              <Field label="Lesson title" id="lesson-title" error={lessonTitleError}>
                 <Input
                   id="lesson-title"
                   value={lessonDraft.title}
-                  maxLength={100}
-                  onChange={(event) =>
-                    setLessonDraft((current) =>
-                      current
-                        ? { ...current, title: event.target.value }
-                        : current,
-                    )
-                  }
+                  aria-invalid={Boolean(lessonTitleError)}
+                  aria-describedby={lessonTitleError ? "lesson-title-error" : undefined}
+                  onChange={(event) => {
+                    const title = event.currentTarget.value;
+                    setLessonTitleError("");
+                    setLessonDraft((current) => current ? { ...current, title } : current);
+                  }}
                 />
               </Field>
               <Field label="Content type" id="lesson-type">
@@ -815,7 +969,7 @@ export default function CurriculumBuilderClient({
               />
             </Field>
             {lessonDraft.type === "VIDEO" && (
-              <Field label="Video URL" id="lesson-video-url" error={formError}>
+              <Field label="Video URL" id="lesson-video-url">
                 <Input
                   id="lesson-video-url"
                   type="url"
@@ -832,7 +986,7 @@ export default function CurriculumBuilderClient({
               </Field>
             )}
             {lessonDraft.type === "TEXT" && (
-              <Field label="Lesson content" id="lesson-content" error={formError}>
+              <Field label="Lesson content" id="lesson-content">
                 <textarea
                   id="lesson-content"
                   rows={7}
@@ -850,32 +1004,21 @@ export default function CurriculumBuilderClient({
               </Field>
             )}
             {lessonDraft.type === "PDF" && (
-              <div className="space-y-2">
-                <span className="text-xs font-medium text-brand-text">
-                  PDF file
-                </span>
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  aria-label="Choose a PDF lesson file"
-                  className="sr-only"
-                  onChange={(event) => selectPdf(event.target.files?.[0])}
+              <Field label="PDF lesson URL" id="lesson-pdf-url">
+                <Input
+                  id="lesson-pdf-url"
+                  type="url"
+                  placeholder="https://"
+                  value={lessonDraft.mediaUrl}
+                  onChange={(event) =>
+                    setLessonDraft((current) =>
+                      current
+                        ? { ...current, mediaUrl: event.target.value }
+                        : current,
+                    )
+                  }
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => pdfInputRef.current?.click()}
-                >
-                  <FileText size={14} aria-hidden="true" />
-                  {lessonDraft.resources.find((resource) => resource.type === "PDF")?.title ??
-                    "Choose PDF"}
-                </Button>
-                <p className="text-[11px] text-brand-text-muted">
-                  PDF preview is stored locally in sample data; maximum 5 MB.
-                </p>
-              </div>
+              </Field>
             )}
             <label className="flex items-center gap-2 text-xs text-brand-text">
               <Checkbox
@@ -968,7 +1111,7 @@ export default function CurriculumBuilderClient({
                     aria-label={`Resource ${index + 1} URL`}
                     type={resource.type === "LINK" ? "url" : "text"}
                     placeholder={
-                      resource.type === "LINK" ? "https://" : "PDF data URL"
+                      "https://"
                     }
                     value={resource.url}
                     onChange={(event) =>
@@ -988,8 +1131,37 @@ export default function CurriculumBuilderClient({
         )}
       </AdminDialog>
 
+      <AdminDialog
+        open={viewingLesson !== null}
+        onOpenChange={(open) => { if (!open) setViewingLesson(null); }}
+        title={viewingLesson?.title ?? "View lesson"}
+        description={viewingLesson?.description || undefined}
+        size="lg"
+      >
+        {viewingLesson && (
+          <div className="space-y-4 text-sm text-brand-text">
+            <p>{viewingLesson.type} lesson</p>
+            {viewingLesson.content && <p className="whitespace-pre-wrap wrap-break-word">{viewingLesson.content}</p>}
+            {viewingLesson.mediaUrl && <p className="break-all">{viewingLesson.mediaUrl}</p>}
+            {viewingLesson.resources.length > 0 && (
+              <div>
+                <h3 className="font-semibold">Lesson resources</h3>
+                <ul className="mt-2 space-y-2">
+                  {viewingLesson.resources.map((resource) => (
+                    <li key={resource.id}>
+                      <span className="font-medium">{resource.title}</span>
+                      <p className="break-all text-brand-text-muted">{resource.url}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </AdminDialog>
+
       <AdminConfirmDialog
-        open={pendingDelete !== null}
+        open={!isReadOnly && pendingDelete !== null}
         onOpenChange={(open) => {
           if (!open) setPendingDelete(null);
         }}
@@ -1007,7 +1179,8 @@ export default function CurriculumBuilderClient({
         }
         confirmLabel="Delete"
         isDestructive
-        onConfirm={confirmDelete}
+        isDisabled={busyAction !== null}
+        onConfirm={() => runAction("delete", confirmDelete)}
       />
     </section>
   );
@@ -1031,7 +1204,7 @@ function Field({
       </label>
       {children}
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p id={id + "-error"} role="alert" className="text-xs text-destructive">
           {error}
         </p>
       )}

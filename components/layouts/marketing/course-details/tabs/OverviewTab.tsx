@@ -21,7 +21,7 @@ export default function OverviewTab({
     {
       icon: Clock3,
       label: "Course Duration",
-      value: course.duration,
+      value: course.duration ?? "Not listed",
     },
     {
       icon: PlayCircle,
@@ -31,7 +31,7 @@ export default function OverviewTab({
     {
       icon: Users,
       label: "Enrolled Students",
-      value: course.students,
+      value: course.students ?? "Not available",
     },
     {
       icon: ChartNoAxesColumnIncreasing,

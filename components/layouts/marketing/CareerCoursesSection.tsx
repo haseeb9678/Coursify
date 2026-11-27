@@ -1,14 +1,12 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   BookOpen,
-  Clock3,
   ArrowRight,
-  Star,
   GraduationCap,
 } from "lucide-react";
 
@@ -20,33 +18,26 @@ import {
 } from "@/components/ui/carousel";
 import MotionReveal from "@/components/layouts/marketing/MotionReveal";
 
-import type {
-  CareerCourse,
-  CareerTrack,
-} from "@/features/courses/types/career-course.types";
+import { CareerCourseCardsSkeleton } from "./MarketingCourseSkeletons";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { formatCoursePrice } from "@/features/admin/utils/learning.utils";
+import { useAllPublicCategories, usePublicCourses } from "@/features/courses/hooks/use-public-courses";
+import type { PublicCourse } from "@/features/courses/types/public-api.types";
 
-interface CareerCoursesSectionProps {
-  courses: CareerCourse[];
-  tracks: CareerTrack[];
-}
-
-const CareerCoursesSection = ({
-  courses,
-  tracks,
-}: CareerCoursesSectionProps) => {
-  const [selectedTrack, setSelectedTrack] = useState("all");
+const CareerCoursesSection = () => {
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const categoriesQuery = useAllPublicCategories();
+  const categories = categoriesQuery.data ?? [];
+  const selectedCategoryId = categories.some((category) => category.id === categoryId) ? categoryId : null;
+  const coursesQuery = usePublicCourses(
+    { page: 1, limit: 12 },
+    selectedCategoryId ? { categoryId: selectedCategoryId } : undefined,
+  );
+  const courses = coursesQuery.data?.items ?? [];
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [snapCount, setSnapCount] = useState(0);
-
-  // Filter courses according to the selected career track.
-  const filteredCourses = useMemo(() => {
-    if (selectedTrack === "all") return courses;
-
-    return courses.filter(
-      (course) => course.categorySlug === selectedTrack,
-    );
-  }, [courses, selectedTrack]);
 
   // Synchronize carousel position and pagination dots.
   useEffect(() => {
@@ -68,8 +59,9 @@ const CareerCoursesSection = ({
     };
   }, [api]);
 
-  const handleTrackChange = (slug: string) => {
-    setSelectedTrack(slug);
+  const handleTrackChange = (id: string | null) => {
+    if (id === selectedCategoryId) return;
+    setCategoryId(id);
     setSelectedIndex(0);
     setSnapCount(0);
   };
@@ -99,18 +91,17 @@ const CareerCoursesSection = ({
 
         {/* Career track filter tabs */}
         <div
-          className="mx-auto 2xl:min-w-[60%] flex items-center justify-between gap-6  hide-scrollbar
-          overflow-x-auto border-b border-brand-border sm:gap-8"
+          className="mx-auto flex w-fit max-w-full items-center justify-between gap-6 overflow-x-auto border-b border-brand-border sm:gap-8 2xl:min-w-[60%]"
           role="tablist"
           aria-label="Filter courses by career track"
         >
           <button
             type="button"
             role="tab"
-            aria-selected={selectedTrack === "all"}
-            onClick={() => handleTrackChange("all")}
+            aria-selected={selectedCategoryId === null}
+            onClick={() => handleTrackChange(null)}
             className={`shrink-0 border-b-2 pb-3.5 text-sm font-semibold transition-colors ${
-              selectedTrack === "all"
+              selectedCategoryId === null
                 ? "border-brand-primary text-brand-primary"
                 : "border-transparent text-brand-text-muted hover:text-brand-text"
             }`}
@@ -118,33 +109,62 @@ const CareerCoursesSection = ({
             All Courses
           </button>
 
-          {tracks.map((track) => {
-            const isActive = selectedTrack === track.slug;
+          {categoriesQuery.isPending && [1, 2, 3].map((index) => (
+            <div key={index} className="shrink-0 pb-3.5" aria-hidden="true">
+              <Skeleton className="h-4 w-20 sm:w-24" />
+            </div>
+          ))}
+
+          {categories.map((category) => {
+            const isActive = selectedCategoryId === category.id;
 
             return (
               <button
-                key={track.id}
+                key={category.id}
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                onClick={() => handleTrackChange(track.slug)}
+                onClick={() => handleTrackChange(category.id)}
                 className={`shrink-0 border-b-2 pb-3.5 text-sm font-semibold transition-colors ${
                   isActive
                     ? "border-brand-primary text-brand-primary"
                     : "border-transparent text-brand-text-muted hover:text-brand-text"
                 }`}
               >
-                {track.name}
+                {category.name}
               </button>
             );
           })}
         </div>
 
+        {categoriesQuery.isError && !categoriesQuery.data && (
+          <div className="space-y-3 text-center">
+            <p role="alert" className="text-sm text-destructive">Categories could not be loaded.</p>
+            <Button
+              type="button"
+              variant="outline"
+              busy={categoriesQuery.isFetching}
+              onClick={() => void categoriesQuery.refetch()}
+            >
+              Retry categories
+            </Button>
+          </div>
+        )}
+
         {/* Course carousel */}
-        {filteredCourses.length > 0 ? (
+        {coursesQuery.isError && !coursesQuery.data ? (
+          <div className="space-y-3 py-10 text-center">
+            <p role="alert" className="text-sm text-destructive">Courses could not be loaded.</p>
+            <Button variant="outline" busy={coursesQuery.isFetching} onClick={() => void coursesQuery.refetch()}>
+              Try again
+            </Button>
+          </div>
+        ) : coursesQuery.isPending ? (
+          <CareerCourseCardsSkeleton />
+        ) : courses.length > 0 ? (
           <>
             <Carousel
-              key={selectedTrack}
+              key={selectedCategoryId ?? "all"}
               setApi={setApi}
               opts={{
                 align: "start",
@@ -154,7 +174,7 @@ const CareerCoursesSection = ({
               className="w-full xl:px-8"
             >
               <CarouselContent className="-ml-3 sm:-ml-4 py-5">
-                {filteredCourses.map((course, index) => (
+                {courses.map((course, index) => (
                   <CarouselItem
                     key={course.id}
                     className="pl-3 md:pl-6 basis-1/2 sm:pl-4 md:basis-1/3 xl:basis-1/4"
@@ -205,16 +225,18 @@ const CareerCoursesSection = ({
             </h3>
 
             <p className="mt-1 text-sm text-brand-text-muted">
-              There are currently no courses in this career track.
+              {selectedCategoryId ? "There are currently no courses in this career track." : "There are currently no published courses available."}
             </p>
 
-            <button
-              type="button"
-              onClick={() => handleTrackChange("all")}
-              className="mt-4 text-sm font-semibold text-brand-primary hover:underline"
-            >
-              Browse all courses
-            </button>
+            {selectedCategoryId && (
+              <button
+                type="button"
+                onClick={() => handleTrackChange(null)}
+                className="mt-4 text-sm font-semibold text-brand-primary hover:underline"
+              >
+                Browse all courses
+              </button>
+            )}
           </div>
         )}
 
@@ -244,19 +266,13 @@ const CareerCoursesSection = ({
 };
 
 // Reusable career course card
-function CareerCourseCard({ course }: { course: CareerCourse }) {
-  const formattedPrice = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: course.currency,
-  }).format(course.price);
-
-  const formattedOriginalPrice =
-    course.originalPrice !== undefined
-      ? new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: course.currency,
-        }).format(course.originalPrice)
-      : null;
+function CareerCourseCard({ course }: { course: PublicCourse }) {
+  const { type, currency, priceMinorUnits, discountedPriceMinorUnits } = course.pricing;
+  const currentPrice = discountedPriceMinorUnits ?? priceMinorUnits;
+  const formattedPrice = type === "FREE" ? "Free" : formatCoursePrice(currentPrice, currency);
+  const formattedOriginalPrice = type === "PAID" && currentPrice < priceMinorUnits
+    ? formatCoursePrice(priceMinorUnits, currency)
+    : null;
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-xl border
@@ -269,18 +285,25 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
         className="relative block h-55 overflow-hidden"
         aria-label={`View ${course.title}`}
       >
-        <Image
-          src={course.thumbnail}
-          alt={course.title}
-          fill
-          sizes="(max-width: 639px) 100vw, (max-width: 767px) 50vw, (max-width: 1279px) 33vw, 25vw"
-          className="object-cover transition-transform duration-500 hover:scale-105"
-        />
+        {course.thumbnailUrl ? (
+          <Image
+            src={course.thumbnailUrl}
+            alt={course.title}
+            fill
+            unoptimized
+            sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 25vw"
+            className="object-cover transition-transform duration-500 hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-brand-soft text-brand-primary" aria-hidden="true">
+            <BookOpen size={32} />
+          </div>
+        )}
 
         {/* Category badge */}
         <span className="absolute left-3 top-3 rounded-md bg-card/90 px-2.5 py-1 
         text-[11px] font-bold text-brand-primary shadow-sm backdrop-blur-sm">
-          {course.category}
+          {course.category.name}
         </span>
       </Link>
 
@@ -289,18 +312,9 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
 
         <div className="space-y-3">
 
-          {/* Lessons and duration */}
-          <div className="flex items-center justify-between gap-2 text-xs text-brand-text-muted">
-            <span className="flex items-center gap-1.5">
-              <BookOpen size={14} className="shrink-0 text-brand-primary" />
-              {course.lessonCount} Lessons
-            </span>
-
-            <span className="flex items-center gap-1.5">
-              <Clock3 size={14} className="shrink-0 text-brand-primary" />
-              {course.duration}
-            </span>
-          </div>
+          <p className="text-xs capitalize text-brand-text-muted">
+            {course.level.toLowerCase().replaceAll("_", " ")} level
+          </p>
 
           {/* Course title */}
           <Link href={`/courses/${course.slug}`}>
@@ -310,22 +324,7 @@ function CareerCourseCard({ course }: { course: CareerCourse }) {
             </h3>
           </Link>
 
-          {/* Rating */}
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <Star
-              size={14}
-              fill="currentColor"
-              className="text-amber-400"
-            />
-
-            <span className="font-bold text-brand-text">
-              {course.rating.toFixed(1)}
-            </span>
-
-            <span className="text-brand-text-muted">
-              ({course.reviewCount.toLocaleString()})
-            </span>
-          </div>
+          <p className="truncate text-xs text-brand-text-muted">By {course.instructor.name}</p>
         </div>
 
         {/* Price and enrollment */}

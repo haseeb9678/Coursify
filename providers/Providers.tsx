@@ -7,6 +7,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 import AccessibilityProvider from "@/components/accessibility/AccessibilityProvider";
 
 interface ProvidersProps {
@@ -39,6 +40,7 @@ export default function Providers({ children }: ProvidersProps) {
         storageKey="coursify-theme"
       >
         <AccessibilityProvider>{children}</AccessibilityProvider>
+        <Toaster />
       </ThemeProvider>
     </QueryClientProvider>
   );

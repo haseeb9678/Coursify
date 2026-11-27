@@ -10,6 +10,9 @@ export interface AdminCategory {
   status: CategoryStatus;
   iconKey: string;
   imageDataUrl: string | null;
+  iconColor?: string;
+  iconBackground?: string;
+  courseCount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,7 +30,7 @@ export type CoursePricingType = "FREE" | "PAID";
 
 export interface CoursePricing {
   type: CoursePricingType;
-  currency: "USD";
+  currency: string;
   priceMinorUnits: number;
   discountedPriceMinorUnits: number | null;
 }
@@ -39,7 +42,9 @@ export interface AdminCourse {
   shortDescription: string;
   description: string;
   categoryId: string;
+  categoryName?: string;
   instructorId: string;
+  instructorName?: string;
   level: CourseLevel;
   language: string;
   thumbnailDataUrl: string | null;
@@ -49,8 +54,12 @@ export interface AdminCourse {
   requirements: string[];
   targetAudience: string[];
   status: CourseStatus;
-  enrollmentCount: number;
-  averageRating: number | null;
+  enrollmentCount?: number;
+  averageRating?: number | null;
+  isFeatured?: boolean;
+  canDelete?: boolean;
+  sectionCount?: number;
+  lessonCount?: number;
   createdAt: string;
   updatedAt: string;
   submittedAt: string | null;

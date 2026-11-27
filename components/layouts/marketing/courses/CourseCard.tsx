@@ -6,12 +6,10 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import {
   BookOpen,
-  Clock3,
-  Star,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { CatalogCourse } from "@/features/courses/data/catalog-courses.data";
+import type { CatalogCourse } from "@/features/courses/types/catalog.types";
 
 interface CourseCardProps {
   course: CatalogCourse;
@@ -33,13 +31,20 @@ export default function CourseCard({ course }: CourseCardProps) {
         href={`/courses/${course.id}`}
         className="relative block h-auto w-[116px] shrink-0 overflow-hidden bg-brand-page-secondary sm:h-48 sm:w-full"
       >
-        <Image
-          src={course.image}
-          alt={course.title}
-          fill
-          sizes="(max-width: 639px) 116px, (max-width: 1023px) 33vw, 25vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
-        />
+        {course.image ? (
+          <Image
+            src={course.image}
+            alt={course.title}
+            fill
+            unoptimized
+            sizes="(max-width: 639px) 116px, (max-width: 1023px) 33vw, 25vw"
+            className="object-cover transition-transform duration-700 group-hover:scale-110"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-brand-primary" aria-hidden="true">
+            <BookOpen className="h-8 w-8" />
+          </div>
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-70" />
 
@@ -76,31 +81,12 @@ export default function CourseCard({ course }: CourseCardProps) {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-brand-text-muted sm:justify-between sm:gap-2 sm:text-xs">
             <span className="flex items-center gap-1">
               <BookOpen className="h-3 w-3 shrink-0 text-primary sm:h-3.5 sm:w-3.5" />
-              {course.lessons} Lessons
-            </span>
-
-            <span className="flex items-center gap-1">
-              <Clock3 className="h-3 w-3 shrink-0 text-primary sm:h-3.5 sm:w-3.5" />
-              {course.duration} hrs
-            </span>
-          </div>
-
-          {/* Rating & Level */}
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] sm:gap-1.5 sm:text-xs">
-            <Star className="h-3 w-3 shrink-0 fill-amber-400 text-amber-400 sm:h-3.5 sm:w-3.5" />
-
-            <span className="font-bold text-brand-text">
-              {course.rating.toFixed(1)}
-            </span>
-
-            <span className="text-brand-text-muted">
-              ({course.reviews.toLocaleString()})
-            </span>
-
-            <span className="ml-auto rounded-full bg-brand-page-secondary px-2 py-1 text-[9px] font-medium text-brand-text-muted sm:text-[10px]">
               {course.level}
             </span>
           </div>
+          <p className="line-clamp-2 text-[10px] leading-4 text-brand-text-muted sm:text-xs">
+            {course.shortDescription}
+          </p>
         </div>
 
         {/* Price */}
@@ -109,12 +95,18 @@ export default function CourseCard({ course }: CourseCardProps) {
             <span className="text-sm font-extrabold text-primary sm:text-lg xl:text-xl">
               {course.price === 0
                 ? "Free"
-                : `$${course.price.toFixed(2)}`}
+                : new Intl.NumberFormat(undefined, {
+                    style: "currency",
+                    currency: course.currency,
+                  }).format(course.price)}
             </span>
 
             {course.originalPrice > course.price && (
               <span className="text-[10px] text-brand-text-muted line-through sm:text-xs xl:text-sm">
-                ${course.originalPrice}
+                {new Intl.NumberFormat(undefined, {
+                  style: "currency",
+                  currency: course.currency,
+                }).format(course.originalPrice)}
               </span>
             )}
           </div>

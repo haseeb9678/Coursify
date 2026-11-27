@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { ArrowLeft, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
+import { getGraphQLErrorCode, getGraphQLErrorMessage } from "@/lib/graphql/error";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -18,20 +19,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import CourseLifecycleDialog, { type PendingCourseAction } from "./CourseLifecycleDialog";
+import CourseStatusBadge from "./CourseStatusBadge";
 import AdminErrorState from "@/components/layouts/admin/shared/AdminErrorState";
 import AdminPageHeader from "@/components/layouts/admin/shared/AdminPageHeader";
-import LearningSampleNotice from "@/components/layouts/admin/learning/LearningSampleNotice";
-import { useLearningDemoStore } from "@/features/admin/store/learning-demo.store";
-import { sampleAdminUsers } from "@/features/admin/data/users.data";
-import { sampleAdminInstructors } from "@/features/admin/data/instructors.data";
+import {
+  useAdminCourse,
+  useCourseCategoryOptions,
+  useCourseInstructorOptions,
+  useCreateAdminCourse,
+  useUpdateAdminCourse,
+} from "@/features/admin/hooks/use-admin-learning";
 import type {
   AdminCourse,
-  AdminCourseInput,
   CourseFormInput,
 } from "@/features/admin/types/learning.types";
+import type { AdminCourseInput } from "@/features/admin/types/learning-api.types";
 import { courseFormSchema } from "@/features/admin/schemas/learning.schemas";
 import {
+  canEditCourse,
   formatCoursePrice,
+  getCourseActionCopy,
+  publishedCourseEditWarning,
   parsePriceToMinorUnits,
   slugifyLearningName,
 } from "@/features/admin/utils/learning.utils";
@@ -50,19 +59,24 @@ export default function CourseFormClient({
   courseId?: string;
 }) {
   const router = useRouter();
-  const categories = useLearningDemoStore((state) => state.categories);
-  const courses = useLearningDemoStore((state) => state.courses);
-  const addCourse = useLearningDemoStore((state) => state.addCourse);
-  const updateCourse = useLearningDemoStore((state) => state.updateCourse);
-  const currentCourse = useLearningDemoStore((state) =>
-    courseId
-      ? state.courses.find((item) => item.id === courseId)
-      : undefined,
+  const courseQuery = useAdminCourse(courseId ?? "", "always");
+  const categoriesQuery = useCourseCategoryOptions();
+  const instructorsQuery = useCourseInstructorOptions();
+  const createCourse = useCreateAdminCourse();
+  const updateCourse = useUpdateAdminCourse();
+  const currentCourse = courseQuery.data;
+  const isCheckingCourse = mode === "edit" && (
+    courseQuery.isLoading || (courseQuery.isFetching && !courseQuery.isFetchedAfterMount)
   );
+  const categories = categoriesQuery.data ?? [];
+  const instructorOptions = instructorsQuery.data ?? [];
+  const submitting = useRef(false);
+  const baseline = useRef<AdminCourse | undefined>(undefined);
+  const [pendingAction, setPendingAction] = useState<PendingCourseAction | null>(null);
+  const [pendingSaveMode, setPendingSaveMode] = useState<SaveMode | null>(null);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     mode === "edit",
   );
-  const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const {
     register,
     control,
@@ -70,19 +84,18 @@ export default function CourseFormClient({
     reset,
     getValues,
     setValue,
-    setError,
-    clearErrors,
-    formState: { errors, isDirty, isSubmitting },
+    formState: { errors, isDirty },
   } = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: getCourseFormValues(currentCourse),
   });
 
   useEffect(() => {
-    if (mode === "edit" && currentCourse) {
+    if (mode === "edit" && !isCheckingCourse && currentCourse && baseline.current?.id !== currentCourse.id) {
+      baseline.current = currentCourse;
       reset(getCourseFormValues(currentCourse));
     }
-  }, [currentCourse, mode, reset]);
+  }, [currentCourse, isCheckingCourse, mode, reset]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -100,56 +113,6 @@ export default function CourseFormClient({
     useWatch({ control, name: "learningOutcomes" }) ?? [];
   const requirements = useWatch({ control, name: "requirements" }) ?? [];
   const targetAudience = useWatch({ control, name: "targetAudience" }) ?? [];
-  const availableCategories = categories.filter(
-    (category) =>
-      category.status === "ACTIVE" ||
-      category.id === currentCourse?.categoryId,
-  );
-  const instructorOptions = sampleAdminInstructors
-    .map((profile) => ({
-      id: profile.userId,
-      name:
-        sampleAdminUsers.find((user) => user.id === profile.userId)?.name ??
-        "Sample instructor",
-    }))
-    .filter((item) => item.id);
-
-  const selectThumbnail = (file: File | undefined) => {
-    if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-      setError("thumbnailDataUrl", {
-        type: "manual",
-        message: "Choose a JPG, PNG, or WebP thumbnail.",
-      });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("thumbnailDataUrl", {
-        type: "manual",
-        message: "Choose a thumbnail smaller than 5 MB.",
-      });
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setValue("thumbnailDataUrl", reader.result, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-        clearErrors("thumbnailDataUrl");
-      }
-    };
-    reader.onerror = () => {
-      setError("thumbnailDataUrl", {
-        type: "manual",
-        message: "The thumbnail preview could not be read.",
-      });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const updateTextList = (
     field: "learningOutcomes" | "requirements" | "targetAudience",
     nextValues: string[],
@@ -157,102 +120,60 @@ export default function CourseFormClient({
     setValue(field, nextValues, { shouldDirty: true, shouldValidate: true });
   };
 
-  const saveCourse = (values: CourseFormValues, saveMode: SaveMode) => {
-    const duplicateSlug = courses.some(
-      (course) =>
-        course.id !== currentCourse?.id &&
-        course.slug.toLowerCase() === values.slug.toLowerCase(),
-    );
-    if (duplicateSlug) {
-      setError("slug", {
-        type: "manual",
-        message: "That course slug is already in use.",
-      });
-      return;
-    }
-
-    const priceMinorUnits = values.isFree
-      ? 0
-      : parsePriceToMinorUnits(values.regularPrice);
-    const discountedPriceMinorUnits =
-      values.isFree || values.discountedPrice.trim() === ""
-        ? null
-        : parsePriceToMinorUnits(values.discountedPrice);
-    if (
-      priceMinorUnits === null ||
-      (discountedPriceMinorUnits === null &&
-        !values.isFree &&
-        values.discountedPrice.trim() !== "")
-    ) {
+  const saveCourse = async (values: CourseFormValues, saveMode: SaveMode) => {
+    if (mode === "edit" && (!currentCourse || !canEditCourse(currentCourse.status))) return;
+    const input = getCourseInput(values, currentCourse?.pricing.currency ?? "USD");
+    if (!input) {
       toast.error("Check the course price values and try again.");
       return;
     }
 
-    const input: AdminCourseInput = {
-      title: values.title.trim(),
-      slug: values.slug.trim(),
-      shortDescription: values.shortDescription.trim(),
-      description: values.description.trim(),
-      categoryId: values.categoryId,
-      instructorId: values.instructorId,
-      level: values.level,
-      language: values.language.trim(),
-      thumbnailDataUrl: values.thumbnailDataUrl,
-      promotionalVideoUrl: values.promotionalVideoUrl.trim(),
-      pricing: {
-        type: values.isFree ? "FREE" : "PAID",
-        currency: "USD",
-        priceMinorUnits: priceMinorUnits ?? 0,
-        discountedPriceMinorUnits: discountedPriceMinorUnits ?? null,
-      },
-      learningOutcomes: values.learningOutcomes
-        .map((item) => item.trim())
-        .filter(Boolean),
-      requirements: values.requirements
-        .map((item) => item.trim())
-        .filter(Boolean),
-      targetAudience: values.targetAudience
-        .map((item) => item.trim())
-        .filter(Boolean),
-    };
-
-    let savedCourse: AdminCourse;
-    if (mode === "create") {
-      savedCourse = addCourse(input);
-      toast.success("Course added to the temporary sample workspace.");
-    } else {
-      if (!currentCourse) {
-        toast.error("This course is unavailable.");
-        return;
-      }
-      const previousStatus = currentCourse.status;
-      const updated = updateCourse(currentCourse.id, input);
-      if (!updated) {
-        toast.error("This course is unavailable or archived.");
-        return;
-      }
-      savedCourse = updated;
-      if (previousStatus !== "DRAFT" && updated.status === "DRAFT") {
-        toast.success(
-          "Course changes are in sample data. The course returned to draft and must be reviewed again.",
-        );
+    try {
+      let savedCourse: AdminCourse;
+      if (mode === "create") {
+        savedCourse = await createCourse.mutateAsync(input);
+        toast.success("Course created.");
+      } else if (currentCourse) {
+        const initial = baseline.current ?? currentCourse;
+        const previous = getCourseInput(getCourseFormValues(initial), initial.pricing.currency);
+        const changes: Partial<AdminCourseInput> = { ...input };
+        for (const key of Object.keys(input) as (keyof AdminCourseInput)[]) {
+          if (JSON.stringify(input[key]) === JSON.stringify(previous?.[key])) delete changes[key];
+        }
+        savedCourse = Object.keys(changes).length
+          ? await updateCourse.mutateAsync({ id: currentCourse.id, ...changes })
+          : currentCourse;
+        if (Object.keys(changes).length) toast.success("Course updated.");
       } else {
-        toast.success("Course changes are in the temporary sample workspace.");
+        return;
       }
-    }
-
-    if (saveMode === "curriculum") {
-      router.push(`/admin/courses/${savedCourse.id}/curriculum`);
-    } else {
-      router.push(`/admin/courses/${savedCourse.id}`);
+      if (saveMode === "curriculum") {
+        router.push(`/admin/courses/${savedCourse.id}/curriculum`);
+      } else {
+        router.push(`/admin/courses/${savedCourse.id}`);
+      }
+    } catch (error) {
+      toast.error(getGraphQLErrorMessage(error));
+      if (mode === "edit" && getGraphQLErrorCode(error) === "CONFLICT") void courseQuery.refetch();
     }
   };
-  const submitDraft = handleSubmit((values) =>
-    saveCourse(values, "draft"),
-  );
-  const submitAndContinue = handleSubmit((values) =>
-    saveCourse(values, "curriculum"),
-  );
+  const submitCourse = (saveMode: SaveMode) => async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (submitting.current || (mode === "edit" && !canEditCourse(currentCourse?.status))) return;
+    submitting.current = true;
+    setPendingSaveMode(saveMode);
+    try {
+      await handleSubmit(
+        (values) => saveCourse(values, saveMode),
+        () => toast.error("Check the highlighted course fields."),
+      )(event);
+    } finally {
+      submitting.current = false;
+      setPendingSaveMode(null);
+    }
+  };
+  const submitDraft = submitCourse("draft");
+  const submitAndContinue = submitCourse("curriculum");
 
   const addTextItem = (
     field: "learningOutcomes" | "requirements" | "targetAudience",
@@ -269,12 +190,20 @@ export default function CourseFormClient({
     );
   };
 
-  if (mode === "edit" && !currentCourse) {
+  if (isCheckingCourse) {
+    return (
+      <main className="mx-auto w-full max-w-3xl px-4 py-8" aria-live="polite">
+        <p className="text-sm text-brand-text-muted">Loading course details…</p>
+      </main>
+    );
+  }
+
+  if (mode === "edit" && (courseQuery.isError || !currentCourse)) {
     return (
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
         <AdminErrorState
           title="Course not found"
-          description="This sample course may have been removed or its ID is invalid."
+          description={courseQuery.error?.message ?? "The course could not be found."}
         />
         <div className="flex justify-center">
           <Button
@@ -289,22 +218,28 @@ export default function CourseFormClient({
     );
   }
 
-  if (currentCourse?.status === "ARCHIVED") {
+  if (mode === "edit" && currentCourse && !canEditCourse(currentCourse.status)) {
+    const action = currentCourse.status === "PENDING_REVIEW" ? "withdraw" : "restore";
+    const description = currentCourse.status === "PUBLISHED"
+      ? publishedCourseEditWarning
+      : currentCourse.status === "PENDING_REVIEW"
+        ? "Withdraw this submission before making changes to the course."
+        : "Return this course to draft before editing. It will need to be reviewed again before publication.";
     return (
       <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8">
-        <AdminErrorState
-          title="Archived courses are read-only"
-          description="Unarchiving is not supported in this sample workflow."
-        />
         <div className="flex justify-center">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push(`/admin/courses/${currentCourse.id}`)}
-          >
-            Back to course
+          <CourseStatusBadge status={currentCourse.status} />
+        </div>
+        <AdminErrorState title="Course editing is restricted" description={description} />
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button type="button" variant="outline" onClick={() => router.push(`/admin/courses/${currentCourse.id}`)}>
+            Back to course details
+          </Button>
+          <Button type="button" onClick={() => setPendingAction({ course: currentCourse, action })}>
+            {getCourseActionCopy(action, currentCourse).label}
           </Button>
         </div>
+        <CourseLifecycleDialog pending={pendingAction} onClose={() => setPendingAction(null)} />
       </main>
     );
   }
@@ -330,7 +265,6 @@ export default function CourseFormClient({
           Back to courses
         </Button>
       </div>
-      <LearningSampleNotice />
 
       <form id="course-form" onSubmit={submitDraft} className="space-y-5">
         <FormSection
@@ -388,7 +322,7 @@ export default function CourseFormClient({
                       <SelectValue placeholder="Choose a category" />
                     </SelectTrigger>
                     <SelectContent align="start">
-                      {availableCategories.map((category) => (
+                      {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
@@ -498,32 +432,18 @@ export default function CourseFormClient({
           </FormField>
         </FormSection>
 
-        <FormSection title="Course media" description="Media stays in this local sample workspace.">
+        <FormSection title="Course media" description="Use a publicly accessible image URL and video link.">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-brand-text">Course thumbnail</span>
-              <input
-                ref={thumbnailInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                aria-label="Choose course thumbnail"
-                className="sr-only"
-                onChange={(event) => selectThumbnail(event.target.files?.[0])}
+            <FormField id="course-thumbnail" label="Course thumbnail URL">
+              <Input
+                id="course-thumbnail"
+                type="url"
+                placeholder="https://example.com/course-image.jpg"
+                {...register("thumbnailDataUrl")}
               />
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => thumbnailInputRef.current?.click()}
-                >
-                  <ImagePlus size={15} aria-hidden="true" />
-                  {thumbnailDataUrl ? "Replace thumbnail" : "Choose thumbnail"}
-                </Button>
-                <p className="text-[11px] text-brand-text-muted">
-                  JPG, PNG, or WebP up to 5 MB. No upload is performed.
-                </p>
-              </div>
+            </FormField>
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-brand-text">Thumbnail preview</span>
               {thumbnailDataUrl && (
                 <div className="relative w-fit">
                   <Image
@@ -542,20 +462,11 @@ export default function CourseFormClient({
                     className="absolute -top-2 -right-2"
                     onClick={() => {
                       setValue("thumbnailDataUrl", null, { shouldDirty: true });
-                      clearErrors("thumbnailDataUrl");
-                      if (thumbnailInputRef.current) {
-                        thumbnailInputRef.current.value = "";
-                      }
                     }}
                   >
                     <X size={14} aria-hidden="true" />
                   </Button>
                 </div>
-              )}
-              {errors.thumbnailDataUrl?.message && (
-                <p role="alert" className="text-xs text-destructive">
-                  {errors.thumbnailDataUrl.message}
-                </p>
               )}
             </div>
             <FormField
@@ -573,7 +484,7 @@ export default function CourseFormClient({
           </div>
         </FormSection>
 
-        <FormSection title="Course pricing" description="Prices use USD and integer cents in sample records.">
+        <FormSection title="Course pricing" description="Set the price learners will see in the catalog.">
           <Controller
             name="isFree"
             control={control}
@@ -594,7 +505,7 @@ export default function CourseFormClient({
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 id="course-price"
-                label="Regular price (USD)"
+                label={`Regular price (${currentCourse?.pricing.currency ?? "USD"})`}
                 error={errors.regularPrice?.message}
               >
                 <Input
@@ -620,7 +531,7 @@ export default function CourseFormClient({
             </div>
           )}
           <p className="text-[11px] text-brand-text-muted">
-            Payments are not connected in this sample module.
+            Currency values are saved with the course.
             {currentCourse && (
               <span className="ml-1">
                 Current price:{" "}
@@ -684,22 +595,52 @@ export default function CourseFormClient({
             <Button
               type="submit"
               variant="outline"
-              disabled={isSubmitting}
+              disabled={pendingSaveMode !== null}
+              busy={pendingSaveMode === "draft"}
             >
-              {isSubmitting ? "Saving..." : "Save as draft"}
+              {mode === "create" ? "Save as draft" : "Save changes"}
             </Button>
             <Button
               type="button"
-              disabled={isSubmitting}
+              disabled={pendingSaveMode !== null}
+              busy={pendingSaveMode === "curriculum"}
               onClick={() => void submitAndContinue()}
             >
-              {isSubmitting ? "Saving..." : "Save and continue to curriculum"}
+              Save and continue to curriculum
             </Button>
           </div>
         </div>
       </form>
     </section>
   );
+}
+
+function getCourseInput(values: CourseFormValues, currency: string): AdminCourseInput | null {
+  const price = values.isFree ? 0 : parsePriceToMinorUnits(values.regularPrice);
+  const hasDiscount = !values.isFree && values.discountedPrice.trim() !== "";
+  const discounted = hasDiscount ? parsePriceToMinorUnits(values.discountedPrice) : null;
+  if (price === null || (hasDiscount && discounted === null)) return null;
+  const lines = (items: string[]) => items.map((item) => item.trim()).filter(Boolean);
+
+  return {
+    title: values.title.trim(),
+    slug: values.slug.trim(),
+    shortDescription: values.shortDescription.trim(),
+    description: values.description.trim(),
+    categoryId: values.categoryId,
+    instructorId: values.instructorId,
+    level: values.level,
+    language: values.language.trim(),
+    thumbnailUrl: values.thumbnailDataUrl?.trim() || null,
+    promotionalVideoUrl: values.promotionalVideoUrl.trim() || null,
+    pricingType: values.isFree ? "FREE" : "PAID",
+    currency,
+    priceMinorUnits: price,
+    discountedPriceMinorUnits: discounted,
+    learningOutcomes: lines(values.learningOutcomes),
+    requirements: lines(values.requirements),
+    targetAudience: lines(values.targetAudience),
+  };
 }
 
 function getCourseFormValues(course?: AdminCourse): CourseFormValues {

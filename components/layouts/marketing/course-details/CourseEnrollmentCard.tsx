@@ -22,6 +22,7 @@ import {
   motion,
 } from "motion/react";
 
+import { formatCoursePrice } from "@/features/admin/utils/learning.utils";
 import type { CourseDetails } from "@/features/courses/data/course-details.data";
 import { IncludedItem } from "./CourseDetailUI";
 
@@ -52,18 +53,13 @@ export default function CourseEnrollmentCard({
 
   const shouldReduceMotion = useAccessibleMotion();
 
-  const discount =
-    course.originalPrice > course.price
-      ? Math.round(
-          ((course.originalPrice - course.price) /
-            course.originalPrice) *
-            100,
-        )
-      : 0;
-
-  const formattedPrice = `$${course.price.toFixed(2)}`;
-
-  const formattedOriginalPrice = `$${course.originalPrice.toFixed(2)}`;
+  const { type, currency, priceMinorUnits, discountedPriceMinorUnits } = course.pricing;
+  const price = discountedPriceMinorUnits ?? priceMinorUnits;
+  const discount = priceMinorUnits > price
+    ? Math.round(((priceMinorUnits - price) / priceMinorUnits) * 100)
+    : 0;
+  const formattedPrice = type === "FREE" ? "Free" : formatCoursePrice(price, currency);
+  const formattedOriginalPrice = formatCoursePrice(priceMinorUnits, currency);
 
   const enrollmentHref = `/signup?course=${encodeURIComponent(course.id)}`;
 
@@ -118,10 +114,7 @@ export default function CourseEnrollmentCard({
   };
 
   const includedItems = [
-    {
-      icon: Video,
-      label: `${course.duration} of on-demand video`,
-    },
+    ...(course.duration ? [{ icon: Video, label: `${course.duration} of course content` }] : []),
     {
       icon: Infinity,
       label: "Full lifetime access",
@@ -130,7 +123,7 @@ export default function CourseEnrollmentCard({
       ? [
           {
             icon: FileText,
-            label: `${course.resources} downloadable resources`,
+            label: `${course.resources} lesson resources`,
           },
         ]
       : []),
@@ -159,16 +152,20 @@ export default function CourseEnrollmentCard({
         <button
           type="button"
           onClick={onPreview}
-          aria-label="Preview this course"
+          disabled={!course.previewVideoUrl}
+          aria-label={course.previewVideoUrl ? "Preview this course" : "Preview unavailable"}
           className="group relative block aspect-video w-full cursor-pointer overflow-hidden rounded-t-2xl bg-brand-page-secondary"
         >
-          <Image
-            src={course.previewImage}
-            alt={`${course.title} preview`}
-            fill
-            sizes="(max-width: 1023px) 100vw, 440px"
-            className="object-cover transition-transform duration-700 group-hover:scale-105 motion-reduce:transform-none"
-          />
+          {course.previewImage && (
+            <Image
+              src={course.previewImage}
+              alt={`${course.title} preview`}
+              fill
+              unoptimized
+              sizes="(max-width: 1023px) 100vw, 440px"
+              className="object-cover transition-transform duration-700 group-hover:scale-105 motion-reduce:transform-none"
+            />
+          )}
 
           {/* Overlay */}
           <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-black/10" />
@@ -186,7 +183,7 @@ export default function CourseEnrollmentCard({
             </span>
 
             <span className="text-xs font-semibold tracking-wide text-white sm:text-sm">
-              Preview this course
+              {course.previewVideoUrl ? "Preview this course" : "Preview unavailable"}
             </span>
           </div>
         </button>

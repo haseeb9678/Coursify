@@ -19,13 +19,20 @@ export default function InstructorTab({ course }: { course: CourseDetails }) {
 
       <div className="flex flex-col gap-5 sm:flex-row">
         <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl border border-primary/15 bg-brand-page-secondary">
-          <Image
-            src={course.instructor.image}
-            alt={course.instructor.name}
-            fill
-            sizes="96px"
-            className="object-cover"
-          />
+          {course.instructor.image ? (
+            <Image
+              src={course.instructor.image}
+              alt={course.instructor.name}
+              fill
+              unoptimized
+              sizes="96px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-primary" aria-hidden="true">
+              <Users size={32} />
+            </div>
+          )}
         </div>
 
         <div className="min-w-0 flex-1 space-y-3">
@@ -42,22 +49,22 @@ export default function InstructorTab({ course }: { course: CourseDetails }) {
           <div className="flex flex-wrap gap-4">
             <InstructorStat
               icon={<Star size={15} className="fill-amber-400 text-amber-400" />}
-              value={`${course.instructor.rating} Rating`}
+              value={`${course.instructor.rating ?? "—"} Rating`}
             />
 
             <InstructorStat
               icon={<Users size={15} className="text-primary" />}
-              value={`${course.instructor.students} Students`}
+              value={`${course.instructor.students ?? "—"} Students`}
             />
 
             <InstructorStat
               icon={<BookOpen size={15} className="text-primary" />}
-              value={`${course.instructor.courses} Courses`}
+              value={`${course.instructor.courses ?? "—"} Courses`}
             />
           </div>
 
           <p className="text-sm leading-7 text-brand-text-muted">
-            {course.instructor.bio}
+            {course.instructor.bio ?? "No instructor bio available."}
           </p>
         </div>
       </div>

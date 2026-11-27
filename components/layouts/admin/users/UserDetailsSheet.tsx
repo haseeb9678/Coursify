@@ -71,15 +71,17 @@ export default function UserDetailsSheet({
   const sessions = sessionsQuery.data ?? [];
   const isSessionsPlaceholder = sessionsQuery.isPlaceholderData;
 
-  const handleRevokeSessions = () => {
+  const handleRevokeSessions = async () => {
     if (!userId || isCurrentUser || !sessionAction) return;
 
-    revokeSessions.mutate(
-      sessionAction === "all"
-        ? { userId }
-        : { userId, sessionId: sessionAction.id },
-    );
-    setSessionAction(null);
+    try {
+      await revokeSessions.mutateAsync(
+        sessionAction === "all" ? { userId } : { userId, sessionId: sessionAction.id },
+      );
+      setSessionAction(null);
+    } catch {
+      // The mutation hook reports the error.
+    }
   };
 
   return (
@@ -151,6 +153,7 @@ export default function UserDetailsSheet({
                 user={details}
                 isPending={detailsQuery.isPending}
                 error={detailsQuery.error}
+                isRetrying={detailsQuery.isFetching}
                 onRetry={() => void detailsQuery.refetch()}
               />
             ) : (
@@ -195,6 +198,7 @@ export default function UserDetailsSheet({
                       type="button"
                       variant="outline"
                       size="sm"
+                      busy={sessionsQuery.isFetching}
                       onClick={() => void sessionsQuery.refetch()}
                     >
                       Retry sessions
@@ -341,11 +345,13 @@ function DetailsPanel({
   user,
   isPending,
   error,
+  isRetrying,
   onRetry,
 }: {
   user: AdminUser | undefined;
   isPending: boolean;
   error: unknown;
+  isRetrying: boolean;
   onRetry: () => void;
 }) {
   if (isPending && !user) {
@@ -371,7 +377,7 @@ function DetailsPanel({
               : getGraphQLErrorMessage(error)
           }
         />
-        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+        <Button type="button" variant="outline" size="sm" busy={isRetrying} onClick={onRetry}>
           Retry details
         </Button>
       </div>

@@ -7,7 +7,6 @@ import {
   ArrowDownWideNarrow,
   SlidersHorizontal,
   X,
-  Check,
   ArrowUpDown,
   Filter,
 } from "lucide-react";
@@ -37,46 +36,34 @@ import type {
 
 interface CourseToolbarProps {
   filters: Filters;
+  categoryOptions: import("@/features/courses/types/catalog.types").FilterOption[];
   activeFilters: string[];
   activeFilterCount: number;
   sort: string;
   totalCourses: number;
   onSortChange: (value: string | null) => void;
   onUpdateFilter: (key: FilterKey, value: string, checked: boolean) => void;
-  onRatingChange: (rating: number) => void;
-  onCertificateChange: (checked: boolean) => void;
   onReset: () => void;
   onRemoveFilter: (value: string) => void;
 }
 
 const sortOptions: CustomSelectOption[] = [
   {
-    label: "Most Popular",
-    value: "popular",
+    label: "Recommended",
+    value: "recommended",
     icon: ArrowDownWideNarrow,
-  },
-  {
-    label: "Highest Rated",
-    value: "rating",
-    icon: Check,
-  },
-  {
-    label: "Newest First",
-    value: "newest",
-    icon: ArrowUpDown,
   },
 ];
 
 export default function CourseToolbar({
   filters,
+  categoryOptions,
   activeFilters,
   activeFilterCount,
   sort,
   totalCourses,
   onSortChange,
   onUpdateFilter,
-  onRatingChange,
-  onCertificateChange,
   onReset,
   onRemoveFilter,
 }: CourseToolbarProps) {
@@ -84,9 +71,8 @@ export default function CourseToolbar({
 
   const filterProps = {
     filters,
+    categoryOptions,
     onUpdateFilter,
-    onRatingChange,
-    onCertificateChange,
     onReset,
   };
 

@@ -394,27 +394,27 @@ export default function AdminUsersClient() {
     }
   };
 
-  const confirmUserAction = () => {
-    if (
-      !pendingAction ||
-      isCurrentUserAccount(pendingAction.user, currentUserId)
-    ) return;
+  const confirmUserAction = async () => {
+    if (!pendingAction || isCurrentUserAccount(pendingAction.user, currentUserId)) return;
 
-    if (pendingAction.kind === "status") {
+    try {
+      if (pendingAction.kind === "status") {
+        await updateUserStatus.mutateAsync({
+          userId: pendingAction.user.id,
+          status: pendingAction.status,
+        });
+      } else {
+        if (roleTarget === pendingAction.user.role) return;
+        await updateUserRole.mutateAsync({
+          userId: pendingAction.user.id,
+          role: roleTarget,
+        });
+      }
       table.clearSelection();
-      updateUserStatus.mutate({
-        userId: pendingAction.user.id,
-        status: pendingAction.status,
-      });
-      return;
+      setPendingAction(null);
+    } catch {
+      // The mutation hook reports the error.
     }
-
-    if (roleTarget === pendingAction.user.role) return;
-    table.clearSelection();
-    updateUserRole.mutate({
-      userId: pendingAction.user.id,
-      role: roleTarget,
-    });
   };
 
   const changePage = (page: number) => {
@@ -509,6 +509,7 @@ export default function AdminUsersClient() {
             ? getGraphQLErrorMessage(statsQuery.error)
             : undefined
         }
+        isRetrying={statsQuery.isFetching}
         onRetry={() => void statsQuery.refetch()}
       />
 
@@ -541,6 +542,7 @@ export default function AdminUsersClient() {
                 type="button"
                 variant="outline"
                 size="sm"
+                busy={usersQuery.isFetching}
                 onClick={() => void usersQuery.refetch()}
               >
                 Retry

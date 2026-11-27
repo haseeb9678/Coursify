@@ -1,8 +1,6 @@
 
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-
-
 import { getCourseById } from "@/features/courses/data/course-details.data";
 import CourseDetailsClient from "@/components/layouts/marketing/course-details/CourseDetailsClient";
 

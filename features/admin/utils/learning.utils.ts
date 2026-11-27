@@ -20,11 +20,11 @@ import {
 
 const courseTransitions: Record<CourseStatus, readonly CourseStatus[]> = {
   DRAFT: ["PENDING_REVIEW"],
-  PENDING_REVIEW: ["APPROVED", "REJECTED"],
-  APPROVED: ["PUBLISHED"],
+  PENDING_REVIEW: ["APPROVED", "REJECTED", "DRAFT"],
+  APPROVED: ["PUBLISHED", "DRAFT"],
   REJECTED: ["DRAFT", "PENDING_REVIEW"],
-  PUBLISHED: ["ARCHIVED"],
-  ARCHIVED: [],
+  PUBLISHED: ["ARCHIVED", "DRAFT"],
+  ARCHIVED: ["DRAFT"],
 };
 
 export const courseReviewChecklist = [
@@ -43,6 +43,58 @@ export function canTransitionCourseStatus(
   next: CourseStatus,
 ) {
   return courseTransitions[current].includes(next);
+}
+
+export type CourseLifecycleAction = "submit" | "publish" | "archive" | "withdraw" | "restore" | "delete";
+export type CourseAdminAction = CourseLifecycleAction | "featured";
+
+export function canEditCourse(status?: CourseStatus) {
+  return status === "DRAFT" || status === "REJECTED";
+}
+
+export function getCourseAdminActions({ status, canDelete }: Pick<AdminCourse, "status" | "canDelete">): CourseAdminAction[] {
+  const actions: CourseAdminAction[] = [];
+  if (canTransitionCourseStatus(status, "PENDING_REVIEW")) actions.push("submit");
+  if (canTransitionCourseStatus(status, "PUBLISHED")) actions.push("publish");
+  if (canTransitionCourseStatus(status, "ARCHIVED")) actions.push("archive");
+  if (canTransitionCourseStatus(status, "DRAFT")) {
+    actions.push(status === "PENDING_REVIEW" ? "withdraw" : "restore");
+  }
+  if (status === "DRAFT" && canDelete) actions.push("delete");
+  if (status === "PUBLISHED") actions.push("featured");
+  return actions;
+}
+
+export const publishedCourseEditWarning =
+  "This course is currently published. Returning it to draft will temporarily remove it from the public course catalog. You will need to submit it for review and publish it again after making changes.";
+
+export function getCourseActionCopy(action: CourseAdminAction, course: AdminCourse) {
+  switch (action) {
+    case "submit":
+      return { label: "Submit for review", description: "Course content and curriculum will be read-only during review.", success: "Course submitted for review." };
+    case "withdraw":
+      return { label: "Withdraw submission", description: "Withdraw this course from review and return it to draft.", success: "Submission withdrawn. The course is now a draft." };
+    case "publish":
+      return { label: "Publish course", description: "Publish this approved course in the public catalog.", success: "Course published successfully." };
+    case "archive":
+      return { label: "Archive course", description: "Archive this course and remove it from the public catalog.", success: "Course archived successfully." };
+    case "restore":
+      return {
+        label: course.status === "PUBLISHED" ? "Unpublish & Edit" : course.status === "ARCHIVED" ? "Restore to draft" : "Return to draft",
+        description: course.status === "PUBLISHED"
+          ? publishedCourseEditWarning
+          : "Return this course to draft. It will need a new approval before publication.",
+        success: course.status === "ARCHIVED" ? "Course restored to draft successfully." : "Course returned to draft successfully.",
+      };
+    case "delete":
+      return { label: "Delete draft", description: `Permanently delete ${course.title}?`, success: "Draft course deleted." };
+    case "featured":
+      return {
+        label: course.isFeatured ? "Remove from featured" : "Feature course",
+        description: course.isFeatured ? "Remove this course from featured listings." : "Include this course in featured listings.",
+        success: "Featured status updated.",
+      };
+  }
 }
 
 export function getCourseReadinessIssues(

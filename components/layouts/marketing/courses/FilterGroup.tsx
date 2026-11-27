@@ -56,9 +56,9 @@ export default function FilterGroup({
                 >
                   <span className="flex items-center gap-2.5">
                     <Checkbox
-                      checked={selected.includes(option.label)}
+                      checked={selected.includes(option.value ?? option.label)}
                       onCheckedChange={(checked) =>
-                        onChange(option.label, checked === true)
+                          onChange(option.value ?? option.label, checked === true)
                       }
                     />
 
