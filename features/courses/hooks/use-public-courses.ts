@@ -15,9 +15,10 @@ import type {
 
 export const publicCourseKeys = {
   all: ["public-courses"] as const,
-  allCategories: () => [...publicCourseKeys.all, "categories", "all"] as const,
+  categoryLists: () => [...publicCourseKeys.all, "categories"] as const,
+  allCategories: () => [...publicCourseKeys.categoryLists(), "all"] as const,
   categories: (page: PublicPagination, search?: string) =>
-    [...publicCourseKeys.all, "categories", page, search] as const,
+    [...publicCourseKeys.categoryLists(), page, search] as const,
   list: (page: PublicPagination, filter?: PublicCourseFilter) =>
     [...publicCourseKeys.all, "list", page, filter] as const,
   detail: (identifier: string) => [...publicCourseKeys.all, "detail", identifier] as const,

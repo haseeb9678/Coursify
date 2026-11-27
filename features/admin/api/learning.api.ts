@@ -53,6 +53,7 @@ import type {
 import type {
   AdminCategoriesFilter,
   AdminCategoryInput,
+  AdminCategoryUpdateInput,
   AdminCourseInput,
   AdminCoursesFilter,
   ApprovalDetails,
@@ -204,11 +205,11 @@ export async function createAdminCategory(
 }
 
 export async function updateAdminCategory(
-  input: AdminCategoryInput & { id: string },
+  input: AdminCategoryUpdateInput,
 ): Promise<AdminCategory> {
   const result = await graphqlClient.request<
     { adminUpdateCategory: { success: boolean; message: string; category: BackendAdminCategory } },
-    { input: AdminCategoryInput & { id: string } }
+    { input: AdminCategoryUpdateInput }
   >(ADMIN_UPDATE_CATEGORY_MUTATION, { input });
   assertSuccess(result.adminUpdateCategory);
   return mapCategory(result.adminUpdateCategory.category);

@@ -37,7 +37,7 @@ export interface PublicCategory {
   name: string;
   slug: string;
   description: string;
-  iconName: "PenTool" | "Code2" | "Megaphone" | "BriefcaseBusiness" | "Camera" | "ChartNoAxesColumn";
+  iconName: string;
   iconBackground: string;
   iconColor: string;
   imageUrl: string | null;

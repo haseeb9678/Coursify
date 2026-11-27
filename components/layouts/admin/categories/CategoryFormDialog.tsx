@@ -2,10 +2,11 @@
 
 import { toast } from "sonner";
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { X } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,17 +22,16 @@ import type {
   AdminCategory,
   CategoryInput,
 } from "@/features/admin/types/learning.types";
-import { categorySchema } from "@/features/admin/schemas/learning.schemas";
+import { getCategoryFormSchema } from "@/features/admin/schemas/learning.schemas";
+import { getInitialCategoryAppearance } from "@/features/categories/category-appearance";
+import type { CategoryColors } from "@/features/categories/category-colors";
+import { CategoryIcon, type CategoryIconName } from "@/features/categories/category-icon-components";
+import { getCategoryIconLabel, getRecommendedCategoryColors } from "@/features/categories/category-icon-library";
+import CategoryAppearancePreview from "./CategoryAppearancePreview";
+import CategoryColorPicker from "./CategoryColorPicker";
 import { slugifyLearningName } from "@/features/admin/utils/learning.utils";
 
-type CategoryFormValues = {
-  name: string;
-  slug: string;
-  description: string;
-  status: "ACTIVE" | "INACTIVE";
-  iconKey: string;
-  imageDataUrl: string | null;
-};
+const CategoryIconPicker = dynamic(() => import("./CategoryIconPicker"));
 
 interface CategoryFormDialogProps {
   open: boolean;
@@ -41,53 +41,86 @@ interface CategoryFormDialogProps {
   onSave: (input: CategoryInput) => boolean | Promise<boolean>;
 }
 
-const iconOptions = [
-  { value: "PenTool", label: "Design" },
-  { value: "Code2", label: "Code" },
-  { value: "Megaphone", label: "Marketing" },
-  { value: "BriefcaseBusiness", label: "Business" },
-  { value: "Camera", label: "Photography" },
-  { value: "ChartNoAxesColumn", label: "Data" },
-];
-
 const textareaClassName =
   "min-h-24 w-full resize-y rounded-lg border border-brand-border bg-background px-3 py-2 text-sm text-brand-text outline-none placeholder:text-brand-text-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40";
 
-export default function CategoryFormDialog({
-  open,
+export default function CategoryFormDialog({ open, ...props }: CategoryFormDialogProps) {
+  return open ? <CategoryFormSession key={props.category?.id ?? "create"} {...props} /> : null;
+}
+
+function CategoryFormSession({
   category,
   categories,
   onOpenChange,
   onSave,
-}: CategoryFormDialogProps) {
+}: Omit<CategoryFormDialogProps, "open">) {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     Boolean(category),
   );
+  const [mode, setMode] = useState<"automatic" | "manual">(category ? "manual" : "automatic");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
+  const iconTrigger = useRef<HTMLButtonElement>(null);
+  const manualColors = useRef<CategoryColors | undefined>(undefined);
+  const [initialForm] = useState(() => {
+    const appearance = getInitialCategoryAppearance(category ?? undefined);
+    return {
+      resolver: zodResolver(getCategoryFormSchema(category ? appearance : undefined)),
+      defaultValues: { ...getCategoryValues(category), ...appearance },
+    };
+  });
   const {
     register,
     control,
     handleSubmit,
-    reset,
+    getValues,
     setValue,
     setError,
     clearErrors,
     formState: { errors, isSubmitting },
-  } = useForm<CategoryFormValues>({
-    resolver: zodResolver(categorySchema),
-    defaultValues: getCategoryValues(category),
+  } = useForm<CategoryInput>(initialForm);
+  const [name, description, iconKey, iconColor, iconBackground] = useWatch({
+    control,
+    name: ["name", "description", "iconKey", "iconColor", "iconBackground"],
   });
+  const colors = { iconColor, iconBackground };
+  const recommended = getRecommendedCategoryColors(iconKey);
+  const fieldOptions = { shouldDirty: true, shouldValidate: true };
 
-  useEffect(() => {
-    reset(getCategoryValues(category));
-  }, [category, open, reset]);
+  const applyColors = (nextColors: CategoryColors) => {
+    setValue("iconColor", nextColors.iconColor, fieldOptions);
+    setValue("iconBackground", nextColors.iconBackground, fieldOptions);
+  };
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) setSlugManuallyEdited(Boolean(category));
-    onOpenChange(nextOpen);
+  const changeMode = (nextMode: "automatic" | "manual") => {
+    if (nextMode === mode) return;
+    if (nextMode === "automatic") {
+      const [iconColor, iconBackground] = getValues(["iconColor", "iconBackground"]);
+      manualColors.current = { iconColor, iconBackground };
+      applyColors(getRecommendedCategoryColors(getValues("iconKey")));
+    } else if (manualColors.current) {
+      applyColors(manualColors.current);
+    }
+    setMode(nextMode);
+  };
+
+  const selectIcon = (nextIcon: CategoryIconName) => {
+    setValue("iconKey", nextIcon, fieldOptions);
+    if (mode === "automatic") applyColors(getRecommendedCategoryColors(nextIcon));
+  };
+
+  const closePicker = () => {
+    setPickerOpen(false);
+    requestAnimationFrame(() => iconTrigger.current?.focus());
+  };
+
+  const closeForm = () => {
+    form.current?.closest("dialog")?.close();
+    onOpenChange(false);
   };
 
   const submitting = useRef(false);
-  const save = handleSubmit(async (values) => {
+  const save = async (values: CategoryInput) => {
     const duplicateSlug = categories.some(
       (item) =>
         item.id !== category?.id && item.slug.toLowerCase() === values.slug,
@@ -101,25 +134,25 @@ export default function CategoryFormDialog({
       return;
     }
 
-    if (await onSave(values)) handleOpenChange(false);
-  }, () => toast.error("Check the highlighted category fields."));
+    if (await onSave(values)) closeForm();
+  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submitting.current) return;
     submitting.current = true;
     try {
-      await save(event);
+      await handleSubmit(save, () => toast.error("Check the highlighted category fields."))(event);
     } finally {
       submitting.current = false;
     }
   };
 
-  return (
+  const formDialog = (
     <AdminDialog
-      open={open}
+      open
       busy={isSubmitting}
-      onOpenChange={handleOpenChange}
+      onOpenChange={(open) => { if (!open) closeForm(); }}
       title={category ? "Edit category" : "Create category"}
       description="Category details organize courses in the learning catalog."
       size="md"
@@ -129,7 +162,7 @@ export default function CategoryFormDialog({
             type="button"
             variant="outline"
             disabled={isSubmitting}
-            onClick={() => handleOpenChange(false)}
+            onClick={closeForm}
           >
             Cancel
           </Button>
@@ -139,7 +172,7 @@ export default function CategoryFormDialog({
         </>
       }
     >
-      <form id="category-form" onSubmit={submit} className="space-y-4">
+      <form ref={form} id="category-form" onSubmit={submit} className="space-y-4">
         <FormField id="category-name" label="Category name" error={errors.name?.message}>
           <Input
             id="category-name"
@@ -186,33 +219,23 @@ export default function CategoryFormDialog({
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="category-icon" label="Category icon">
-            <Controller
-              name="iconKey"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(value) => {
-                    if (value !== null) field.onChange(value);
-                  }}
-                >
-                  <SelectTrigger
-                    id="category-icon"
-                    className="h-10 w-full border-brand-border bg-background text-sm"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent align="start">
-                    {iconOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
+          <FormField id="category-icon" label="Category icon" error={errors.iconKey?.message}>
+            <Button
+              ref={iconTrigger}
+              id="category-icon"
+              type="button"
+              variant="outline"
+              aria-haspopup="dialog"
+              aria-expanded={pickerOpen}
+              aria-invalid={Boolean(errors.iconKey)}
+              aria-label={`Choose category icon. Current icon: ${getCategoryIconLabel(iconKey)}`}
+              disabled={isSubmitting}
+              className="h-10 w-full min-w-0 justify-start border-brand-border"
+              onClick={() => setPickerOpen(true)}
+            >
+              <CategoryIcon name={iconKey} aria-hidden="true" />
+              <span className="truncate">{getCategoryIconLabel(iconKey)}</span>
+            </Button>
           </FormField>
           <FormField id="category-status" label="Status">
             <Controller
@@ -242,6 +265,56 @@ export default function CategoryFormDialog({
             />
           </FormField>
         </div>
+
+        <fieldset disabled={isSubmitting} className="min-w-0 space-y-3 rounded-xl border border-brand-border p-3">
+          <legend className="px-1 text-sm font-semibold text-brand-text">Icon appearance</legend>
+          <div
+            role="group"
+            aria-label="Icon color mode"
+            aria-describedby={mode === "manual" ? "category-color-mode-help" : undefined}
+            className="flex flex-wrap gap-2"
+          >
+            <Button
+              type="button"
+              variant={mode === "automatic" ? "default" : "outline"}
+              aria-pressed={mode === "automatic"}
+              aria-describedby={mode === "manual" ? "category-color-mode-help" : undefined}
+              onClick={() => changeMode("automatic")}
+            >
+              Automatic colors
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "manual" ? "default" : "outline"}
+              aria-pressed={mode === "manual"}
+              onClick={() => changeMode("manual")}
+            >
+              Manual colors
+            </Button>
+          </div>
+          {mode === "manual" && (
+            <>
+              <p id="category-color-mode-help" className="text-xs text-brand-text-muted">
+                Switching to automatic colors applies the recommended palette. Switch back to restore your manual colors for this session.
+              </p>
+              <CategoryColorPicker
+                colors={colors}
+                recommended={recommended}
+                errors={{ iconColor: errors.iconColor?.message, iconBackground: errors.iconBackground?.message }}
+                onChange={(field, value) => setValue(field, value, fieldOptions)}
+                onPaletteChange={applyColors}
+              />
+            </>
+          )}
+        </fieldset>
+
+        <CategoryAppearancePreview
+          name={name}
+          description={description}
+          iconKey={iconKey}
+          colors={colors}
+          courseCount={category ? category.courseCount : 0}
+        />
 
         <div className="space-y-2">
           <span className="text-xs font-medium text-brand-text">Category image URL</span>
@@ -305,16 +378,24 @@ export default function CategoryFormDialog({
       </form>
     </AdminDialog>
   );
+
+  return (
+    <>
+      {formDialog}
+      {pickerOpen && (
+        <CategoryIconPicker value={iconKey} onSelect={selectIcon} onClose={closePicker} />
+      )}
+    </>
+  );
 }
 
-function getCategoryValues(category: AdminCategory | null): CategoryFormValues {
+function getCategoryValues(category: AdminCategory | null): Omit<CategoryInput, "iconKey" | keyof CategoryColors> {
   return category
     ? {
         name: category.name,
         slug: category.slug,
         description: category.description,
         status: category.status,
-        iconKey: category.iconKey,
         imageDataUrl: category.imageDataUrl,
       }
     : {
@@ -322,7 +403,6 @@ function getCategoryValues(category: AdminCategory | null): CategoryFormValues {
         slug: "",
         description: "",
         status: "ACTIVE",
-        iconKey: "code",
         imageDataUrl: null,
       };
 }

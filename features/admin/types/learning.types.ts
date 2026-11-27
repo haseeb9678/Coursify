@@ -190,6 +190,8 @@ export interface CategoryInput {
   description: string;
   status: CategoryStatus;
   iconKey: string;
+  iconColor: string;
+  iconBackground: string;
   imageDataUrl: string | null;
 }
 

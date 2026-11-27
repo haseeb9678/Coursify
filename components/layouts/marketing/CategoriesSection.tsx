@@ -5,16 +5,8 @@ import Link from "next/link";
 import { useCallback } from "react";
 import type { PointerEvent } from "react";
 
-import {
-  ArrowRight,
-  PenTool,
-  Code2,
-  Megaphone,
-  BriefcaseBusiness,
-  Camera,
-  ChartNoAxesColumn,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { CategoryIcon } from "@/features/categories/category-icon-components";
 
 import {
   motion,
@@ -41,20 +33,7 @@ interface CategoryCardProps {
 
 const CARDS_PER_SLIDE = 2;
 
-// Resolve serializable icon names into Lucide components.
-// This mapping stays inside the Client Component.
-const categoryIcons: Record<PublicCategory["iconName"], LucideIcon> = {
-  PenTool,
-  Code2,
-  Megaphone,
-  BriefcaseBusiness,
-  Camera,
-  ChartNoAxesColumn,
-};
-
 const CategoryCard = ({ category, index }: CategoryCardProps) => {
-  const Icon = categoryIcons[category.iconName] ?? Code2;
-
   const shouldReduceMotion = useAccessibleMotion();
 
   // Mouse position
@@ -127,7 +106,8 @@ const CategoryCard = ({ category, index }: CategoryCardProps) => {
         >
           {/* Clipped backdrop: category watermark + cursor light */}
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
-            <Icon
+            <CategoryIcon
+              name={category.iconName}
               strokeWidth={1.2}
               style={{ color: category.iconColor }}
               className="absolute -right-5 -bottom-6 size-28 -rotate-12 opacity-[0.07] transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110"
@@ -153,7 +133,7 @@ const CategoryCard = ({ category, index }: CategoryCardProps) => {
             transition={{ type: "spring", stiffness: 300, damping: 16 }}
             className="relative flex size-12 shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 ring-black/5 sm:size-14"
           >
-            <Icon size={25} strokeWidth={1.8} />
+            <CategoryIcon name={category.iconName} size={25} strokeWidth={1.8} />
           </motion.div>
 
           {/* Category Details */}

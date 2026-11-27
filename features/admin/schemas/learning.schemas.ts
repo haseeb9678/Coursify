@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { isCategoryHexColor, type CategoryColors } from "@/features/categories/category-colors";
+import { resolveCategoryIconName } from "@/features/categories/category-icon-components";
 import { parsePriceToMinorUnits } from "@/features/admin/utils/learning.utils";
 
 const slugSchema = z
@@ -8,14 +10,39 @@ const slugSchema = z
   .max(90, "Use no more than 90 characters.")
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens.");
 
+const categoryIconSchema = z.string().refine(
+  (name) => resolveCategoryIconName(name) !== undefined,
+  "Choose an icon from the library.",
+);
+const categoryColorSchema = z.string().refine(isCategoryHexColor, "Enter a HEX color like #2563EB.");
+
 export const categorySchema = z.object({
   name: z.string().trim().min(2, "Enter a category name.").max(70),
   slug: slugSchema,
   description: z.string().trim().min(10, "Add a short description.").max(400),
   status: z.enum(["ACTIVE", "INACTIVE"]),
-  iconKey: z.string().min(1),
+  iconKey: categoryIconSchema,
+  iconColor: categoryColorSchema,
+  iconBackground: categoryColorSchema,
   imageDataUrl: z.string().nullable(),
 });
+
+export function getCategoryFormSchema(saved?: CategoryColors & { iconKey: string }) {
+  if (!saved) return categorySchema;
+
+  // A saved legacy value may pass through an edit without being resubmitted.
+  return categorySchema.extend({
+    iconKey: resolveCategoryIconName(saved.iconKey)
+      ? categoryIconSchema
+      : categoryIconSchema.or(z.literal(saved.iconKey)),
+    iconColor: isCategoryHexColor(saved.iconColor)
+      ? categoryColorSchema
+      : categoryColorSchema.or(z.literal(saved.iconColor)),
+    iconBackground: isCategoryHexColor(saved.iconBackground)
+      ? categoryColorSchema
+      : categoryColorSchema.or(z.literal(saved.iconBackground)),
+  });
+}
 
 export const courseFormSchema = z
   .object({

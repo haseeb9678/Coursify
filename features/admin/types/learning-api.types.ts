@@ -132,6 +132,8 @@ export interface AdminCategoryInput {
   status: "ACTIVE" | "INACTIVE";
 }
 
+export type AdminCategoryUpdateInput = { id: string } & Partial<AdminCategoryInput>;
+
 export interface AdminCourseInput {
   title: string;
   slug: string;

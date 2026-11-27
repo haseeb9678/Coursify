@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { ArrowLeft, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, FileJson, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { getGraphQLErrorCode, getGraphQLErrorMessage } from "@/lib/graphql/error";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import CourseJsonImportDialog from "./CourseJsonImportDialog";
+import type { CategoryOption, InstructorOption } from "@/features/admin/types/learning-api.types";
+import { importFields, pricingImportFields, sameField, type CourseImportPlan, type ImportPatch } from "@/features/admin/utils/course-json-import";
 import CourseLifecycleDialog, { type PendingCourseAction } from "./CourseLifecycleDialog";
 import CourseStatusBadge from "./CourseStatusBadge";
 import AdminErrorState from "@/components/layouts/admin/shared/AdminErrorState";
@@ -68,8 +71,14 @@ export default function CourseFormClient({
   const isCheckingCourse = mode === "edit" && (
     courseQuery.isLoading || (courseQuery.isFetching && !courseQuery.isFetchedAfterMount)
   );
-  const categories = categoriesQuery.data ?? [];
-  const instructorOptions = instructorsQuery.data ?? [];
+  const [importOpen, setImportOpen] = useState(false);
+  const [importedCategories, setImportedCategories] = useState<CategoryOption[]>([]);
+  const [importedInstructors, setImportedInstructors] = useState<InstructorOption[]>([]);
+  const [lastImport, setLastImport] = useState<{ before: CourseFormInput; patch: ImportPatch; customSlug: boolean; explicitSlug: boolean }>();
+  const categoryOptions = categoriesQuery.data ?? [];
+  const baseInstructors = instructorsQuery.data ?? [];
+  const categories = [...categoryOptions, ...importedCategories.filter((item) => !categoryOptions.some(({ id }) => id === item.id))];
+  const instructorOptions = [...baseInstructors, ...importedInstructors.filter((item) => !baseInstructors.some(({ id }) => id === item.id))];
   const submitting = useRef(false);
   const baseline = useRef<AdminCourse | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<PendingCourseAction | null>(null);
@@ -84,7 +93,8 @@ export default function CourseFormClient({
     reset,
     getValues,
     setValue,
-    formState: { errors, isDirty },
+    trigger,
+    formState: { errors, isDirty, dirtyFields },
   } = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: getCourseFormValues(currentCourse),
@@ -118,6 +128,53 @@ export default function CourseFormClient({
     nextValues: string[],
   ) => {
     setValue(field, nextValues, { shouldDirty: true, shouldValidate: true });
+  };
+
+  const applyImportPatch = (patch: ImportPatch) => {
+    const changed = importFields.filter((field) => patch[field] !== undefined);
+    for (const field of changed) {
+      const value = patch[field];
+      if (value !== undefined) setValue(field, value, { shouldDirty: true });
+    }
+    if (changed.length) void trigger(changed);
+  };
+
+  const importCourse = (plan: CourseImportPlan, explicitSlug: boolean) => {
+    if (mode !== "create" || submitting.current || plan.errors.length) return;
+    const category = plan.category;
+    if (plan.patch.categoryId && category) {
+      setImportedCategories((items) => [...items.filter(({ id }) => id !== category.id), category]);
+    }
+    if (plan.patch.instructorId && plan.instructor) {
+      const { id, name, avatar } = plan.instructor;
+      setImportedInstructors((items) => [...items.filter((item) => item.id !== id), { id, name, avatar }]);
+    }
+    setLastImport({
+      before: structuredClone(getValues()),
+      patch: plan.patch,
+      customSlug: slugManuallyEdited,
+      explicitSlug: Boolean(explicitSlug && plan.patch.slug !== undefined),
+    });
+    applyImportPatch(plan.patch);
+    if (explicitSlug && plan.patch.slug !== undefined) setSlugManuallyEdited(true);
+  };
+
+  const undoImport = () => {
+    if (!lastImport || mode !== "create" || submitting.current) return;
+    const { before, patch, customSlug, explicitSlug } = lastImport;
+    const current = getValues();
+    const after = { ...before, ...patch };
+    const pricingChanged = pricingImportFields.some((field) => !sameField(current[field], after[field]));
+    const restore = importFields.filter((field) =>
+      patch[field] !== undefined &&
+      sameField(current[field], after[field]) &&
+      !(pricingChanged && pricingImportFields.some((priceField) => priceField === field)),
+    );
+    for (const field of restore) setValue(field, before[field], { shouldDirty: true });
+    if (restore.includes("slug") && explicitSlug && slugManuallyEdited) setSlugManuallyEdited(customSlug);
+    if (restore.length) void trigger(restore);
+    setLastImport(undefined);
+    toast.info(restore.length ? "Import undone. Later edits were preserved." : "The imported values were already changed.");
   };
 
   const saveCourse = async (values: CourseFormValues, saveMode: SaveMode) => {
@@ -255,15 +312,27 @@ export default function CourseFormClient({
               : "Update course content. Changes to reviewed content require a new review."
           }
         />
-        <Button
-          type="button"
-          variant="outline"
-          className="gap-2"
-          onClick={() => router.push("/admin/courses")}
-        >
-          <ArrowLeft size={15} aria-hidden="true" />
-          Back to courses
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {mode === "create" && (
+            <>
+              <Button type="button" variant="outline" disabled={pendingSaveMode !== null} onClick={() => setImportOpen(true)}>
+                <FileJson size={15} aria-hidden="true" /> Import JSON
+              </Button>
+              {lastImport && (
+                <Button type="button" variant="ghost" disabled={pendingSaveMode !== null} onClick={undoImport}>Undo Last Import</Button>
+              )}
+            </>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={() => router.push("/admin/courses")}
+          >
+            <ArrowLeft size={15} aria-hidden="true" />
+            Back to courses
+          </Button>
+        </div>
       </div>
 
       <form id="course-form" onSubmit={submitDraft} className="space-y-5">
@@ -611,6 +680,17 @@ export default function CourseFormClient({
           </div>
         </div>
       </form>
+      {mode === "create" && importOpen && (
+        <CourseJsonImportDialog
+          categories={categoryOptions}
+          instructors={baseInstructors}
+          availability={{ categories: categoriesQuery.isSuccess, instructors: instructorsQuery.isSuccess }}
+          optionsLoading={categoriesQuery.isPending || instructorsQuery.isPending}
+          getSnapshot={() => ({ values: getValues(), isDirty: (field) => Boolean(dirtyFields[field]), customSlug: slugManuallyEdited })}
+          onApply={importCourse}
+          onClose={() => setImportOpen(false)}
+        />
+      )}
     </section>
   );
 }

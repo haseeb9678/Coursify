@@ -38,6 +38,7 @@ import {
 import type {
   AdminCategoriesFilter,
   AdminCategoryInput,
+  AdminCategoryUpdateInput,
   AdminCourseInput,
   AdminCoursesFilter,
   PaginationInput,
@@ -74,6 +75,15 @@ function useInvalidateLearning() {
   return () => queryClient.invalidateQueries({ queryKey: adminLearningKeys.all });
 }
 
+function useInvalidateCategories() {
+  const invalidateLearning = useInvalidateLearning();
+  const queryClient = useQueryClient();
+  return () => Promise.all([
+    invalidateLearning(),
+    queryClient.invalidateQueries({ queryKey: publicCourseKeys.categoryLists() }),
+  ]);
+}
+
 export function useAdminCategories(
   pagination: PaginationInput,
   filter?: AdminCategoriesFilter,
@@ -93,7 +103,7 @@ export function useAdminCategoryStats() {
 }
 
 export function useCreateAdminCategory() {
-  const invalidate = useInvalidateLearning();
+  const invalidate = useInvalidateCategories();
   return useMutation({
     mutationFn: (input: AdminCategoryInput) => createAdminCategory(input),
     onSuccess: invalidate,
@@ -101,16 +111,16 @@ export function useCreateAdminCategory() {
 }
 
 export function useUpdateAdminCategory() {
-  const invalidate = useInvalidateLearning();
+  const invalidate = useInvalidateCategories();
   return useMutation({
-    mutationFn: (input: AdminCategoryInput & { id: string }) =>
+    mutationFn: (input: AdminCategoryUpdateInput) =>
       updateAdminCategory(input),
     onSuccess: invalidate,
   });
 }
 
 export function useUpdateAdminCategoryStatus() {
-  const invalidate = useInvalidateLearning();
+  const invalidate = useInvalidateCategories();
   return useMutation({
     mutationFn: (input: { id: string; status: "ACTIVE" | "INACTIVE" }) =>
       updateAdminCategoryStatus(input.id, input.status),
@@ -119,7 +129,7 @@ export function useUpdateAdminCategoryStatus() {
 }
 
 export function useDeleteAdminCategory() {
-  const invalidate = useInvalidateLearning();
+  const invalidate = useInvalidateCategories();
   return useMutation({
     mutationFn: deleteAdminCategory,
     onSuccess: invalidate,

@@ -5,19 +5,14 @@ import Image from "next/image";
 import {
   BookOpen,
   Boxes,
-  BriefcaseBusiness,
-  Camera,
-  ChartNoAxesColumn,
   CheckCircle2,
-  Code2,
-  Megaphone,
-  PenTool,
   Pencil,
   Plus,
   Tags,
   Trash2,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { CategoryIcon } from "@/features/categories/category-icon-components";
+import { getCategoryAppearanceChanges } from "@/features/categories/category-appearance";
 import { toast } from "sonner";
 import { getGraphQLErrorMessage } from "@/lib/graphql/error";
 import { Button } from "@/components/ui/button";
@@ -66,15 +61,6 @@ import type {
   CategoryStatus,
 } from "@/features/admin/types/learning.types";
 import { downloadCsv, formatManagementDate } from "@/features/admin/utils/management.utils";
-
-const categoryIcons: Record<string, LucideIcon> = {
-  PenTool,
-  Code2,
-  Megaphone,
-  BriefcaseBusiness,
-  Camera,
-  ChartNoAxesColumn,
-};
 
 const visibleColumns = [
   "identity",
@@ -133,7 +119,6 @@ export default function AdminCategoriesClient() {
         header: "Category",
         sortValue: (category) => category.name,
         cell: (category) => {
-          const Icon = categoryIcons[category.iconKey] ?? Tags;
           return (
             <div className="flex min-w-48 items-center gap-3">
               {category.imageDataUrl ? (
@@ -146,8 +131,11 @@ export default function AdminCategoriesClient() {
                   className="size-10 rounded-lg border border-brand-border object-cover"
                 />
               ) : (
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon size={18} aria-hidden="true" />
+                <span
+                  className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+                  style={{ color: category.iconColor, backgroundColor: category.iconBackground }}
+                >
+                  <CategoryIcon name={category.iconKey} fallback="Tags" size={18} aria-hidden="true" />
                 </span>
               )}
               <div className="min-w-0">
@@ -269,19 +257,24 @@ export default function AdminCategoriesClient() {
       slug: input.slug,
       description: input.description,
       status: input.status,
-      iconName: input.iconKey,
-      iconColor: editingCategory?.iconColor ?? "#2563EB",
-      iconBackground: editingCategory?.iconBackground ?? "#DBEAFE",
       imageUrl: input.imageDataUrl,
     };
     try {
       if (editingCategory) {
-        await editCategory.mutateAsync({ ...backendInput, id: editingCategory.id });
+        await editCategory.mutateAsync({
+          id: editingCategory.id,
+          ...backendInput,
+          ...getCategoryAppearanceChanges(input, editingCategory),
+        });
       } else {
-        await createCategory.mutateAsync(backendInput);
+        await createCategory.mutateAsync({
+          ...backendInput,
+          iconName: input.iconKey,
+          iconColor: input.iconColor,
+          iconBackground: input.iconBackground,
+        });
       }
       toast.success(`Category ${editingCategory ? "updated" : "created"}.`);
-      setEditingCategory(null);
       return true;
     } catch (error) {
       toast.error(getGraphQLErrorMessage(error));
@@ -520,7 +513,6 @@ function CategoryDetailsSheet({
   courseCount: number;
   onOpenChange: (open: boolean) => void;
 }) {
-  const Icon = category ? categoryIcons[category.iconKey] ?? Tags : Tags;
   return (
     <Sheet open={category !== null} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
@@ -543,8 +535,11 @@ function CategoryDetailsSheet({
                   className="size-13 rounded-xl border border-brand-border object-cover"
                 />
               ) : (
-                <span className="flex size-13 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Icon size={21} aria-hidden="true" />
+                <span
+                  className="flex size-13 items-center justify-center rounded-xl bg-primary/10 text-primary"
+                  style={{ color: category.iconColor, backgroundColor: category.iconBackground }}
+                >
+                  <CategoryIcon name={category.iconKey} fallback="Tags" size={21} aria-hidden="true" />
                 </span>
               )}
               <div className="min-w-0">
