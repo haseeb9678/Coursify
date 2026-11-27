@@ -8,6 +8,7 @@ import {
 import { loginUser } from "../api/auth.api";
 import { authKeys } from "../constants/auth.keys";
 import { useAuthStore } from "../store/auth.store";
+import { commerceKeys } from "@/features/commerce/commerce-cache";
 
 export function useLogin() {
     const queryClient = useQueryClient();
@@ -30,6 +31,10 @@ export function useLogin() {
             await queryClient.cancelQueries({
                 queryKey: authKeys.me(),
             });
+
+            if (useAuthStore.getState().user?.id !== response.user.id) {
+                queryClient.removeQueries({ queryKey: commerceKeys.all });
+            }
 
             // Update TanStack Query cache
             queryClient.setQueryData(

@@ -24,14 +24,18 @@ export default function DashboardBreadcrumb({
     return null;
   }
 
-  const breadcrumbs = segments.map((segment, index) => ({
-    label: formatBreadcrumbLabel(segment, config.routeLabels),
-    href:
-      index === 0
-        ? config.dashboardRoute
-        : `/${segments.slice(0, index + 1).join("/")}`,
-    isLast: index === segments.length - 1,
-  }));
+  const breadcrumbs = segments.map((segment, index) => {
+    const path = `/${segments.slice(0, index + 1).join("/")}`;
+    const isDetail = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(segment);
+    const detailLabel = isDetail ? config.routeLabels?.[`${segments[index - 1]}/[id]`] : undefined;
+    const alias = config.navigationGroups.flatMap((group) => group.items)
+      .find((item) => item.activePaths?.includes(path));
+    return {
+      label: detailLabel ?? formatBreadcrumbLabel(segment, config.routeLabels),
+      href: index === 0 ? config.dashboardRoute : alias?.href ?? path,
+      isLast: index === segments.length - 1,
+    };
+  });
 
   return (
     <Breadcrumb className="min-w-0">

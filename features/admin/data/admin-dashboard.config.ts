@@ -99,7 +99,7 @@ const adminNavigationGroups = [
         label: "Enrollments",
         href: `${adminBaseRoute}/enrollments`,
         icon: FileCheck2,
-        implemented: false,
+        implemented: true,
       },
       {
         label: "Course Approvals",
@@ -126,10 +126,22 @@ const adminNavigationGroups = [
     label: "Finance",
     items: [
       {
+        label: "Orders",
+        href: `${adminBaseRoute}/orders`,
+        icon: ReceiptText,
+        implemented: true,
+      },
+      {
         label: "Transactions",
         href: `${adminBaseRoute}/transactions`,
         icon: ReceiptText,
-        implemented: false,
+        implemented: true,
+      },
+      {
+        label: "Stripe Webhooks",
+        href: `${adminBaseRoute}/webhooks`,
+        icon: CreditCard,
+        implemented: true,
       },
       {
         label: "Subscriptions",
@@ -196,6 +208,8 @@ export const adminDashboardConfig = {
     "course-approvals": "Course Approvals",
     reviews: "Reviews",
     transactions: "Transactions",
+    orders: "Orders",
+    webhooks: "Stripe Webhooks",
     subscriptions: "Subscriptions",
     notifications: "Notifications",
     "roles-permissions": "Roles & Permissions",

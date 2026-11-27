@@ -2,14 +2,14 @@
 
 import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 import { motion } from "motion/react";
-import { Flame, Target, Trophy } from "lucide-react";
+import { Flame, Trophy } from "lucide-react";
 
 import DashboardCard from "./DashboardCard";
 import { StudentDashboardData } from "@/features/student/types/dashboard.types";
 
 
 interface WeeklyGoalCardProps {
-  goal: StudentDashboardData["weeklyGoal"];
+  goal?: StudentDashboardData["weeklyGoal"];
 }
 
 export default function WeeklyGoalCard({
@@ -17,7 +17,7 @@ export default function WeeklyGoalCard({
 }: WeeklyGoalCardProps) {
   const shouldReduceMotion = useAccessibleMotion();
 
-  const hasGoal = goal.targetHours > 0;
+  const hasGoal = !!goal && goal.targetHours > 0;
 
   const progress = hasGoal
     ? Math.min(
@@ -30,7 +30,7 @@ export default function WeeklyGoalCard({
 
   const remainingHours = Math.max(
     0,
-    goal.targetHours - goal.completedHours,
+    (goal?.targetHours ?? 0) - (goal?.completedHours ?? 0),
   );
 
   return (
@@ -55,7 +55,7 @@ export default function WeeklyGoalCard({
         <div
           className="relative size-44"
           role="img"
-          aria-label={`${progress}% of weekly goal achieved`}
+          aria-label={goal ? `${progress}% of weekly goal achieved` : "Weekly goal tracking unavailable"}
         >
           <svg
             viewBox="0 0 120 120"
@@ -72,7 +72,7 @@ export default function WeeklyGoalCard({
               className="text-primary/10"
             />
 
-            <motion.circle
+            {goal && <motion.circle
               cx="60"
               cy="60"
               r="50"
@@ -93,12 +93,12 @@ export default function WeeklyGoalCard({
                 duration: shouldReduceMotion ? 0 : 1,
                 ease: "easeOut",
               }}
-            />
+            />}
           </svg>
 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-3xl font-bold tabular-nums text-brand-text">
-              {progress}%
+              {goal ? `${progress}%` : "?"}
             </span>
 
             <span className="text-xs text-brand-text-muted">
@@ -108,11 +108,11 @@ export default function WeeklyGoalCard({
         </div>
 
         <p className="mt-3 text-sm font-semibold text-brand-text">
-          {goal.completedHours} / {goal.targetHours} hours
+          {goal ? `${goal.completedHours} / ${goal.targetHours} hours` : "Weekly goal tracking unavailable"}
         </p>
 
         <p className="mt-1 text-center text-xs text-brand-text-muted">
-          {!hasGoal
+          {!goal ? null : !hasGoal
             ? "No weekly goal configured yet."
             : remainingHours > 0
               ? `${remainingHours.toFixed(1)} hours remaining to reach your goal.`
@@ -127,11 +127,11 @@ export default function WeeklyGoalCard({
 
         <div className="min-w-0">
           <p className="text-sm font-semibold text-brand-text">
-            {goal.streakDays}-day learning streak
+            {goal ? `${goal.streakDays}-day learning streak` : "Learning streak unavailable"}
           </p>
 
           <p className="mt-1 text-xs text-brand-text-muted">
-            {goal.streakDays > 0
+            {!goal ? null : goal.streakDays > 0
               ? "Keep the momentum going!"
               : "Start learning to build your streak."}
           </p>

@@ -1,15 +1,14 @@
 export function isActiveRoute(
   pathname: string,
   href: string,
+  activePaths: readonly string[] = [],
 ): boolean {
   const normalizedPathname = pathname.replace(/\/+$/, "") || "/";
-  const normalizedHref = href.replace(/\/+$/, "") || "/";
-
-  return (
-    normalizedPathname === normalizedHref ||
-    (normalizedHref !== "/" &&
-      normalizedPathname.startsWith(`${normalizedHref}/`))
-  );
+  return [href, ...activePaths].some((path) => {
+    const normalizedHref = path.replace(/\/+$/, "") || "/";
+    return normalizedPathname === normalizedHref ||
+      (normalizedHref !== "/" && normalizedPathname.startsWith(`${normalizedHref}/`));
+  });
 }
 
 export function getUserInitials(name: string): string {

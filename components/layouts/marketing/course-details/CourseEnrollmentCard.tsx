@@ -25,6 +25,8 @@ import {
 import { formatCoursePrice } from "@/features/admin/utils/learning.utils";
 import type { CourseDetails } from "@/features/courses/data/course-details.data";
 import { IncludedItem } from "./CourseDetailUI";
+import { Button } from "@/components/ui/button";
+import { useCourseEnrollment } from "@/features/commerce/use-course-enrollment";
 
 interface CourseEnrollmentCardProps {
   course: CourseDetails;
@@ -61,7 +63,17 @@ export default function CourseEnrollmentCard({
   const formattedPrice = type === "FREE" ? "Free" : formatCoursePrice(price, currency);
   const formattedOriginalPrice = formatCoursePrice(priceMinorUnits, currency);
 
-  const enrollmentHref = `/signup?course=${encodeURIComponent(course.id)}`;
+  const enrollment = useCourseEnrollment(course);
+  const enrollmentClassName = "group relative flex h-12 min-w-0 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-md shadow-primary/15 transition-all duration-300 hover:bg-brand-primary-hover hover:shadow-lg active:scale-[0.98] motion-reduce:transform-none";
+  const enrollmentContent = (
+    <>
+      <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-linear-to-r from-transparent via-white/25 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
+      <span className="relative">{enrollment.label}</span>
+      {!enrollment.busy && !enrollment.disabled && (
+        <ArrowUpRight size={17} aria-hidden className="relative transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none" />
+      )}
+    </>
+  );
 
   // Observe enrollment controls.
   useEffect(() => {
@@ -216,22 +228,12 @@ export default function CourseEnrollmentCard({
 
             {/* Enrollment Actions */}
             <div className="flex items-center gap-2.5">
-              <Link
-                href={enrollmentHref}
-                className="group relative flex h-12 min-w-0 flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground shadow-md shadow-primary/15 transition-all duration-300 hover:bg-brand-primary-hover hover:shadow-lg active:scale-[0.98] motion-reduce:transform-none"
-              >
-                {/* Shine Effect */}
-                <span className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-linear-to-r from-transparent via-white/25 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
-
-                <span className="relative">
-                  Enroll Now
-                </span>
-
-                <ArrowUpRight
-                  size={17}
-                  className="relative transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none"
-                />
-              </Link>
+              {enrollment.href ? (
+                <Link href={enrollment.href} className={enrollmentClassName}>{enrollmentContent}</Link>
+              ) : (
+                <Button type="button" className={enrollmentClassName} busy={enrollment.busy}
+                  disabled={enrollment.disabled} onClick={enrollment.action}>{enrollmentContent}</Button>
+              )}
 
               {/* Wishlist */}
               <button
@@ -347,7 +349,7 @@ export default function CourseEnrollmentCard({
                 onClick={handleScrollToEnrollment}
                 className="group flex h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-md shadow-primary/15 transition-all duration-300 hover:bg-brand-primary-hover active:scale-95 motion-reduce:transform-none sm:px-7"
               >
-                Enroll Now
+                {enrollment.label}
 
                 <ArrowDown
                   size={16}

@@ -1,85 +1,30 @@
-import {
-    LayoutDashboard,
-    BookOpen,
-    Compass,
-    Heart,
-    Award,
-    Bell,
-    Settings,
-} from "lucide-react";
-
-import type {
-    DashboardNavigationGroup,
-    DashboardNavigationItem,
-} from "@/features/dashboard/types/dashboard.types";
+import { BookOpen, CreditCard, LayoutDashboard, ShoppingBag } from "lucide-react";
+import type { DashboardNavigationGroup, DashboardNavigationItem } from "@/features/dashboard/types/dashboard.types";
 
 export const STUDENT_BASE_PATH = "/student";
 
-export const studentNavigation = [
+export const studentNavigationGroups = [
     {
-        label: "Dashboard",
-        href: `${STUDENT_BASE_PATH}/dashboard`,
-        icon: LayoutDashboard,
+        label: "Overview",
+        items: [{ label: "Dashboard", href: `${STUDENT_BASE_PATH}/dashboard`, icon: LayoutDashboard }],
     },
     {
         label: "My Learning",
-        href: `${STUDENT_BASE_PATH}/my-learning`,
-        icon: BookOpen,
+        items: [{
+            label: "My Courses",
+            href: `${STUDENT_BASE_PATH}/my-courses`,
+            activePaths: [`${STUDENT_BASE_PATH}/my-learning`, `${STUDENT_BASE_PATH}/learning`],
+            icon: BookOpen,
+        }],
     },
     {
-        label: "Explore Courses",
-        href: `${STUDENT_BASE_PATH}/courses`,
-        icon: Compass,
-    },
-] satisfies readonly DashboardNavigationItem[];
-
-export const studentLearningNavigation = [
-    {
-        label: "Wishlist",
-        href: `${STUDENT_BASE_PATH}/wishlist`,
-        icon: Heart,
-    },
-    {
-        label: "Certificates",
-        href: `${STUDENT_BASE_PATH}/certificates`,
-        icon: Award,
-    },
-] satisfies readonly DashboardNavigationItem[];
-
-export const studentPreferencesNavigation = [
-    {
-        label: "Notifications",
-        href: `${STUDENT_BASE_PATH}/notifications`,
-        icon: Bell,
-    },
-    {
-        label: "Settings",
-        href: `${STUDENT_BASE_PATH}/settings`,
-        icon: Settings,
-    },
-] satisfies readonly DashboardNavigationItem[];
-
-// Used by the existing profile dropdown.
-export const studentAccountNavigation = [
-    ...studentLearningNavigation,
-    {
-        label: "Account Settings",
-        href: `${STUDENT_BASE_PATH}/settings`,
-        icon: Settings,
-    },
-] satisfies readonly DashboardNavigationItem[];
-
-export const studentNavigationGroups = [
-    {
-        label: "Workspace",
-        items: studentNavigation,
-    },
-    {
-        label: "My Library",
-        items: studentLearningNavigation,
-    },
-    {
-        label: "Preferences",
-        items: studentPreferencesNavigation,
+        label: "Purchases & Billing",
+        items: [
+            { label: "Purchase History", href: `${STUDENT_BASE_PATH}/purchase-history`, icon: ShoppingBag },
+            { label: "Payment History", href: `${STUDENT_BASE_PATH}/payments`, icon: CreditCard },
+        ],
     },
 ] satisfies readonly DashboardNavigationGroup[];
+
+// The account menu already displays the signed-in student's profile and sign-out action.
+export const studentAccountNavigation: readonly DashboardNavigationItem[] = [];

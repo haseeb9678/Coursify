@@ -43,6 +43,7 @@ export const recentActivitySchema = z.object({
     type: z.enum([
         "lesson_completed",
         "course_started",
+        "course_enrolled",
         "certificate_earned",
         "course_completed",
     ]),

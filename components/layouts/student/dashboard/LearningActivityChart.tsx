@@ -26,7 +26,7 @@ import { DashboardPeriod, StudentDashboardData } from "@/features/student/types/
 
 
 interface LearningActivityChartProps {
-  activity: StudentDashboardData["learningActivity"];
+  activity?: StudentDashboardData["learningActivity"];
 }
 
 const chartConfig = {
@@ -46,7 +46,7 @@ export default function LearningActivityChart({
 
   const gradientId = useId().replace(/:/g, "");
 
-  const chartData = activity[period];
+  const chartData = activity?.[period] ?? [];
 
   const totalHours = chartData.reduce(
     (total, item) => total + item.hours,
@@ -78,6 +78,7 @@ export default function LearningActivityChart({
                 key={item}
                 type="button"
                 onClick={() => setPeriod(item)}
+                disabled={!activity}
                 aria-pressed={period === item}
                 className={cn(
                   "cursor-pointer rounded-md px-3 py-1.5",
@@ -99,7 +100,7 @@ export default function LearningActivityChart({
       {/* Total Learning Hours */}
       <div className="mb-5 mt-6">
         <p className="text-3xl font-bold tracking-tight tabular-nums text-brand-text">
-          {totalHours.toFixed(1)}
+          {activity ? totalHours.toFixed(1) : "?"}
 
           <span className="ml-1.5 text-sm font-medium text-brand-text-muted">
             hours
@@ -202,7 +203,7 @@ export default function LearningActivityChart({
         </ChartContainer>
       ) : (
         <div className="flex h-60 items-center justify-center text-sm text-brand-text-muted">
-          No learning activity available yet.
+          {activity ? "No learning activity available yet." : "Learning time tracking is unavailable."}
         </div>
       )}
     </DashboardCard>

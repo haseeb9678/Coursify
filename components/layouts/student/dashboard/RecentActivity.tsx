@@ -25,6 +25,11 @@ const activityConfig = {
     color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   },
 
+  course_enrolled: {
+    icon: BookOpen,
+    color: "bg-primary/10 text-primary",
+  },
+
   course_started: {
     icon: BookOpen,
     color: "bg-primary/10 text-primary",

@@ -12,11 +12,13 @@ import {
 } from "@/components/ui/chart";
 
 import DashboardCard from "./DashboardCard";
+import type { EnrollmentStats } from "@/features/commerce/commerce.types";
 import { DashboardStatsData } from "@/features/student/types/dashboard.types";
 
 
 interface CourseProgressChartProps {
-  stats: DashboardStatsData;
+  stats?: DashboardStatsData;
+  enrollmentStats?: EnrollmentStats;
 }
 
 const chartConfig = {
@@ -42,35 +44,34 @@ const chartConfig = {
 
 export default function CourseProgressChart({
   stats,
+  enrollmentStats,
 }: CourseProgressChartProps) {
   const shouldReduceMotion = useAccessibleMotion();
 
-  const notStarted = Math.max(
-    0,
-    stats.enrolledCourses -
-      stats.completedCourses -
-      stats.inProgressCourses,
-  );
+  const total = stats?.enrolledCourses ?? enrollmentStats?.total;
+  const completed = stats?.completedCourses ?? enrollmentStats?.completed ?? 0;
+  const active = stats?.inProgressCourses ?? enrollmentStats?.active ?? 0;
+  const remaining = Math.max(0, (total ?? 0) - completed - active);
 
   const chartData = [
     {
       status: "completed",
       label: "Completed",
-      count: stats.completedCourses,
+      count: completed,
       fill: "var(--color-completed)",
       color: "var(--primary)",
     },
     {
       status: "inProgress",
-      label: "In progress",
-      count: stats.inProgressCourses,
+      label: stats ? "In progress" : "Active enrollment",
+      count: active,
       fill: "var(--color-inProgress)",
       color: "#60a5fa",
     },
     {
       status: "notStarted",
-      label: "Not started",
-      count: notStarted,
+      label: stats ? "Not started" : "Inactive enrollment",
+      count: remaining,
       fill: "var(--color-notStarted)",
       color: "var(--muted-foreground)",
     },
@@ -83,10 +84,10 @@ export default function CourseProgressChart({
       </h2>
 
       <p className="mt-1 text-sm text-brand-text-muted">
-        Your learning distribution.
+        {stats ? "Your learning distribution." : "Enrollment status. Lesson progress tracking is unavailable."}
       </p>
 
-      {stats.enrolledCourses > 0 ? (
+      {total ? (
         <div className="relative mx-auto mt-3 max-w-64">
           <ChartContainer
             config={chartConfig}
@@ -98,7 +99,7 @@ export default function CourseProgressChart({
                 content={
                   <ChartTooltipContent
                     hideLabel
-                    nameKey="status"
+                    nameKey="label"
                   />
                 }
               />
@@ -108,7 +109,7 @@ export default function CourseProgressChart({
                   (item) => item.count > 0,
                 )}
                 dataKey="count"
-                nameKey="status"
+                nameKey="label"
                 innerRadius="72%"
                 outerRadius="92%"
                 paddingAngle={4}
@@ -123,7 +124,7 @@ export default function CourseProgressChart({
           {/* Center Label */}
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-3xl font-bold tabular-nums text-brand-text">
-              {stats.enrolledCourses}
+              {total}
             </span>
 
             <span className="text-xs text-brand-text-muted">
@@ -133,13 +134,13 @@ export default function CourseProgressChart({
         </div>
       ) : (
         <div className="flex h-64 items-center justify-center text-sm text-brand-text-muted">
-          No enrolled courses yet.
+          {total === undefined ? "Enrollment totals unavailable." : "No enrolled courses yet."}
         </div>
       )}
 
       {/* Custom Legend */}
       <div className="space-y-3">
-        {chartData.map((item) => (
+        {total !== undefined && chartData.map((item) => (
           <div
             key={item.status}
             className="flex items-center gap-2.5"

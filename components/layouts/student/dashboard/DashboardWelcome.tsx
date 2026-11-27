@@ -90,7 +90,7 @@ export default function DashboardWelcome() {
           </p>
 
           <Link
-            href="/student/courses"
+            href="/courses"
             className="
               mt-2 inline-flex items-center gap-2
               rounded-lg bg-primary px-4 py-2.5

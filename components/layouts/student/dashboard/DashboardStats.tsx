@@ -11,56 +11,55 @@ import {
 } from "lucide-react";
 
 import DashboardCard from "./DashboardCard";
+import type { EnrollmentStats } from "@/features/commerce/commerce.types";
 import { DashboardStatsData } from "@/features/student/types/dashboard.types";
 
 
 interface DashboardStatsProps {
-  stats: DashboardStatsData;
+  stats?: DashboardStatsData;
+  enrollmentStats?: EnrollmentStats;
 }
 
 export default function DashboardStats({
   stats,
+  enrollmentStats,
 }: DashboardStatsProps) {
-  const completionRate =
-    stats.enrolledCourses > 0
-      ? Math.round(
-          (stats.completedCourses /
-            stats.enrolledCourses) *
-            100,
-        )
-      : 0;
+  const enrolled = enrollmentStats?.total ?? stats?.enrolledCourses;
+  const completed = enrollmentStats?.completed ?? stats?.completedCourses;
+  const completionRate = enrolled && completed !== undefined ? Math.round(completed / enrolled * 100) : undefined;
 
   const cards = [
     {
       label: "Enrolled courses",
-      value: stats.enrolledCourses,
-      description: `${stats.inProgressCourses} currently in progress`,
+      value: enrolled ?? "?",
+      description: stats ? `${stats.inProgressCourses} currently in progress`
+        : enrollmentStats ? `${enrollmentStats.active} active enrollments` : "Enrollment total unavailable",
       icon: BookOpen,
-      href: "/student/my-learning",
+      href: "/student/my-courses",
       color: "text-primary bg-primary/10",
     },
     {
       label: "Completed courses",
-      value: stats.completedCourses,
-      description: `${completionRate}% completion rate`,
+      value: completed ?? "?",
+      description: completionRate === undefined ? "Recorded course completions" : `${completionRate}% completion rate`,
       icon: CircleCheck,
-      href: "/student/my-learning",
+      href: "/student/my-courses",
       color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
     },
     {
       label: "Learning hours",
-      value: `${stats.learningHours.toFixed(1)}h`,
-      description: "Total learning time",
+      value: stats ? `${stats.learningHours.toFixed(1)}h` : "?",
+      description: stats ? "Total learning time" : "Learning time tracking unavailable",
       icon: Clock3,
-      href: "/student/my-learning",
+      href: "/student/my-courses",
       color: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
     },
     {
       label: "Certificates",
-      value: stats.certificates,
-      description: "Certificates earned",
+      value: stats?.certificates ?? "?",
+      description: stats ? "Certificates earned" : "Certificate totals unavailable",
       icon: Award,
-      href: "/student/certificates",
+      href: undefined,
       color: "text-amber-600 bg-amber-500/10 dark:text-amber-400",
     },
   ];
@@ -97,7 +96,7 @@ export default function DashboardStats({
                 {card.description}
               </p>
 
-              <Link
+              {card.href && <Link
                 href={card.href}
                 aria-label={`View ${card.label}`}
                 className="
@@ -109,7 +108,7 @@ export default function DashboardStats({
                 "
               >
                 <ArrowUpRight size={16} />
-              </Link>
+              </Link>}
             </div>
           </DashboardCard>
         );

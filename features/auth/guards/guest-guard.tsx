@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { enrollmentReturnPath } from "@/features/commerce/return-path";
 
 import { useAuthStore } from "../store/auth.store";
 
@@ -19,6 +20,9 @@ export default function GuestGuard({
   redirectTo,
 }: GuestGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const returnTo = pathname === "/login" ? enrollmentReturnPath(searchParams.get("returnTo")) : null;
 
   // Authentication state
   const user = useAuthStore((state) => state.user);
@@ -38,7 +42,7 @@ export default function GuestGuard({
   // Determine role-based redirect destination
   const redirectPath =
     isInitialized && hasAuthenticatedUser
-      ? redirectTo ?? getRoleDashboardRoute(user.role)
+      ? (user.role === "STUDENT" ? returnTo : null) ?? redirectTo ?? getRoleDashboardRoute(user.role)
       : null;
 
   // Redirect authenticated users

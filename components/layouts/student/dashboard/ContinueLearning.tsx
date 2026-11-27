@@ -13,17 +13,28 @@ import {
 import { motion } from "motion/react";
 
 import DashboardCard from "./DashboardCard";
+import type { Enrollment } from "@/features/commerce/commerce.types";
 import { LearningCourse } from "@/features/student/types/dashboard.types";
 
 
 interface ContinueLearningProps {
-  courses: LearningCourse[];
+  courses?: LearningCourse[];
+  enrollments?: Enrollment[];
 }
 
 export default function ContinueLearning({
-  courses,
+  courses = [],
+  enrollments = [],
 }: ContinueLearningProps) {
   const shouldReduceMotion = useAccessibleMotion();
+  const rows = courses.length
+    ? courses.map((course) => ({ ...course, tracked: course, subtitle: course.currentLesson }))
+    : enrollments.filter(({ status, course }) => (status === "ACTIVE" || status === "COMPLETED") &&
+        (course.status === "PUBLISHED" || course.status === "ARCHIVED"))
+      .map(({ course }) => ({
+        id: course.id, title: course.title, category: course.category.name,
+        thumbnail: course.thumbnailUrl, subtitle: course.instructor.name, tracked: undefined,
+      }));
 
   return (
     <DashboardCard
@@ -37,12 +48,12 @@ export default function ContinueLearning({
           </h2>
 
           <p className="mt-1 text-sm text-brand-text-muted">
-            Pick up where you left off.
+            {courses.length ? "Pick up where you left off." : "Open one of your enrolled courses."}
           </p>
         </div>
 
         <Link
-          href="/student/my-learning"
+          href="/student/my-courses"
           className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
         >
           View all
@@ -51,9 +62,9 @@ export default function ContinueLearning({
         </Link>
       </div>
 
-      {courses.length > 0 ? (
+      {rows.length > 0 ? (
         <div className="mt-5 space-y-4">
-          {courses.map((course) => (
+          {rows.map((course) => (
             <div
               key={course.id}
               className="
@@ -71,7 +82,7 @@ export default function ContinueLearning({
                     <Image
                       src={course.thumbnail}
                       alt={course.title}
-                      fill
+                      fill unoptimized
                       sizes="80px"
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
@@ -94,13 +105,13 @@ export default function ContinueLearning({
                   </h3>
 
                   <p className="mt-1 truncate text-xs text-brand-text-muted">
-                    {course.currentLesson}
+                    {course.subtitle}
                   </p>
                 </div>
 
                 <Link
-                  href={`/student/courses/${encodeURIComponent(course.id)}`}
-                  aria-label={`Continue ${course.title}`}
+                  href={`/student/learning/${encodeURIComponent(course.id)}`}
+                  aria-label={`Open ${course.title}`}
                   className="
                     flex size-10 shrink-0 items-center
                     justify-center rounded-xl
@@ -113,15 +124,15 @@ export default function ContinueLearning({
               </div>
 
               {/* Course Progress */}
-              <div className="mt-4">
+              {course.tracked && <div className="mt-4">
                 <div className="mb-2 flex items-center justify-between gap-2 text-xs">
                   <span className="text-brand-text-muted">
-                    {course.completedLessons} of{" "}
-                    {course.totalLessons} lessons
+                    {course.tracked.completedLessons} of{" "}
+                    {course.tracked.totalLessons} lessons
                   </span>
 
                   <span className="font-semibold tabular-nums text-primary">
-                    {course.progress}%
+                    {course.tracked.progress}%
                   </span>
                 </div>
 
@@ -130,17 +141,17 @@ export default function ContinueLearning({
                   aria-label={`${course.title} progress`}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-valuenow={course.progress}
+                  aria-valuenow={course.tracked.progress}
                   className="h-1.5 overflow-hidden rounded-full bg-primary/10"
                 >
                   <motion.div
                     initial={{
                       width: shouldReduceMotion
-                        ? `${course.progress}%`
+                        ? `${course.tracked.progress}%`
                         : 0,
                     }}
                     animate={{
-                      width: `${course.progress}%`,
+                      width: `${course.tracked.progress}%`,
                     }}
                     transition={{
                       duration: shouldReduceMotion
@@ -151,7 +162,7 @@ export default function ContinueLearning({
                     className="h-full rounded-full bg-primary"
                   />
                 </div>
-              </div>
+              </div>}
             </div>
           ))}
         </div>
@@ -163,14 +174,14 @@ export default function ContinueLearning({
           />
 
           <p className="text-sm text-brand-text-muted">
-            {`You don't have any courses in progress.`}
+            Open My Courses to view your enrollments.
           </p>
 
           <Link
-            href="/student/courses"
+            href="/student/my-courses"
             className="text-sm font-semibold text-primary"
           >
-            Explore courses
+            My Courses
           </Link>
         </div>
       )}

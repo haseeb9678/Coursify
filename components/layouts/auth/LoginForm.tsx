@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { enrollmentReturnPath } from "@/features/commerce/return-path";
 import { motion } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +34,8 @@ import { getGraphQLErrorMessage } from "@/lib/graphql/error";
 
 const LoginForm = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = enrollmentReturnPath(searchParams.get("returnTo"));
 
   const [formMessage, setFormMessage] = useState("");
 
@@ -65,7 +68,7 @@ const LoginForm = () => {
 
       toast.success(response.message);
 
-      router.replace("/");
+      router.replace(response.user.role === "STUDENT" && returnTo ? returnTo : "/");
     } catch (error: unknown) {
       const message = getGraphQLErrorMessage(error);
 

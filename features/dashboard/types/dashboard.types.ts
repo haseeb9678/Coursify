@@ -7,6 +7,7 @@ export interface DashboardNavigationItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  activePaths?: readonly string[];
   implemented?: boolean;
 }
 

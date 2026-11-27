@@ -36,6 +36,7 @@ interface AdminDataTableProps<T> {
   isLoading?: boolean;
   isPlaceholderData?: boolean;
   isSelectionDisabled?: boolean;
+  showSelection?: boolean;
   isPaginationDisabled?: boolean;
   error?: string | null;
   emptyTitle?: string;
@@ -58,6 +59,7 @@ export default function AdminDataTable<T>({
   isLoading = false,
   isPlaceholderData = false,
   isSelectionDisabled = false,
+  showSelection = true,
   isPaginationDisabled = false,
   error = null,
   emptyTitle = "No records found",
@@ -119,7 +121,7 @@ export default function AdminDataTable<T>({
           <table className="w-full min-w-[880px] border-collapse text-left text-xs">
             <thead className="bg-brand-page-secondary/70">
               <tr className="border-b border-brand-border">
-                <th scope="col" className="w-11 px-4 py-3">
+                {showSelection && <th scope="col" className="w-11 px-4 py-3">
                   <span className="relative flex size-4">
                     <Checkbox
                       checked={allSelected}
@@ -137,7 +139,7 @@ export default function AdminDataTable<T>({
                       </span>
                     )}
                   </span>
-                </th>
+                </th>}
                 {visibleColumns.map((column) => (
                   <th
                     key={column.id}
@@ -175,7 +177,7 @@ export default function AdminDataTable<T>({
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, rowIndex) => (
                   <tr key={`loading-${rowIndex}`}>
-                    <td colSpan={visibleColumns.length + 1} className="px-4 py-5">
+                    <td colSpan={visibleColumns.length + (showSelection ? 1 : 0)} className="px-4 py-5">
                       <div className="h-4 animate-pulse rounded bg-brand-soft motion-reduce:animate-none" />
                     </td>
                   </tr>
@@ -188,14 +190,14 @@ export default function AdminDataTable<T>({
                       key={id}
                       className="transition-colors hover:bg-brand-page-secondary/60"
                     >
-                      <td className="px-4 py-3.5">
+                      {showSelection && <td className="px-4 py-3.5">
                         <Checkbox
                           checked={selectedIds.has(id)}
                           disabled={isSelectionDisabled}
                           onCheckedChange={(checked) => onToggleRows([id], checked === true)}
                           aria-label={`Select row ${id}`}
                         />
-                      </td>
+                      </td>}
                       {visibleColumns.map((column) => (
                         <td key={column.id} className={`px-4 py-3.5 text-brand-text ${column.className ?? ""}`}>
                           {column.cell(row)}

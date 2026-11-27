@@ -6,7 +6,7 @@ export default function AdminStatsGrid({
   columns = 4,
 }: {
   stats: AdminStat[];
-  columns?: 4 | 5;
+  columns?: 3 | 4 | 5;
 }) {
   return (
     <section
@@ -14,7 +14,9 @@ export default function AdminStatsGrid({
       className={
         columns === 5
           ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
-          : "grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+          : columns === 3
+            ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+            : "grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
       }
     >
       {stats.map((stat) => (

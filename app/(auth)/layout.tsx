@@ -5,6 +5,7 @@ import Footer from "@/components/layouts/marketing/Footer";
 import { footerColumns } from "@/features/home/data/footer.data";
 import AuthNavbar from "@/components/layouts/auth/Navbar";
 import GuestGuard from "@/features/auth/guards/guest-guard";
+import AuthLoader from "@/components/layouts/auth/AuthLoader";
 import AccessibilityButton from "@/components/accessibility/AccessibilityButton";
 
 export default function AuthLayout({
@@ -46,9 +47,9 @@ export default function AuthLayout({
         </div>
 
         {/* Auth Pages */}
-          <GuestGuard redirectTo="/student/dashboard">
-      {children}
-       </GuestGuard>
+        <React.Suspense fallback={<AuthLoader message="Verifying your session..." />}>
+          <GuestGuard redirectTo="/student/dashboard">{children}</GuestGuard>
+        </React.Suspense>
        
       </main>
 

@@ -139,7 +139,7 @@ export default function DashboardProfileMenu({
           );
         })}
 
-        <DropdownMenuSeparator />
+        {accountNavigation.length > 0 && <DropdownMenuSeparator />}
 
         <DropdownMenuItem
           disabled={isLoggingOut}
