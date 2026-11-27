@@ -16,6 +16,7 @@ interface CourseTabsProps {
   onTabChange: (tab: CourseTab) => void;
   expandedModules: number[];
   onToggleModule: (index: number) => void;
+  onPreviewLesson: (lesson: { id: string; title: string }) => void;
 }
 
 const tabs: { label: string; value: CourseTab }[] = [
@@ -31,6 +32,7 @@ export default function CourseTabs({
   onTabChange,
   expandedModules,
   onToggleModule,
+  onPreviewLesson,
 }: CourseTabsProps) {
   return (
     <>
@@ -88,6 +90,7 @@ export default function CourseTabs({
               course={course}
               expandedModules={expandedModules}
               onToggleModule={onToggleModule}
+              onPreviewLesson={onPreviewLesson}
             />
           )}
 

@@ -246,10 +246,11 @@ const CURRICULUM_FIELDS = gql`
   fragment CurriculumSectionFields on CourseSectionEntity {
     id courseId title description position createdAt updatedAt
     lessons {
-      id sectionId title description type content videoUrl documentUrl
+      id sectionId title description type content videoUrl documentUrl videoAssetId documentAssetId
       durationSeconds position isPreview createdAt updatedAt
+      videoQualities { height assetId }
       resources {
-        id title type url fileName fileSize position createdAt updatedAt
+        id title type url fileName fileSize mediaAssetId position createdAt updatedAt
       }
     }
   }
@@ -308,9 +309,22 @@ export const ADMIN_CREATE_LESSON_MUTATION = gql`
   mutation AdminCreateCourseLesson($input: AdminCreateCourseLessonInput!) {
     adminCreateCourseLesson(input: $input) {
       success message lesson {
-        id sectionId title description type content videoUrl documentUrl
+        id sectionId title description type content videoUrl documentUrl videoAssetId documentAssetId
         durationSeconds position isPreview createdAt updatedAt
-        resources { id title type url fileName fileSize position createdAt updatedAt }
+        resources { id title type url fileName fileSize mediaAssetId position createdAt updatedAt }
+      }
+    }
+  }
+`;
+
+export const ADMIN_SAVE_LESSON_MUTATION = `
+  mutation AdminSaveCourseLesson($input: AdminSaveCourseLessonInput!) {
+    adminSaveCourseLesson(input: $input) {
+      success message
+      lesson {
+        id sectionId title description type content videoUrl documentUrl videoAssetId documentAssetId durationSeconds position isPreview createdAt updatedAt
+        videoQualities { height assetId }
+        resources { id title type url fileName fileSize mediaAssetId position createdAt updatedAt }
       }
     }
   }
@@ -319,7 +333,7 @@ export const ADMIN_CREATE_LESSON_MUTATION = gql`
 export const ADMIN_UPDATE_LESSON_MUTATION = gql`
   mutation AdminUpdateCourseLesson($input: AdminUpdateCourseLessonInput!) {
     adminUpdateCourseLesson(input: $input) {
-      success message lesson { id sectionId title description type content videoUrl documentUrl durationSeconds position isPreview createdAt updatedAt }
+      success message lesson { id sectionId title description type content videoUrl documentUrl videoAssetId documentAssetId durationSeconds position isPreview createdAt updatedAt }
     }
   }
 `;
@@ -345,7 +359,7 @@ export const ADMIN_MOVE_LESSON_MUTATION = gql`
 export const ADMIN_CREATE_RESOURCE_MUTATION = gql`
   mutation AdminCreateLessonResource($input: AdminCreateLessonResourceInput!) {
     adminCreateLessonResource(input: $input) {
-      success message resource { id title type url fileName fileSize position createdAt updatedAt }
+      success message resource { id title type url fileName fileSize mediaAssetId position createdAt updatedAt }
     }
   }
 `;
@@ -353,7 +367,7 @@ export const ADMIN_CREATE_RESOURCE_MUTATION = gql`
 export const ADMIN_UPDATE_RESOURCE_MUTATION = gql`
   mutation AdminUpdateLessonResource($input: AdminUpdateLessonResourceInput!) {
     adminUpdateLessonResource(input: $input) {
-      success message resource { id title type url fileName fileSize position createdAt updatedAt }
+      success message resource { id title type url fileName fileSize mediaAssetId position createdAt updatedAt }
     }
   }
 `;
@@ -449,7 +463,7 @@ export const PUBLIC_COURSE_QUERY = gql`
     course(identifier: $identifier) {
       ...PublicCourseFields
       updatedAt
-      curriculum { title lessons { title durationSeconds isPreview resourceCount } }
+      curriculum { title lessons { title durationSeconds isPreview resourceCount previewLessonId } }
     }
   }
 `;

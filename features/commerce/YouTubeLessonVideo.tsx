@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import LessonPlaybackControls, { initialPlayback, toggleLessonFullscreen } from "./LessonPlaybackControls";
+import LessonPlaybackControls, { initialPlayback, toggleLessonFullscreen, type LessonPlayback } from "./LessonPlaybackControls";
 
 interface YouTubePlayer {
   destroy: () => void;
@@ -20,6 +19,7 @@ interface YouTubePlayer {
   isMuted: () => boolean;
   getPlaybackRate: () => number;
   getAvailablePlaybackRates: () => number[];
+  getVideoLoadedFraction?: () => number;
 }
 
 type PlayerEvent = { target: YouTubePlayer; data: number };
@@ -65,21 +65,30 @@ function loadYouTubeApi(): Promise<YouTubeApi> {
 }
 
 export default function YouTubeLessonVideo({ embed, title }: { embed: string; title: string }) {
-  const [useProviderControls, setUseProviderControls] = useState(false);
-  const useYouTubeControls = useCallback(() => setUseProviderControls(true), []);
-  if (useProviderControls) {
-    return <iframe src={embed} title={title} className={`${frameClass} rounded-2xl border border-brand-border bg-black`}
-      allow={youtubePermissions} allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />;
+  const [providerPlayback, setProviderPlayback] = useState<Pick<LessonPlayback, "position" | "playing">>();
+  const useYouTubeControls = useCallback((playback = initialPlayback) => setProviderPlayback(playback), []);
+  if (providerPlayback) {
+    const address = new URL(embed);
+    address.searchParams.set("playsinline", "1");
+    const start = Math.floor(providerPlayback.position);
+    if (start > 0) address.searchParams.set("start", String(start));
+    if (providerPlayback.playing) address.searchParams.set("autoplay", "1");
+    return <div className="space-y-2">
+      <iframe src={address.href} title={title} className={`${frameClass} rounded-2xl border border-brand-border bg-black`}
+        allow={youtubePermissions} allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+      <p className="text-xs text-brand-text-muted">Choose a resolution in YouTube Settings → Quality.</p>
+    </div>;
   }
   return <YouTubeCustomControls embed={embed} title={title} onFallback={useYouTubeControls} />;
 }
 
-function YouTubeCustomControls({ embed, title, onFallback }: { embed: string; title: string; onFallback: () => void }) {
+function YouTubeCustomControls({ embed, title, onFallback }: { embed: string; title: string; onFallback: (playback?: LessonPlayback) => void }) {
   const surface = useRef<HTMLDivElement>(null);
   const frameHost = useRef<HTMLDivElement>(null);
   const player = useRef<YouTubePlayer>(null);
   const [ready, setReady] = useState(false);
   const [playback, setPlayback] = useState(initialPlayback);
+  const [buffered, setBuffered] = useState(0);
   const [rates, setRates] = useState<number[]>([1]);
 
   useEffect(() => {
@@ -104,9 +113,11 @@ function YouTubeCustomControls({ embed, title, onFallback }: { embed: string; ti
     const readyTimer = window.setTimeout(onFallback, 12000);
     const update = (target: YouTubePlayer) => {
       if (!active) return;
+      const duration = target.getDuration() || 0;
+      setBuffered((target.getVideoLoadedFraction?.() ?? 0) * duration);
       setPlayback({
         position: target.getCurrentTime() || 0,
-        duration: target.getDuration() || 0,
+        duration,
         playing: target.getPlayerState() === 1,
         muted: target.isMuted(),
         volume: target.getVolume() / 100,
@@ -150,11 +161,12 @@ function YouTubeCustomControls({ embed, title, onFallback }: { embed: string; ti
   }, [embed, onFallback, title]);
 
   return (
-    <div className="space-y-2">
-      <div ref={surface} className="overflow-hidden rounded-2xl border border-brand-border bg-black text-white fullscreen:flex fullscreen:flex-col fullscreen:justify-center">
-        <div ref={frameHost} className="aspect-video min-h-50 w-full in-fullscreen:max-h-[calc(100dvh-6rem)]" />
+    <div ref={surface} className="relative rounded-2xl border border-brand-border bg-black text-white shadow-sm fullscreen:flex fullscreen:flex-col fullscreen:justify-center">
+        <div ref={frameHost} className="aspect-video min-h-50 w-full overflow-hidden rounded-t-2xl in-fullscreen:max-h-[calc(100dvh-6rem)]" />
         <LessonPlaybackControls
           playback={playback} rates={rates} disabled={!ready}
+          container={surface} buffered={buffered} provider="YouTube"
+          onProviderControls={() => onFallback(playback)}
           onToggle={() => {
             if (playback.playing) player.current?.pauseVideo();
             else player.current?.playVideo();
@@ -179,8 +191,6 @@ function YouTubeCustomControls({ embed, title, onFallback }: { embed: string; ti
           onSpeed={(rate) => player.current?.setPlaybackRate(rate)}
           onFullscreen={() => void toggleLessonFullscreen(surface.current)}
         />
-      </div>
-      <Button variant="link" onClick={onFallback}>Use YouTube controls</Button>
     </div>
   );
 }

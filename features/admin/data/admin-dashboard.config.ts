@@ -5,6 +5,7 @@ import {
   ChartPie,
   CreditCard,
   FileCheck2,
+  HardDrive,
   LayoutDashboard,
   Megaphone,
   PanelsTopLeft,
@@ -119,6 +120,7 @@ const adminNavigationGroups = [
     label: "Website Management",
     items: [
       { label: "Hero Management", href: `${adminBaseRoute}/website/hero`, icon: PanelsTopLeft, implemented: true },
+      { label: "Media Library", href: `${adminBaseRoute}/media`, icon: HardDrive, implemented: true },
       { label: "Promotional Popups", href: `${adminBaseRoute}/website/popups`, icon: Megaphone, implemented: true },
     ],
   },

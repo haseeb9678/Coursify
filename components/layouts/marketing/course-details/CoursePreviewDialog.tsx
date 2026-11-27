@@ -4,22 +4,26 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { PlayCircle, X } from "lucide-react";
 
+import { ManagedMedia } from "@/features/storage/ManagedMedia";
+import LessonVideoPlayer from "@/features/commerce/LessonVideoPlayer";
 import type { CourseDetails } from "@/features/courses/data/course-details.data";
 
 interface CoursePreviewDialogProps {
   course: CourseDetails;
   open: boolean;
   onClose: () => void;
+  lesson?: { id: string; title: string } | null;
 }
 
 export default function CoursePreviewDialog({
   course,
   open,
   onClose,
+  lesson,
 }: CoursePreviewDialogProps) {
   return (
     <AnimatePresence>
-      {open && course.previewVideoUrl && (
+      {open && (lesson || course.previewVideoUrl) && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
@@ -46,7 +50,14 @@ export default function CoursePreviewDialog({
               <X size={18} />
             </button>
 
-            <div className="relative aspect-video">
+            {lesson ? <div className="space-y-4 p-4 sm:p-6">
+              <h3 id="preview-title" className="pr-12 text-lg font-semibold">{lesson.title}</h3>
+              <ManagedMedia key={lesson.id} courseId={course.id} lessonId={lesson.id} kind="video" title={lesson.title} preview />
+            </div> : course.previewVideoUrl && /\.mp4(?:[?#]|$)/i.test(course.previewVideoUrl)
+              ? <div className="space-y-4 p-4 sm:p-6">
+                <h3 id="preview-title" className="pr-12 text-lg font-semibold">Course preview</h3>
+                <LessonVideoPlayer source={course.previewVideoUrl} title={course.title} />
+              </div> : <div className="relative aspect-video">
               {course.previewImage && (
                 <Image
                   src={course.previewImage}
@@ -67,7 +78,7 @@ export default function CoursePreviewDialog({
                   </h3>
 
                   <a
-                    href={course.previewVideoUrl}
+                    href={course.previewVideoUrl ?? undefined}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-1 inline-block text-xs text-white/80 underline hover:text-white"
@@ -76,7 +87,7 @@ export default function CoursePreviewDialog({
                   </a>
                 </div>
               </div>
-            </div>
+            </div>}
           </motion.div>
         </motion.div>
       )}

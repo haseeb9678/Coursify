@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import Image from "next/image";
+import MediaUpload from "@/components/shared/media/MediaUpload";
+import { useMediaPending } from "@/features/storage/use-media-pending";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { ArrowLeft, FileJson, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, FileJson, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getGraphQLErrorCode, getGraphQLErrorMessage } from "@/lib/graphql/error";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ export default function CourseFormClient({
   const categories = [...categoryOptions, ...importedCategories.filter((item) => !categoryOptions.some(({ id }) => id === item.id))];
   const instructorOptions = [...baseInstructors, ...importedInstructors.filter((item) => !baseInstructors.some(({ id }) => id === item.id))];
   const submitting = useRef(false);
+  const media = useMediaPending();
   const baseline = useRef<AdminCourse | undefined>(undefined);
   const [pendingAction, setPendingAction] = useState<PendingCourseAction | null>(null);
   const [pendingSaveMode, setPendingSaveMode] = useState<SaveMode | null>(null);
@@ -119,6 +121,7 @@ export default function CourseFormClient({
 
   const isFree = useWatch({ control, name: "isFree" });
   const thumbnailDataUrl = useWatch({ control, name: "thumbnailDataUrl" });
+  const promotionalVideoUrl = useWatch({ control, name: "promotionalVideoUrl" });
   const learningOutcomes =
     useWatch({ control, name: "learningOutcomes" }) ?? [];
   const requirements = useWatch({ control, name: "requirements" }) ?? [];
@@ -216,7 +219,7 @@ export default function CourseFormClient({
   };
   const submitCourse = (saveMode: SaveMode) => async (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
-    if (submitting.current || (mode === "edit" && !canEditCourse(currentCourse?.status))) return;
+    if (submitting.current || media.pending || (mode === "edit" && !canEditCourse(currentCourse?.status))) return;
     submitting.current = true;
     setPendingSaveMode(saveMode);
     try {
@@ -315,11 +318,11 @@ export default function CourseFormClient({
         <div className="flex flex-wrap items-center gap-2">
           {mode === "create" && (
             <>
-              <Button type="button" variant="outline" disabled={pendingSaveMode !== null} onClick={() => setImportOpen(true)}>
+              <Button type="button" variant="outline" disabled={pendingSaveMode !== null || media.pending} onClick={() => setImportOpen(true)}>
                 <FileJson size={15} aria-hidden="true" /> Import JSON
               </Button>
               {lastImport && (
-                <Button type="button" variant="ghost" disabled={pendingSaveMode !== null} onClick={undoImport}>Undo Last Import</Button>
+                <Button type="button" variant="ghost" disabled={pendingSaveMode !== null || media.pending} onClick={undoImport}>Undo Last Import</Button>
               )}
             </>
           )}
@@ -501,54 +504,21 @@ export default function CourseFormClient({
           </FormField>
         </FormSection>
 
-        <FormSection title="Course media" description="Use a publicly accessible image URL and video link.">
+        <FormSection title="Course media" description="Upload public course media or use an existing URL.">
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormField id="course-thumbnail" label="Course thumbnail URL">
-              <Input
-                id="course-thumbnail"
-                type="url"
-                placeholder="https://example.com/course-image.jpg"
-                {...register("thumbnailDataUrl")}
-              />
+            <FormField id="course-thumbnail" label="Course thumbnail" error={errors.thumbnailDataUrl?.message}>
+              <MediaUpload purpose="COURSE_THUMBNAIL" courseId={currentCourse?.id} label="Course thumbnail" value={thumbnailDataUrl}
+                onUrlChange={(value) => setValue("thumbnailDataUrl", value || null, { shouldDirty: true, shouldValidate: true })}
+                onAsset={(asset) => setValue("thumbnailDataUrl", asset.publicUrl, { shouldDirty: true, shouldValidate: true })}
+                onRemove={() => setValue("thumbnailDataUrl", null, { shouldDirty: true, shouldValidate: true })}
+                onBusyChange={media.track("thumbnail")} />
             </FormField>
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-brand-text">Thumbnail preview</span>
-              {thumbnailDataUrl && (
-                <div className="relative w-fit">
-                  <Image
-                    src={thumbnailDataUrl}
-                    alt="Course thumbnail preview"
-                    width={240}
-                    height={135}
-                    unoptimized
-                    className="h-32 w-56 rounded-lg border border-brand-border object-cover"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon-sm"
-                    aria-label="Remove course thumbnail"
-                    className="absolute -top-2 -right-2"
-                    onClick={() => {
-                      setValue("thumbnailDataUrl", null, { shouldDirty: true });
-                    }}
-                  >
-                    <X size={14} aria-hidden="true" />
-                  </Button>
-                </div>
-              )}
-            </div>
-            <FormField
-              id="course-promo-video"
-              label="Promotional video URL (optional)"
-              error={errors.promotionalVideoUrl?.message}
-            >
-              <Input
-                id="course-promo-video"
-                type="url"
-                placeholder="https://"
-                {...register("promotionalVideoUrl")}
-              />
+            <FormField id="course-promo-video" label="Promotional video (optional)" error={errors.promotionalVideoUrl?.message}>
+              <MediaUpload purpose="COURSE_PROMOTIONAL_VIDEO" courseId={currentCourse?.id} label="Promotional video" value={promotionalVideoUrl}
+                onUrlChange={(value) => setValue("promotionalVideoUrl", value, { shouldDirty: true, shouldValidate: true })}
+                onAsset={(asset) => setValue("promotionalVideoUrl", asset.publicUrl ?? "", { shouldDirty: true, shouldValidate: true })}
+                onRemove={() => setValue("promotionalVideoUrl", "", { shouldDirty: true, shouldValidate: true })}
+                onBusyChange={media.track("promo")} />
             </FormField>
           </div>
         </FormSection>
@@ -664,14 +634,14 @@ export default function CourseFormClient({
             <Button
               type="submit"
               variant="outline"
-              disabled={pendingSaveMode !== null}
+              disabled={pendingSaveMode !== null || media.pending}
               busy={pendingSaveMode === "draft"}
             >
               {mode === "create" ? "Save as draft" : "Save changes"}
             </Button>
             <Button
               type="button"
-              disabled={pendingSaveMode !== null}
+              disabled={pendingSaveMode !== null || media.pending}
               busy={pendingSaveMode === "curriculum"}
               onClick={() => void submitAndContinue()}
             >

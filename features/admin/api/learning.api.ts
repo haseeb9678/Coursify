@@ -18,6 +18,7 @@ import {
   ADMIN_CREATE_CATEGORY_MUTATION,
   ADMIN_CREATE_COURSE_MUTATION,
   ADMIN_CREATE_LESSON_MUTATION,
+  ADMIN_SAVE_LESSON_MUTATION,
   ADMIN_CREATE_RESOURCE_MUTATION,
   ADMIN_CREATE_SECTION_MUTATION,
   ADMIN_DELETE_CATEGORY_MUTATION,
@@ -150,6 +151,9 @@ function mapResource(resource: LessonResourceRecord): LessonResource {
     title: resource.title,
     type: resource.type,
     url: resource.url,
+    mediaAssetId: resource.mediaAssetId,
+    fileName: resource.fileName,
+    fileSize: resource.fileSize,
   };
 }
 
@@ -165,6 +169,8 @@ function mapLesson(lesson: LessonRecord): CourseLesson {
     isPreview: lesson.isPreview,
     content: lesson.content,
     mediaUrl: lesson.videoUrl ?? lesson.documentUrl ?? "",
+    mediaAssetId: lesson.videoAssetId ?? lesson.documentAssetId,
+    videoQualities: lesson.videoQualities,
     resources: lesson.resources.map(mapResource),
     createdAt: lesson.createdAt,
     updatedAt: lesson.updatedAt,
@@ -409,10 +415,21 @@ export async function saveLesson(
     content: string;
     videoUrl: string | null;
     documentUrl: string | null;
+    mediaAssetId?: string | null;
     durationSeconds: number | null;
     isPreview: boolean;
+    videoQualities?: CourseLesson["videoQualities"];
+    resources?: { id?: string; title: string; type: "LINK" | "PDF" | "FILE" | "DOCUMENT"; url: string; mediaAssetId?: string | null }[];
   },
 ): Promise<CourseLesson> {
+  if (input.resources) {
+    const { id, sectionId, title, description, type, content, videoUrl, documentUrl, durationSeconds, isPreview, mediaAssetId, resources, videoQualities } = input;
+    const saved = await graphqlClient.request<{ adminSaveCourseLesson: { success: boolean; message: string; lesson: LessonRecord } }>(
+      ADMIN_SAVE_LESSON_MUTATION, { input: { id, sectionId, title, description, type, content, videoUrl, documentUrl, durationSeconds, isPreview, mediaAssetId, resources, videoQualities } },
+    );
+    assertSuccess(saved.adminSaveCourseLesson);
+    return mapLesson(saved.adminSaveCourseLesson.lesson);
+  }
   if (action === "create") {
     const createInput = {
       sectionId: input.sectionId,
@@ -421,7 +438,7 @@ export async function saveLesson(
       type: input.type,
       content: input.content,
       videoUrl: input.videoUrl,
-      documentUrl: input.documentUrl,
+      documentUrl: input.documentUrl, mediaAssetId: input.mediaAssetId || undefined,
       durationSeconds: input.durationSeconds,
       isPreview: input.isPreview,
     };
@@ -439,7 +456,7 @@ export async function saveLesson(
     type: input.type,
     content: input.content,
     videoUrl: input.videoUrl,
-    documentUrl: input.documentUrl,
+    documentUrl: input.documentUrl, mediaAssetId: input.mediaAssetId || undefined,
     durationSeconds: input.durationSeconds,
     isPreview: input.isPreview,
   };
@@ -479,7 +496,7 @@ export async function moveLesson(lessonId: string, destinationSectionId: string)
 
 export async function saveLessonResource(
   action: "create" | "update",
-  input: { id?: string; lessonId?: string; title: string; type: "LINK" | "PDF"; url: string; fileName?: string; fileSize?: number },
+  input: { id?: string; lessonId?: string; title: string; type: "LINK" | "PDF" | "DOCUMENT" | "FILE"; url: string; mediaAssetId?: string | null; fileName?: string; fileSize?: number },
 ) {
   if (action === "create") {
     const createInput = {
@@ -489,6 +506,7 @@ export async function saveLessonResource(
       url: input.url,
       fileName: input.fileName,
       fileSize: input.fileSize,
+      mediaAssetId: input.mediaAssetId || undefined,
     };
     const result = await graphqlClient.request<
       { adminCreateLessonResource: { success: boolean; message: string; resource: LessonResourceRecord } },
@@ -497,7 +515,7 @@ export async function saveLessonResource(
     assertSuccess(result.adminCreateLessonResource);
     return result.adminCreateLessonResource.resource;
   }
-  const updateInput = { id: input.id ?? "", title: input.title, type: input.type, url: input.url };
+  const updateInput = { id: input.id ?? "", title: input.title, type: input.type, url: input.url, mediaAssetId: input.mediaAssetId || undefined };
   const result = await graphqlClient.request<
     { adminUpdateLessonResource: { success: boolean; message: string; resource: LessonResourceRecord } },
     { input: typeof updateInput }

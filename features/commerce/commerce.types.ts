@@ -172,7 +172,8 @@ export interface LearningLesson {
   videoUrl: string | null;
   documentUrl: string | null;
   durationSeconds?: number | null;
-  resources: { id: string; title: string; type: string; url: string }[];
+  hasManagedMedia?: boolean;
+  resources: { id: string; title: string; type: string; url: string; hasManagedMedia?: boolean }[];
 }
 
 export interface LearningContent {

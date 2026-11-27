@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
+import AvatarDialog from "@/features/storage/AvatarDialog";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -25,6 +27,7 @@ export default function DashboardProfileMenu({
   onLogout,
   isLoggingOut = false,
 }: DashboardProfileMenuProps) {
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const name = user.name.trim() || user.role.toLowerCase();
   const initials = getUserInitials(name);
 
@@ -35,6 +38,7 @@ export default function DashboardProfileMenu({
   };
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         disabled={isLoggingOut}
@@ -57,6 +61,7 @@ export default function DashboardProfileMenu({
           ) : user.avatar ? (
             <Image
               src={user.avatar}
+              unoptimized
               alt={name}
               fill
               sizes="36px"
@@ -112,6 +117,10 @@ export default function DashboardProfileMenu({
 
         <DropdownMenuSeparator />
 
+        <DropdownMenuItem disabled={isLoggingOut} onClick={() => setAvatarOpen(true)}>
+          <UserRound aria-hidden="true" /> Edit profile photo
+        </DropdownMenuItem>
+
         {accountNavigation.map((item) => {
           const isImplemented = item.implemented !== false;
 
@@ -160,5 +169,7 @@ export default function DashboardProfileMenu({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    {avatarOpen && <AvatarDialog onClose={() => setAvatarOpen(false)} />}
+    </>
   );
 }

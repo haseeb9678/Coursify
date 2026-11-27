@@ -7,6 +7,7 @@ export interface CourseLesson {
   title: string;
   duration: string;
   preview?: boolean;
+  previewLessonId?: string | null;
 }
 
 export interface CourseModule {
@@ -89,6 +90,7 @@ export async function getCourseById(identifier: string): Promise<CourseDetails |
         title: lesson.title,
         duration: lesson.durationSeconds === null ? "Not listed" : formatDuration(lesson.durationSeconds),
         preview: lesson.isPreview,
+        previewLessonId: lesson.previewLessonId,
       };
     });
     totalDuration += sectionDuration;

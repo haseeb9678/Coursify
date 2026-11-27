@@ -15,6 +15,7 @@ import { CommerceLink, CommerceLoading, CommerceMessage } from "./CommerceUi";
 import { OrderRecord } from "./CommerceRecords";
 import LessonDiscussion from "./LessonDiscussion";
 import LessonVideoPlayer from "./LessonVideoPlayer";
+import { ManagedMedia } from "@/features/storage/ManagedMedia";
 import StudentCourseModules, { lessonTypes } from "./StudentCourseModules";
 import StudentLearningSkeleton from "./StudentLearningSkeleton";
 import { useStudentId } from "./student-queries";
@@ -85,7 +86,7 @@ export function StudentLearningPage({ courseId }: { courseId: string }) {
       {selected ? (
         <div className="grid items-start gap-5 p-4 sm:gap-6 sm:p-6 lg:p-8 xl:grid-cols-[minmax(0,1fr)_21rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]">
           <div className="min-w-0 space-y-5 sm:space-y-6">
-            <LearningLessonPanel key={selected.id} lesson={selected} />
+            <LearningLessonPanel key={`${userId}-${selected.id}`} courseId={course.id} lesson={selected} />
             <div id="student-lesson-discussion" className="scroll-mt-24">
               <LessonDiscussion key={`${userId}-${selected.id}`} userId={userId} courseId={course.id} lessonId={selected.id} />
             </div>
@@ -97,13 +98,13 @@ export function StudentLearningPage({ courseId }: { courseId: string }) {
   );
 }
 
-function LearningLessonPanel({ lesson }: { lesson: LearningLesson }) {
+function LearningLessonPanel({ courseId, lesson }: { courseId: string; lesson: LearningLesson }) {
   const { icon: Icon, label } = lessonTypes[lesson.type];
   const video = safeMaterialUrl(lesson.videoUrl);
   const document = safeMaterialUrl(lesson.documentUrl);
   const resources = lesson.resources.flatMap((resource) => {
     const href = safeMaterialUrl(resource.url);
-    return href ? [{ ...resource, href }] : [];
+    return href || resource.hasManagedMedia ? [{ ...resource, href }] : [];
   });
   return (
     <article aria-labelledby="student-lesson-heading" className="min-w-0 divide-y divide-brand-border rounded-2xl border border-brand-border bg-card shadow-sm">
@@ -118,15 +119,16 @@ function LearningLessonPanel({ lesson }: { lesson: LearningLesson }) {
         {lesson.description && <p className="wrap-break-word text-sm leading-relaxed whitespace-pre-wrap text-brand-text-muted sm:text-base">{lesson.description}</p>}
       </header>
       {lesson.type === "VIDEO" && (
-        <div className="p-4 sm:p-6 lg:p-8">{video ? <LessonVideoPlayer source={video} title={lesson.title} />
+        <div className="p-4 sm:p-6 lg:p-8">{lesson.hasManagedMedia ? <ManagedMedia kind="video" courseId={courseId} lessonId={lesson.id} title={lesson.title} /> : video ? <LessonVideoPlayer source={video} title={lesson.title} />
           : <p className="rounded-xl border border-brand-border bg-brand-page-secondary p-4 text-sm text-brand-text-muted">A video is unavailable for this lesson.</p>}</div>
       )}
       {lesson.type === "PDF" && (
         <div className="p-4 sm:p-6 lg:p-8">
           <div className="flex flex-wrap items-center gap-3 rounded-xl border border-brand-border bg-brand-page-secondary p-4 sm:gap-4">
             <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-soft text-primary"><FileText aria-hidden="true" className="size-5" /></span>
-            <p className="min-w-0 flex-1 text-sm font-semibold text-brand-text">{document ? "Lesson PDF" : "A PDF is unavailable for this lesson."}</p>
-            {document && <Button size="lg" nativeButton={false} render={<a href={document} target="_blank" rel="noreferrer" />}>
+            <p className="min-w-0 flex-1 text-sm font-semibold text-brand-text">{document || lesson.hasManagedMedia ? "Lesson PDF" : "A PDF is unavailable for this lesson."}</p>
+            {lesson.hasManagedMedia && <ManagedMedia kind="pdf" courseId={courseId} lessonId={lesson.id} title={lesson.title} />}
+            {!lesson.hasManagedMedia && document && <Button size="lg" nativeButton={false} render={<a href={document} target="_blank" rel="noreferrer" />}>
               Open lesson PDF <ArrowUpRight aria-hidden="true" />
             </Button>}
           </div>
@@ -139,14 +141,14 @@ function LearningLessonPanel({ lesson }: { lesson: LearningLesson }) {
         <section className="space-y-3 p-4 sm:p-6 lg:p-8">
           <h3 className="font-semibold text-brand-text">Lesson resources</h3>
           <ul className="grid gap-2 lg:grid-cols-2">
-            {resources.map(({ id, href, title, type }) => (
+            {resources.map(({ id, href, title, type, hasManagedMedia }) => (
               <li key={id} className="min-w-0">
-                <a href={href} target="_blank" rel="noreferrer"
+                {hasManagedMedia ? <ManagedMedia kind="document" courseId={courseId} lessonId={lesson.id} resourceId={id} title={title} /> : <a href={href ?? undefined} target="_blank" rel="noreferrer"
                   className="flex min-h-12 items-center gap-3 rounded-xl border border-brand-border px-3 py-2 text-sm font-medium text-brand-text transition-colors hover:border-primary/40 hover:bg-brand-soft hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                   {type === "PDF" ? <FileText className="size-4 shrink-0 text-primary" aria-hidden="true" /> : <Link2 className="size-4 shrink-0 text-primary" aria-hidden="true" />}
                   <span className="min-w-0 flex-1 wrap-break-word">{title}<span className="block text-xs font-normal text-brand-text-muted">{type === "PDF" ? "PDF document" : "External link"}</span></span>
                   <ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
-                </a>
+                </a>}
               </li>
             ))}
           </ul>

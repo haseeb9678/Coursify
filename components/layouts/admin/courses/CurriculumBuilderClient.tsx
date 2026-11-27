@@ -2,6 +2,9 @@
 
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import MediaUpload from "@/components/shared/media/MediaUpload";
+import { useMediaPending } from "@/features/storage/use-media-pending";
+import { ManagedMedia } from "@/features/storage/ManagedMedia";
 import {
   ArrowDown,
   ArrowLeft,
@@ -45,6 +48,7 @@ import type {
   LessonInput,
   LessonResourceType,
   LessonType,
+  LessonVideoQuality,
   SectionInput,
 } from "@/features/admin/types/learning.types";
 import {
@@ -68,6 +72,9 @@ type LessonDraft = {
   isPreview: boolean;
   content: string;
   mediaUrl: string;
+  mediaAssetId?: string | null;
+  videoQualities: LessonVideoQuality[];
+  measuredDuration?: number;
   resources: ({ id?: string } & LessonInput["resources"][number])[];
 };
 type PendingDelete =
@@ -85,6 +92,7 @@ const emptyLessonDraft = (sectionId: string): LessonDraft => ({
   isPreview: false,
   content: "",
   mediaUrl: "",
+  videoQualities: [],
   resources: [],
 });
 
@@ -94,6 +102,9 @@ export default function CurriculumBuilderClient({
   courseId: string;
 }) {
   const router = useRouter();
+  const media = useMediaPending();
+  const qualityUploads = useMediaPending();
+  const uploading = media.pending || qualityUploads.pending;
   const courseQuery = useAdminCourse(courseId);
   const curriculumQuery = useAdminCurriculum(courseId);
   const curriculumMutation = useCurriculumMutation();
@@ -120,7 +131,9 @@ export default function CurriculumBuilderClient({
       isPreview: lesson.isPreview,
       content: lesson.content,
       mediaUrl: lesson.videoUrl ?? lesson.documentUrl ?? "",
-      resources: lesson.resources.map(({ id, title, type, url }) => ({ id, title, type, url })),
+      mediaAssetId: lesson.videoAssetId ?? lesson.documentAssetId,
+      videoQualities: lesson.videoQualities,
+      resources: lesson.resources.map(({ id, title, type, url, mediaAssetId, fileName, fileSize }) => ({ id, title, type, url, mediaAssetId, fileName, fileSize })),
       createdAt: lesson.createdAt,
       updatedAt: lesson.updatedAt,
     })),
@@ -321,20 +334,18 @@ export default function CurriculumBuilderClient({
       durationMinutes:
         lesson.durationSeconds === null
           ? ""
-          : String(Math.round(lesson.durationSeconds / 60)),
+          : String(Math.max(1, Math.ceil(lesson.durationSeconds / 60))),
+      measuredDuration: lesson.durationSeconds ?? undefined,
       isPreview: lesson.isPreview,
       content: lesson.content,
       mediaUrl: lesson.mediaUrl,
-      resources: lesson.resources.map(({ id, title, type, url }) => ({
-        id,
-        title,
-        type,
-        url,
-      })),
+      mediaAssetId: lesson.mediaAssetId,
+      videoQualities: lesson.videoQualities ?? [],
+      resources: lesson.resources.map((resource) => ({ ...resource })),
     });
   };
   const saveLesson = async () => {
-    if (!lessonDraft) return;
+    if (!lessonDraft || uploading) return;
     setFormError("");
     setLessonTitleError("");
     const minutes = lessonDraft.durationMinutes.trim()
@@ -350,16 +361,17 @@ export default function CurriculumBuilderClient({
       return;
     }
     const resourceInput: LessonInput["resources"] = lessonDraft.resources.map(
-      ({ title, type, url }) => ({ title, type, url }),
+      ({ title, type, url, mediaAssetId }) => ({ title, type, url, mediaAssetId }),
     );
     const input: LessonInput = {
       title: lessonDraft.title,
       description: lessonDraft.description,
       type: lessonDraft.type,
-      durationSeconds: minutes === null ? null : minutes * 60,
+      durationSeconds: lessonDraft.measuredDuration ?? (minutes === null ? null : minutes * 60),
       isPreview: lessonDraft.isPreview,
       content: lessonDraft.content,
       mediaUrl: lessonDraft.mediaUrl,
+      mediaAssetId: lessonDraft.mediaAssetId,
       resources: resourceInput,
     };
     const parsed = lessonSchema.safeParse(input);
@@ -374,7 +386,7 @@ export default function CurriculumBuilderClient({
       return;
     }
     try {
-      const savedLesson = await curriculumMutation.mutateAsync({
+      await curriculumMutation.mutateAsync({
         action: lessonDraft.id ? "update-lesson" : "create-lesson",
         id: lessonDraft.id ?? undefined,
         sectionId: lessonDraft.sectionId,
@@ -386,51 +398,10 @@ export default function CurriculumBuilderClient({
         documentUrl: parsed.data.type === "PDF" ? parsed.data.mediaUrl : null,
         durationSeconds: parsed.data.durationSeconds,
         isPreview: parsed.data.isPreview,
+        mediaAssetId: parsed.data.mediaAssetId,
+        videoQualities: lessonDraft.videoQualities,
+        resources: parsed.data.resources.map((resource, index) => ({ ...resource, id: lessonDraft.resources[index]?.id })),
       });
-      if (!savedLesson || typeof savedLesson !== "object" || !("id" in savedLesson)) {
-        throw new Error("The lesson was saved without a returned ID.");
-      }
-      const priorResources = lessonDraft.id
-        ? allLessons.find((lesson) => lesson.id === lessonDraft.id)?.resources ?? []
-        : [];
-      const retained = new Set<string>();
-      const orderedResourceIds: string[] = [];
-      for (const resource of lessonDraft.resources) {
-        if (resource.id) {
-          await curriculumMutation.mutateAsync({
-            action: "update-resource",
-            id: resource.id,
-            title: resource.title,
-            type: resource.type,
-            url: resource.url,
-          });
-          retained.add(resource.id);
-          orderedResourceIds.push(resource.id);
-        } else {
-          const created = await curriculumMutation.mutateAsync({
-            action: "create-resource",
-            lessonId: savedLesson.id,
-            title: resource.title,
-            type: resource.type,
-            url: resource.url,
-          });
-          if (created && typeof created === "object" && "id" in created) {
-            orderedResourceIds.push(created.id);
-          }
-        }
-      }
-      for (const resource of priorResources) {
-        if (!retained.has(resource.id) && !lessonDraft.resources.some((item) => item.id === resource.id)) {
-          await curriculumMutation.mutateAsync({ action: "delete-resource", id: resource.id });
-        }
-      }
-      if (orderedResourceIds.length > 0) {
-        await curriculumMutation.mutateAsync({
-          action: "reorder-resources",
-          lessonId: savedLesson.id,
-          ids: orderedResourceIds,
-        });
-      }
       showSaved(lessonDraft.id ? "Lesson updated." : "Lesson added.");
       setLessonDraft(null);
       setFormError("");
@@ -463,7 +434,7 @@ export default function CurriculumBuilderClient({
       if (!current) return current;
       const resources = current.resources.map((resource, resourceIndex) =>
         resourceIndex === index
-          ? { ...resource, [key]: value }
+          ? { ...resource, [key]: value, ...(key === "type" && value !== resource.type ? { url: "", mediaAssetId: undefined, fileName: undefined } : {}) }
           : resource,
       );
       return { ...current, resources };
@@ -861,7 +832,6 @@ export default function CurriculumBuilderClient({
 
       <AdminDialog
         open={!isReadOnly && lessonDraft !== null}
-        busy={busyAction === "lesson"}
         onOpenChange={(open) => {
           if (!open) {
             setLessonDraft(null);
@@ -870,20 +840,21 @@ export default function CurriculumBuilderClient({
         }}
         title={lessonDraft?.id ? "Edit lesson" : "Add lesson"}
         description="Choose the content type and provide the lesson material."
+        busy={uploading || busyAction === "lesson"}
         size="lg"
         footer={
           <>
             <Button
               type="button"
               variant="outline"
-              disabled={busyAction !== null}
+              disabled={busyAction !== null || uploading}
               onClick={() => setLessonDraft(null)}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              disabled={busyAction !== null}
+              disabled={busyAction !== null || uploading}
               busy={busyAction === "lesson"}
               onClick={() => void runAction("lesson", saveLesson)}
             >
@@ -911,6 +882,7 @@ export default function CurriculumBuilderClient({
               <Field label="Content type" id="lesson-type">
                 <Select
                   value={lessonDraft.type}
+                  disabled={uploading || busyAction !== null}
                   onValueChange={(value) => {
                     if (
                       value === "VIDEO" ||
@@ -918,7 +890,7 @@ export default function CurriculumBuilderClient({
                       value === "PDF"
                     ) {
                       setLessonDraft((current) =>
-                        current ? { ...current, type: value } : current,
+                        current && current.type !== value ? { ...current, type: value, mediaUrl: "", mediaAssetId: undefined, videoQualities: [] } : current,
                       );
                     }
                   }}
@@ -945,7 +917,7 @@ export default function CurriculumBuilderClient({
                   onChange={(event) =>
                     setLessonDraft((current) =>
                       current
-                        ? { ...current, durationMinutes: event.target.value }
+                        ? { ...current, durationMinutes: event.target.value, measuredDuration: undefined }
                         : current,
                     )
                   }
@@ -968,22 +940,43 @@ export default function CurriculumBuilderClient({
                 className={textareaClassName}
               />
             </Field>
-            {lessonDraft.type === "VIDEO" && (
-              <Field label="Video URL" id="lesson-video-url">
-                <Input
-                  id="lesson-video-url"
-                  type="url"
-                  placeholder="https://"
-                  value={lessonDraft.mediaUrl}
-                  onChange={(event) =>
-                    setLessonDraft((current) =>
-                      current
-                        ? { ...current, mediaUrl: event.target.value }
-                        : current,
-                    )
-                  }
-                />
+            {lessonDraft.type !== "TEXT" && (
+              <Field label={lessonDraft.type === "VIDEO" ? "Lesson video" : "Lesson PDF"} id="lesson-upload">
+                <MediaUpload key={lessonDraft.type} label={lessonDraft.type === "VIDEO" ? "Lesson video" : "Lesson PDF"}
+                  purpose={lessonDraft.type === "VIDEO" ? "LESSON_VIDEO" : "LESSON_DOCUMENT"} courseId={courseId} mode="UPLOAD_ONLY"
+                  disabled={busyAction !== null || qualityUploads.pending}
+                  existingFile={lessonDraft.mediaAssetId ? "Verified private file" : lessonDraft.mediaUrl ? "Legacy external media. Upload a local file to replace it." : undefined}
+                  onBusyChange={media.track("lesson")}
+                  onAsset={(asset, metadata) => setLessonDraft((current) => current ? {
+                    ...current, mediaUrl: "", mediaAssetId: asset.id, videoQualities: [],
+                    ...(metadata ? { measuredDuration: Math.max(1, Math.round(metadata.duration)), durationMinutes: String(Math.max(1, Math.ceil(metadata.duration / 60))) } : {}),
+                  } : current)} />
               </Field>
+            )}
+            {lessonDraft.type === "VIDEO" && lessonDraft.mediaAssetId && (
+              <details className="group rounded-xl border border-brand-border bg-brand-page-secondary/60 p-3 sm:p-4">
+                <summary className="cursor-pointer rounded-md text-sm font-semibold text-brand-text focus-visible:ring-2 focus-visible:ring-ring">
+                  Video quality options{lessonDraft.videoQualities.length ? ` (${lessonDraft.videoQualities.length})` : ""}
+                </summary>
+                <p className="mt-2 text-xs text-brand-text-muted">Upload optional MP4 exports of this same lesson. Learners can switch between the original and the versions you add.</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {[360, 480, 720, 1080].map((height) => {
+                    const existing = lessonDraft.videoQualities.find((item) => item.height === height);
+                    return <div key={`${lessonDraft.mediaAssetId}-${height}`} className="min-w-0 rounded-lg border border-brand-border bg-card p-3">
+                      <p className="mb-2 text-xs font-semibold text-brand-text">{height}p</p>
+                      <MediaUpload purpose="LESSON_VIDEO" mode="UPLOAD_ONLY" courseId={courseId} label={`${height}p version`}
+                        expectedVideoHeight={height} disabled={busyAction !== null || media.pending} existingFile={existing ? "Verified version" : undefined}
+                        onBusyChange={qualityUploads.track(String(height))}
+                        onAsset={(asset) => setLessonDraft((current) => current ? { ...current, videoQualities: [
+                          ...current.videoQualities.filter((item) => item.height !== height), { height, assetId: asset.id },
+                        ] } : current)}
+                        onRemove={() => setLessonDraft((current) => current ? { ...current,
+                          videoQualities: current.videoQualities.filter((item) => item.height !== height),
+                        } : current)} />
+                    </div>;
+                  })}
+                </div>
+              </details>
             )}
             {lessonDraft.type === "TEXT" && (
               <Field label="Lesson content" id="lesson-content">
@@ -1000,23 +993,6 @@ export default function CurriculumBuilderClient({
                     )
                   }
                   className={textareaClassName}
-                />
-              </Field>
-            )}
-            {lessonDraft.type === "PDF" && (
-              <Field label="PDF lesson URL" id="lesson-pdf-url">
-                <Input
-                  id="lesson-pdf-url"
-                  type="url"
-                  placeholder="https://"
-                  value={lessonDraft.mediaUrl}
-                  onChange={(event) =>
-                    setLessonDraft((current) =>
-                      current
-                        ? { ...current, mediaUrl: event.target.value }
-                        : current,
-                    )
-                  }
                 />
               </Field>
             )}
@@ -1041,7 +1017,7 @@ export default function CurriculumBuilderClient({
                     Additional resources
                   </h3>
                   <p className="mt-1 text-[11px] text-brand-text-muted">
-                    Add reference links or supplementary PDF resources.
+                    Add reference links or upload private lesson files.
                   </p>
                 </div>
                 <Button
@@ -1049,6 +1025,7 @@ export default function CurriculumBuilderClient({
                   size="sm"
                   variant="outline"
                   onClick={addResource}
+                  disabled={media.pending}
                 >
                   <Plus size={13} aria-hidden="true" />
                   Add resource
@@ -1070,8 +1047,9 @@ export default function CurriculumBuilderClient({
                   />
                   <Select
                     value={resource.type}
+                    disabled={uploading || busyAction !== null}
                     onValueChange={(value) => {
-                      if (value === "LINK" || value === "PDF") {
+                      if (value === "LINK" || value === "PDF" || value === "DOCUMENT" || value === "FILE") {
                         updateResource(index, "type", value);
                       }
                     }}
@@ -1085,6 +1063,8 @@ export default function CurriculumBuilderClient({
                     <SelectContent align="start">
                       <SelectItem value="LINK">Link</SelectItem>
                       <SelectItem value="PDF">PDF</SelectItem>
+                      <SelectItem value="DOCUMENT">Document</SelectItem>
+                      <SelectItem value="FILE">File</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button
@@ -1092,6 +1072,7 @@ export default function CurriculumBuilderClient({
                     variant="ghost"
                     size="icon-sm"
                     aria-label={`Remove resource ${index + 1}`}
+                    disabled={uploading || busyAction !== null}
                     onClick={() =>
                       setLessonDraft((current) =>
                         current
@@ -1107,18 +1088,18 @@ export default function CurriculumBuilderClient({
                   >
                     <Trash2 size={14} aria-hidden="true" />
                   </Button>
-                  <Input
-                    aria-label={`Resource ${index + 1} URL`}
-                    type={resource.type === "LINK" ? "url" : "text"}
-                    placeholder={
-                      "https://"
-                    }
-                    value={resource.url}
-                    onChange={(event) =>
-                      updateResource(index, "url", event.target.value)
-                    }
-                    className="sm:col-span-3"
-                  />
+                  <div className="sm:col-span-3">
+                    {resource.type === "LINK" ? <Input aria-label={`Resource ${index + 1} URL`} type="url" placeholder="https://"
+                      value={resource.url} onChange={(event) => updateResource(index, "url", event.target.value)} />
+                    : <MediaUpload label="Resource file" purpose="LESSON_RESOURCE" courseId={courseId} mode="UPLOAD_ONLY"
+                        existingFile={resource.fileName || (resource.mediaAssetId ? "Verified private file" : resource.url ? "Legacy external file" : undefined)}
+                        disabled={busyAction !== null} onBusyChange={media.track(`resource-${index}`)}
+                        onAsset={(asset) => setLessonDraft((current) => current ? { ...current,
+                          resources: current.resources.map((item, position) => position === index ? {
+                            ...item, url: "", mediaAssetId: asset.id, fileName: asset.originalFileName, fileSize: asset.sizeBytes,
+                          } : item),
+                        } : current)} />}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1142,6 +1123,7 @@ export default function CurriculumBuilderClient({
           <div className="space-y-4 text-sm text-brand-text">
             <p>{viewingLesson.type} lesson</p>
             {viewingLesson.content && <p className="whitespace-pre-wrap wrap-break-word">{viewingLesson.content}</p>}
+            {viewingLesson.mediaAssetId && <ManagedMedia courseId={courseId} lessonId={viewingLesson.id} kind={viewingLesson.type === "VIDEO" ? "video" : "pdf"} title={viewingLesson.title} />}
             {viewingLesson.mediaUrl && <p className="break-all">{viewingLesson.mediaUrl}</p>}
             {viewingLesson.resources.length > 0 && (
               <div>
@@ -1150,7 +1132,7 @@ export default function CurriculumBuilderClient({
                   {viewingLesson.resources.map((resource) => (
                     <li key={resource.id}>
                       <span className="font-medium">{resource.title}</span>
-                      <p className="break-all text-brand-text-muted">{resource.url}</p>
+                      {resource.mediaAssetId ? <ManagedMedia courseId={courseId} lessonId={viewingLesson.id} resourceId={resource.id} kind="document" title={resource.title} /> : <p className="break-all text-brand-text-muted">{resource.url}</p>}
                     </li>
                   ))}
                 </ul>

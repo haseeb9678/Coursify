@@ -5,9 +5,9 @@ import { toast } from "sonner";
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { X } from "lucide-react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
+import MediaUpload from "@/components/shared/media/MediaUpload";
+import { useMediaPending } from "@/features/storage/use-media-pending";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -120,6 +120,7 @@ function CategoryFormSession({
   };
 
   const submitting = useRef(false);
+  const media = useMediaPending();
   const save = async (values: CategoryInput) => {
     const duplicateSlug = categories.some(
       (item) =>
@@ -139,7 +140,7 @@ function CategoryFormSession({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (submitting.current) return;
+    if (submitting.current || media.pending) return;
     submitting.current = true;
     try {
       await handleSubmit(save, () => toast.error("Check the highlighted category fields."))(event);
@@ -161,7 +162,7 @@ function CategoryFormSession({
           <Button
             type="button"
             variant="outline"
-            disabled={isSubmitting}
+            disabled={isSubmitting || media.pending}
             onClick={closeForm}
           >
             Cancel
@@ -317,58 +318,13 @@ function CategoryFormSession({
         />
 
         <div className="space-y-2">
-          <span className="text-xs font-medium text-brand-text">Category image URL</span>
-          <div className="flex flex-wrap items-center gap-3">
-            <Controller
-              name="imageDataUrl"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  type="url"
-                  aria-label="Category image URL"
-                  placeholder="https://example.com/category.jpg"
-                  value={field.value ?? ""}
-                  onChange={(event) => {
-                    field.onChange(event.target.value || null);
-                    clearErrors("imageDataUrl");
-                  }}
-                />
-              )}
-            />
-          </div>
-          <Controller
-            name="imageDataUrl"
-            control={control}
-            render={({ field }) => (
-              <>
-                {field.value && (
-                <div className="relative w-fit">
-                  <Image
-                    src={field.value}
-                    alt="Selected category preview"
-                    width={96}
-                    height={96}
-                    unoptimized
-                    className="size-24 rounded-lg border border-brand-border object-cover"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon-sm"
-                    aria-label="Remove category image"
-                    className="absolute -top-2 -right-2"
-                    onClick={() => {
-                      field.onChange(null);
-                      clearErrors("imageDataUrl");
-                    }}
-                  >
-                    <X size={14} aria-hidden="true" />
-                  </Button>
-                </div>
-                )}
-              </>
-            )}
-          />
+          <span className="text-xs font-medium text-brand-text">Category image</span>
+          <Controller name="imageDataUrl" control={control} render={({ field }) => (
+            <MediaUpload label="Category image" purpose="CATEGORY_IMAGE" value={field.value} disabled={isSubmitting}
+              onUrlChange={(value) => { field.onChange(value || null); clearErrors("imageDataUrl"); }}
+              onAsset={(asset) => { field.onChange(asset.publicUrl); clearErrors("imageDataUrl"); }}
+              onRemove={() => field.onChange(null)} onBusyChange={media.track("image")} />
+          )} />
           {errors.imageDataUrl?.message && (
             <p role="alert" className="text-xs text-destructive">
               {errors.imageDataUrl.message}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import MediaUpload from "@/components/shared/media/MediaUpload";
+import { useMediaPending } from "@/features/storage/use-media-pending";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -80,13 +82,15 @@ function WebsiteEditor({ kind, record, onClose }: { kind: WebsiteKind; record?: 
     defaultValues: defaults, resolver: zodResolver(websiteFormSchema(kind)),
   });
   const values = { ...defaults, ...useWatch({ control }) };
+  const media = useMediaPending();
   const busy = mutation.isPending || formState.isSubmitting;
+  const saveBlocked = busy || media.pending;
   const formId = `${prefix}-content`;
   const entity = kind === "hero" ? "slide" : "popup";
 
   const submit = async (event?: FormEvent, status?: ContentStatus) => {
     event?.preventDefault();
-    if (locked.current) return;
+    if (locked.current || media.pending) return;
     locked.current = true;
     if (status) setValue("status", status, { shouldDirty: true });
     setError("");
@@ -165,9 +169,9 @@ function WebsiteEditor({ kind, record, onClose }: { kind: WebsiteKind; record?: 
       footer={
         <div className="flex flex-wrap justify-end gap-2">
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>Cancel</Button>
-          <Button type="button" variant="outline" disabled={busy} onClick={() => void submit(undefined, "DRAFT")}>Save as draft</Button>
-          <Button type="button" variant="outline" disabled={busy} onClick={() => void submit(undefined, "ACTIVE")}>Activate {entity}</Button>
-          <Button type="submit" form={formId} busy={busy}>Save changes</Button>
+          <Button type="button" variant="outline" disabled={saveBlocked} onClick={() => void submit(undefined, "DRAFT")}>Save as draft</Button>
+          <Button type="button" variant="outline" disabled={saveBlocked} onClick={() => void submit(undefined, "ACTIVE")}>Activate {entity}</Button>
+          <Button type="submit" form={formId} disabled={media.pending} busy={busy}>Save changes</Button>
         </div>
       }>
       <form id={formId} onSubmit={submit} className="space-y-6" noValidate>
@@ -182,8 +186,16 @@ function WebsiteEditor({ kind, record, onClose }: { kind: WebsiteKind; record?: 
         <fieldset className="grid gap-3 sm:grid-cols-2">
           <legend className="mb-2 text-sm font-semibold text-brand-text">Appearance</legend>
           {kind === "popup" && select("layout", "Layout", popupLayouts)}
-          {text("imageUrl", kind === "hero" ? "Desktop image reference" : "Image reference", { placeholder: "https://? or /images/?" })}
-          {kind === "hero" && text("mobileImageUrl", "Mobile image reference")}
+          {(["imageUrl", ...(kind === "hero" ? ["mobileImageUrl"] as const : [])] as const).map((field) => {
+            const label = field === "mobileImageUrl" ? "Mobile image" : kind === "hero" ? "Desktop image" : "Popup image";
+            const purpose = field === "mobileImageUrl" ? "HERO_MOBILE_IMAGE" : kind === "hero" ? "HERO_IMAGE" : "PROMOTIONAL_POPUP_IMAGE";
+            const update = (value: string) => setValue(field, value, { shouldDirty: true, shouldValidate: true });
+            return <WebsiteField key={field} id={`${prefix}-${field}`} label={label} error={formState.errors[field]?.message}>
+              <MediaUpload purpose={purpose} label={label} value={values[field]} allowLocalPath disabled={busy}
+                onUrlChange={update} onAsset={(asset) => update(asset.publicUrl ?? "")} onRemove={() => update("")}
+                onBusyChange={media.track(field)} />
+            </WebsiteField>;
+          })}
           {text("imageAlt", "Image alternative text", { max: 160 })}
           {kind === "hero" && select("imagePosition", "Image position", imagePositions)}
         </fieldset>

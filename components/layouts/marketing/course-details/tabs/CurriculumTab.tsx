@@ -23,12 +23,14 @@ interface CurriculumTabProps {
   course: CourseDetails;
   expandedModules: number[];
   onToggleModule: (index: number) => void;
+  onPreviewLesson: (lesson: { id: string; title: string }) => void;
 }
 
 export default function CurriculumTab({
   course,
   expandedModules,
   onToggleModule,
+  onPreviewLesson,
 }: CurriculumTabProps) {
   const shouldReduceMotion = useAccessibleMotion();
 
@@ -306,7 +308,11 @@ export default function CurriculumTab({
                               </div>
 
                               {/* Preview Label */}
-                              {lesson.preview && (
+                              {lesson.previewLessonId ? <button type="button"
+                                onClick={() => onPreviewLesson({ id: lesson.previewLessonId!, title: lesson.title })}
+                                className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-ring">
+                                Play preview
+                              </button> : lesson.preview && (
                                 <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
                                   Preview
                                 </span>

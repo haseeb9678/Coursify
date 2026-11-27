@@ -139,10 +139,10 @@ export function getCourseReadinessIssues(
       (lesson) =>
         !lesson.title.trim() ||
         !lesson.description.trim() ||
-        (lesson.type === "VIDEO" && !lesson.mediaUrl.trim()) ||
+        (lesson.type === "VIDEO" && !lesson.mediaUrl.trim() && !lesson.mediaAssetId) ||
         (lesson.type === "TEXT" && !lesson.content.trim()) ||
         (lesson.type === "PDF" &&
-          !lesson.mediaUrl.trim() &&
+          !lesson.mediaUrl.trim() && !lesson.mediaAssetId &&
           !lesson.resources.some((resource) => resource.type === "PDF")),
     )
   ) {

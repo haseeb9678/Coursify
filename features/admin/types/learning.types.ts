@@ -77,13 +77,16 @@ export type AdminCourseInput = Omit<
 >;
 
 export type LessonType = "VIDEO" | "TEXT" | "PDF";
-export type LessonResourceType = "LINK" | "PDF";
+export type LessonResourceType = "LINK" | "PDF" | "DOCUMENT" | "FILE";
 
 export interface LessonResource {
   id: string;
   title: string;
   type: LessonResourceType;
   url: string;
+  mediaAssetId?: string | null;
+  fileName?: string | null;
+  fileSize?: number | null;
 }
 
 export interface CourseSection {
@@ -96,6 +99,8 @@ export interface CourseSection {
   updatedAt: string;
 }
 
+export interface LessonVideoQuality { height: number; assetId: string }
+
 export interface CourseLesson {
   id: string;
   sectionId: string;
@@ -107,6 +112,8 @@ export interface CourseLesson {
   isPreview: boolean;
   content: string;
   mediaUrl: string;
+  mediaAssetId?: string | null;
+  videoQualities?: LessonVideoQuality[] | null;
   resources: LessonResource[];
   createdAt: string;
   updatedAt: string;
@@ -227,6 +234,7 @@ export interface LessonInput {
   isPreview: boolean;
   content: string;
   mediaUrl: string;
+  mediaAssetId?: string | null;
   resources: Omit<LessonResource, "id">[];
 }
 

@@ -157,7 +157,8 @@ export interface AdminCourseInput {
 export interface LessonResourceRecord {
   id: string;
   title: string;
-  type: "LINK" | "PDF";
+  type: "LINK" | "PDF" | "DOCUMENT" | "FILE";
+  mediaAssetId?: string | null;
   url: string;
   fileName: string | null;
   fileSize: number | null;
@@ -175,6 +176,9 @@ export interface LessonRecord {
   content: string;
   videoUrl: string | null;
   documentUrl: string | null;
+  videoAssetId?: string | null;
+  documentAssetId?: string | null;
+  videoQualities?: import("./learning.types").LessonVideoQuality[] | null;
   durationSeconds: number | null;
   position: number;
   isPreview: boolean;

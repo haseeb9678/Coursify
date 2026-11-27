@@ -120,23 +120,24 @@ export const lessonSchema = z
     isPreview: z.boolean(),
     content: z.string().trim().max(12000),
     mediaUrl: z.string().trim(),
+    mediaAssetId: z.uuid().nullish(),
     resources: z.array(
       z.object({
         title: z.string().trim().min(2, "Enter a resource title.").max(100),
-        type: z.enum(["LINK", "PDF"]),
-        url: z.string().trim().min(1, "Add a URL or select a PDF."),
+        type: z.enum(["LINK", "PDF", "DOCUMENT", "FILE"]),
+        url: z.string().trim(),
+        mediaAssetId: z.uuid().nullish(),
       }),
     ),
   })
   .superRefine((values, context) => {
     if (
-      values.type === "VIDEO" &&
-      !z.url().safeParse(values.mediaUrl).success
+      values.type === "VIDEO" && !values.mediaAssetId && !values.mediaUrl
     ) {
       context.addIssue({
         code: "custom",
         path: ["mediaUrl"],
-        message: "Enter a valid video URL.",
+        message: "Upload an MP4 video for this lesson.",
       });
     }
     if (values.type === "TEXT" && values.content.length < 20) {
@@ -148,16 +149,18 @@ export const lessonSchema = z
     }
     if (
       values.type === "PDF" &&
-      !values.mediaUrl &&
-      !values.resources.some((resource) => resource.type === "PDF")
+      !values.mediaUrl && !values.mediaAssetId
     ) {
       context.addIssue({
         code: "custom",
         path: ["mediaUrl"],
-        message: "Choose a PDF file or add a PDF resource.",
+        message: "Upload a PDF for this lesson.",
       });
     }
     values.resources.forEach((resource, index) => {
+      if (resource.type !== "LINK" && !resource.mediaAssetId && !resource.url) {
+        context.addIssue({ code: "custom", path: ["resources", index], message: "Upload a file for the resource." });
+      }
       if (resource.type === "LINK" && !z.url().safeParse(resource.url).success) {
         context.addIssue({
           code: "custom",

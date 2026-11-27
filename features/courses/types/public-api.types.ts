@@ -27,6 +27,7 @@ export interface PublicCourseDetail extends PublicCourse {
       title: string;
       durationSeconds: number | null;
       isPreview: boolean;
+      previewLessonId?: string | null;
       resourceCount: number;
     }[];
   }[] | null;

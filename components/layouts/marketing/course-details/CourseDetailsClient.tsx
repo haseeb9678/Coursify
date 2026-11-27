@@ -63,6 +63,7 @@ export default function CourseDetailsClient({
 
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLesson, setPreviewLesson] = useState<{ id: string; title: string } | null>(null);
 
   const toggleModule = (index: number) => {
     setExpandedModules((previous) =>
@@ -133,6 +134,7 @@ export default function CourseDetailsClient({
                 onTabChange={setActiveTab}
                 expandedModules={expandedModules}
                 onToggleModule={toggleModule}
+                onPreviewLesson={setPreviewLesson}
               />
             </motion.div>
           </motion.div>
@@ -153,8 +155,9 @@ export default function CourseDetailsClient({
       {/* Course Preview Dialog */}
       <CoursePreviewDialog
         course={course}
-        open={previewOpen}
-        onClose={() => setPreviewOpen(false)}
+        open={previewOpen || previewLesson !== null}
+        lesson={previewLesson}
+        onClose={() => { setPreviewOpen(false); setPreviewLesson(null); }}
       />
     </main>
   );

@@ -141,6 +141,7 @@ export default function DashboardMobileNav({
               {user.avatar ? (
                 <Image
                   src={user.avatar}
+                  unoptimized
                   alt={user.name}
                   fill
                   sizes="44px"

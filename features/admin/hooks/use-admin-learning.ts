@@ -250,11 +250,11 @@ export function useCurriculumMutation() {
       | { action: "update-section"; id: string; title: string; description: string }
       | { action: "delete-section"; id: string }
       | { action: "reorder-sections"; courseId: string; ids: string[] }
-      | { action: "create-lesson" | "update-lesson"; id?: string; sectionId: string; title: string; description: string; type: "VIDEO" | "TEXT" | "PDF"; content: string; videoUrl: string | null; documentUrl: string | null; durationSeconds: number | null; isPreview: boolean }
+      | { action: "create-lesson" | "update-lesson"; id?: string; sectionId: string; title: string; description: string; type: "VIDEO" | "TEXT" | "PDF"; content: string; videoUrl: string | null; documentUrl: string | null; mediaAssetId?: string | null; durationSeconds: number | null; isPreview: boolean; videoQualities?: import("../types/learning.types").LessonVideoQuality[]; resources?: { id?: string; title: string; type: "LINK" | "PDF" | "FILE" | "DOCUMENT"; url: string; mediaAssetId?: string | null }[] }
       | { action: "delete-lesson"; id: string }
       | { action: "reorder-lessons"; sectionId: string; ids: string[] }
       | { action: "move-lesson"; lessonId: string; destinationSectionId: string }
-      | { action: "create-resource" | "update-resource"; id?: string; lessonId?: string; title: string; type: "LINK" | "PDF"; url: string; fileName?: string; fileSize?: number }
+      | { action: "create-resource" | "update-resource"; id?: string; lessonId?: string; title: string; type: "LINK" | "PDF" | "DOCUMENT" | "FILE"; url: string; mediaAssetId?: string | null; fileName?: string; fileSize?: number }
       | { action: "delete-resource"; id: string }
       | { action: "reorder-resources"; lessonId: string; ids: string[] }) => {
       switch (input.action) {

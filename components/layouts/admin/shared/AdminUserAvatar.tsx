@@ -24,7 +24,7 @@ export default function AdminUserAvatar({
       aria-label={name}
     >
       {avatar ? (
-        <Image src={avatar} alt="" fill sizes="56px" className="object-cover" />
+        <Image src={avatar} alt="" fill unoptimized sizes="56px" className="object-cover" />
       ) : (
         getUserInitials(name)
       )}

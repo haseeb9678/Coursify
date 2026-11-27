@@ -60,7 +60,7 @@ export const commerceApi = {
     "reconcileCheckout", `mutation ($input: CheckoutReconcileInput!) { reconcileCheckout(input: $input) { ${checkoutFields} } }`, { input }),
   learning: (courseId: string) => request<"myCourseLearningContent", LearningContent>(
     "myCourseLearningContent", `query ($courseId: ID!) { myCourseLearningContent(courseId: $courseId) {
-      id title sections { id title lessons { id title description type content videoUrl documentUrl durationSeconds resources { id title type url } } }
+      id title sections { id title lessons { id title description type content videoUrl documentUrl durationSeconds hasManagedMedia resources { id title type url hasManagedMedia } } }
     } }`, { courseId }),
   lessonComments: (courseId: string, lessonId: string, pagination: Pagination) =>
     request<"lessonComments", CommercePage<LessonComment>>("lessonComments", `query ($courseId: ID!, $lessonId: ID!, $pagination: PaginationInput!) {
