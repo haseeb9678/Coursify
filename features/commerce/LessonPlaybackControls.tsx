@@ -4,7 +4,7 @@ import { useEffect, useState, type KeyboardEvent, type RefObject } from "react";
 import { Gauge, Maximize, Minimize, Pause, Play, RotateCcw, RotateCw, Settings2, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
+  DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -147,23 +147,28 @@ export default function LessonPlaybackControls({
             </DropdownMenuTrigger>
             <DropdownMenuContent side="top" align="end" sideOffset={8} portalContainer={container}
               className="w-52 rounded-xl border border-white/15 bg-zinc-950 p-1.5 text-white shadow-xl [&_[data-highlighted]]:bg-white/15 [&_[data-highlighted]]:text-white">
-              <DropdownMenuLabel className="flex items-center gap-2 px-2 text-white/65"><Gauge className="size-3.5" aria-hidden="true" /> Playback speed</DropdownMenuLabel>
               <DropdownMenuRadioGroup value={String(speed)} onValueChange={(value) => onSpeed(Number(value))}>
+                <DropdownMenuLabel className="flex items-center gap-2 px-2 text-white/65"><Gauge className="size-3.5" aria-hidden="true" /> Playback speed</DropdownMenuLabel>
                 {rates.map((rate) => <DropdownMenuRadioItem key={rate} value={String(rate)} disabled={disabled || rates.length < 2}
                   className="min-h-8 px-2">{rate === 1 ? "Normal" : `${rate}×`}</DropdownMenuRadioItem>)}
               </DropdownMenuRadioGroup>
               <DropdownMenuSeparator className="bg-white/12" />
-              <DropdownMenuLabel className="px-2 text-white/65">Quality</DropdownMenuLabel>
-              {provider ? (
-                <DropdownMenuItem className="min-h-9 px-2" onClick={onProviderControls}>Open YouTube quality controls</DropdownMenuItem>
-              ) : qualities.length ? (
+              {qualities.length && !provider ? (
                 <DropdownMenuRadioGroup value={quality?.toString() ?? "original"} onValueChange={(value) => onQuality?.(value === "original" ? undefined : Number(value))}>
+                  <DropdownMenuLabel className="px-2 text-white/65">Quality</DropdownMenuLabel>
                   <DropdownMenuRadioItem className="min-h-8 px-2" value="original" disabled={changingQuality}>{original}</DropdownMenuRadioItem>
                   {qualities.map((height) => <DropdownMenuRadioItem key={height} value={String(height)} className="min-h-8 px-2" disabled={changingQuality}>
                     {height}p
                   </DropdownMenuRadioItem>)}
                 </DropdownMenuRadioGroup>
-              ) : <DropdownMenuLabel className="px-2 font-normal text-white">{original} available</DropdownMenuLabel>}
+              ) : (
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="px-2 text-white/65">Quality</DropdownMenuLabel>
+                  {provider ? (
+                    <DropdownMenuItem className="min-h-9 px-2" onClick={onProviderControls}>Open YouTube quality controls</DropdownMenuItem>
+                  ) : <p className="px-2 py-1 text-xs text-white">{original} available</p>}
+                </DropdownMenuGroup>
+              )}
               {!provider && <>
                 <DropdownMenuSeparator className="bg-white/12" />
                 <DropdownMenuItem className="min-h-9 px-2" onClick={onProviderControls}>Use browser controls</DropdownMenuItem>

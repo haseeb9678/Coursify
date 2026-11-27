@@ -243,7 +243,11 @@ function VideoControls({ source, title, expiresAt, qualities, renew }: VideoProp
           video.current.volume = level;
           video.current.muted = false;
         }}
-        onSpeed={(rate) => { if (video.current) video.current.playbackRate = rate; }}
+        onSpeed={(rate) => {
+          if (!video.current) return;
+          video.current.defaultPlaybackRate = rate;
+          video.current.playbackRate = rate;
+        }}
         onFullscreen={() => void toggleLessonFullscreen(player.current, video.current)}
       />}
       {native && <Button variant="ghost" className="m-1 text-xs text-white hover:bg-white/15 hover:text-white"
