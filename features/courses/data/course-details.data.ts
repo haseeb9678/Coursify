@@ -1,10 +1,12 @@
 import { formatLearningDuration } from "@/features/admin/utils/learning.utils";
+import type { LessonType } from "@/features/admin/types/learning.types";
 import { getPublicCourse } from "@/features/courses/api/public-courses.api";
 import type { PublicCourse } from "@/features/courses/types/public-api.types";
 import { getGraphQLErrorCode } from "@/lib/graphql/error";
 
 export interface CourseLesson {
   title: string;
+  type: LessonType;
   duration: string;
   preview?: boolean;
   previewLessonId?: string | null;
@@ -88,6 +90,7 @@ export async function getCourseById(identifier: string): Promise<CourseDetails |
       resources += lesson.resourceCount;
       return {
         title: lesson.title,
+        type: lesson.type,
         duration: lesson.durationSeconds === null ? "Not listed" : formatDuration(lesson.durationSeconds),
         preview: lesson.isPreview,
         previewLessonId: lesson.previewLessonId,

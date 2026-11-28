@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUpRight, Download, FileText, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,17 @@ export function ManagedMedia({ courseId, lessonId, resourceId, kind, title, prev
   courseId: string; lessonId: string; resourceId?: string; kind: "video" | "pdf" | "document"; title: string; preview?: boolean;
 }) {
   const userId = useAuthStore((state) => state.user?.id);
-  const read = useCallback((height?: number) => resourceId ? storageApi.resource(courseId, lessonId, resourceId)
-    : storageApi.lesson(courseId, lessonId, preview, height), [courseId, lessonId, preview, resourceId]);
+  const read = useCallback((height?: number, signal?: AbortSignal) => resourceId ? storageApi.resource(courseId, lessonId, resourceId, signal)
+    : storageApi.lesson(courseId, lessonId, preview, height, signal), [courseId, lessonId, preview, resourceId]);
   return kind === "video" ? <SignedVideo cacheKey={["lesson-media", preview ? "preview" : userId, courseId, lessonId]}
     read={read} title={title} /> : kind === "pdf" ? <SignedPdf read={read} title={title} /> : <SignedDocument read={read} title={title} />;
 }
 
-export function SignedVideo({ cacheKey, title, read }: { cacheKey: unknown[]; title: string; read: (height?: number) => Promise<MediaRead> }) {
+export function SignedVideo({ cacheKey, title, read }: {
+  cacheKey: unknown[]; title: string; read: (height?: number, signal?: AbortSignal) => Promise<MediaRead>;
+}) {
   const initial = useQuery({
-    queryKey: cacheKey, queryFn: () => read(), gcTime: 0, retry: false,
+    queryKey: cacheKey, queryFn: ({ signal }) => read(undefined, signal), gcTime: 0, retry: false,
     staleTime: Infinity, refetchOnMount: "always", refetchOnWindowFocus: false, refetchOnReconnect: false,
   });
   if (initial.isPending) return <Skeleton role="status" aria-label="Preparing video" className="aspect-video w-full rounded-2xl" />;
@@ -34,7 +36,7 @@ export function SignedVideo({ cacheKey, title, read }: { cacheKey: unknown[]; ti
     qualities={initial.data.availableQualities ?? undefined} renew={read} />;
 }
 
-export function SignedDocument({ title, read }: { title: string; read: () => Promise<MediaRead> }) {
+export function SignedDocument({ title, read, icon }: { title: string; read: () => Promise<MediaRead>; icon?: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -47,7 +49,7 @@ export function SignedDocument({ title, read }: { title: string; read: () => Pro
       const link = document.createElement("a");
       link.href = url;
       link.referrerPolicy = "no-referrer";
-      link.download = "";
+      // Managed resources use the storage response's attachment disposition.
       document.body.append(link);
       link.click();
       link.remove();
@@ -60,7 +62,7 @@ export function SignedDocument({ title, read }: { title: string; read: () => Pro
 
   return <div className="space-y-1">
     <Button type="button" variant="outline" busy={busy} onClick={() => void download()}>
-      <Download aria-hidden="true" /> Download {title}
+      {icon ?? <Download aria-hidden="true" />} Download {title}
     </Button>
     {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
   </div>;

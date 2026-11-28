@@ -2,7 +2,7 @@
 
 import { useAccessibleMotion } from "@/features/accessibility/hooks/use-accessible-motion";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   motion,
   type Variants,
@@ -13,7 +13,10 @@ import CourseTabs from "./CourseTabs";
 import CourseEnrollmentCard from "./CourseEnrollmentCard";
 import CoursePreviewDialog from "./CoursePreviewDialog";
 
-import type { CourseDetails } from "@/features/courses/data/course-details.data";
+import type { CourseDetails, CourseLesson } from "@/features/courses/data/course-details.data";
+import LessonPreviewDialog, { type LessonPreview } from "@/features/courses/materials/LessonPreviewDialog";
+import { loadAuthorizedPreviewFile, readPdf } from "@/features/courses/materials/preview-files";
+import { storageApi } from "@/features/storage/storage.api";
 
 interface CourseDetailsClientProps {
   course: CourseDetails;
@@ -63,7 +66,21 @@ export default function CourseDetailsClient({
 
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewLesson, setPreviewLesson] = useState<{ id: string; title: string } | null>(null);
+  const [previewLesson, setPreviewLesson] = useState<LessonPreview | null>(null);
+  const previewTrigger = useRef<HTMLButtonElement>(null);
+
+  function openLessonPreview({ preview, previewLessonId: id, title, type }: CourseLesson, trigger: HTMLButtonElement) {
+    if (!preview || !id) return;
+    previewTrigger.current = trigger;
+    if (type === "TEXT") {
+      setPreviewLesson({ id, title, kind: "text", load: (signal) => storageApi.previewText(course.id, id, signal) });
+    } else if (type === "PDF") {
+      setPreviewLesson({ id, title, kind: "pdf", load: async (signal) =>
+        readPdf(await loadAuthorizedPreviewFile((requestSignal) => storageApi.lesson(course.id, id, true, undefined, requestSignal), signal)) });
+    } else if (type === "VIDEO") {
+      setPreviewLesson({ id, title, kind: "video", courseId: course.id, lessonId: id });
+    }
+  }
 
   const toggleModule = (index: number) => {
     setExpandedModules((previous) =>
@@ -134,7 +151,7 @@ export default function CourseDetailsClient({
                 onTabChange={setActiveTab}
                 expandedModules={expandedModules}
                 onToggleModule={toggleModule}
-                onPreviewLesson={setPreviewLesson}
+                onPreviewLesson={openLessonPreview}
               />
             </motion.div>
           </motion.div>
@@ -155,10 +172,10 @@ export default function CourseDetailsClient({
       {/* Course Preview Dialog */}
       <CoursePreviewDialog
         course={course}
-        open={previewOpen || previewLesson !== null}
-        lesson={previewLesson}
-        onClose={() => { setPreviewOpen(false); setPreviewLesson(null); }}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
       />
+      <LessonPreviewDialog preview={previewLesson} returnFocus={previewTrigger} onClose={() => setPreviewLesson(null)} />
     </main>
   );
 }

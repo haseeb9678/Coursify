@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowLeft, ArrowUpRight, BookOpen, FileText, Link2, MessageSquare } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUpRight, BookOpen, FileText, MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import AdminPageHeader from "@/components/layouts/admin/shared/AdminPageHeader";
@@ -14,6 +14,7 @@ import type { LearningLesson } from "./commerce.types";
 import { CommerceLink, CommerceLoading, CommerceMessage } from "./CommerceUi";
 import { OrderRecord } from "./CommerceRecords";
 import LessonDiscussion from "./LessonDiscussion";
+import LearningLessonResources from "./LearningLessonResources";
 import LessonVideoPlayer from "./LessonVideoPlayer";
 import { ManagedMedia } from "@/features/storage/ManagedMedia";
 import StudentCourseModules, { lessonTypes } from "./StudentCourseModules";
@@ -102,10 +103,6 @@ function LearningLessonPanel({ courseId, lesson }: { courseId: string; lesson: L
   const { icon: Icon, label } = lessonTypes[lesson.type];
   const video = safeMaterialUrl(lesson.videoUrl);
   const document = safeMaterialUrl(lesson.documentUrl);
-  const resources = lesson.resources.flatMap((resource) => {
-    const href = safeMaterialUrl(resource.url);
-    return href || resource.hasManagedMedia ? [{ ...resource, href }] : [];
-  });
   return (
     <article aria-labelledby="student-lesson-heading" className="min-w-0 divide-y divide-brand-border rounded-2xl border border-brand-border bg-card shadow-sm">
       <header className="space-y-3 p-4 sm:p-6 lg:p-8">
@@ -137,23 +134,7 @@ function LearningLessonPanel({ courseId, lesson }: { courseId: string; lesson: L
       {lesson.content && <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-[80ch] wrap-break-word text-sm leading-relaxed whitespace-pre-wrap text-brand-text sm:text-base">{lesson.content}</div>
       </div>}
-      {!!resources.length && (
-        <section className="space-y-3 p-4 sm:p-6 lg:p-8">
-          <h3 className="font-semibold text-brand-text">Lesson resources</h3>
-          <ul className="grid gap-2 lg:grid-cols-2">
-            {resources.map(({ id, href, title, type, hasManagedMedia }) => (
-              <li key={id} className="min-w-0">
-                {hasManagedMedia ? <ManagedMedia kind="document" courseId={courseId} lessonId={lesson.id} resourceId={id} title={title} /> : <a href={href ?? undefined} target="_blank" rel="noreferrer"
-                  className="flex min-h-12 items-center gap-3 rounded-xl border border-brand-border px-3 py-2 text-sm font-medium text-brand-text transition-colors hover:border-primary/40 hover:bg-brand-soft hover:text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                  {type === "PDF" ? <FileText className="size-4 shrink-0 text-primary" aria-hidden="true" /> : <Link2 className="size-4 shrink-0 text-primary" aria-hidden="true" />}
-                  <span className="min-w-0 flex-1 wrap-break-word">{title}<span className="block text-xs font-normal text-brand-text-muted">{type === "PDF" ? "PDF document" : "External link"}</span></span>
-                  <ArrowUpRight className="size-4 shrink-0" aria-hidden="true" />
-                </a>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <LearningLessonResources courseId={courseId} lesson={lesson} />
     </article>
   );
 }

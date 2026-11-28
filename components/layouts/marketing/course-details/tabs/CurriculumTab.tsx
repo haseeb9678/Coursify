@@ -12,18 +12,19 @@ import {
   ChevronDown,
   Clock3,
   Lock,
-  PlayCircle,
   ChevronsDownUp,
   ChevronsUpDown,
 } from "lucide-react";
 
-import type { CourseDetails } from "@/features/courses/data/course-details.data";
+import type { CourseDetails, CourseLesson } from "@/features/courses/data/course-details.data";
+import { ContentIcon } from "@/features/courses/materials/ContentIcon";
+import { detectContentType } from "@/features/courses/materials/content-type";
 
 interface CurriculumTabProps {
   course: CourseDetails;
   expandedModules: number[];
   onToggleModule: (index: number) => void;
-  onPreviewLesson: (lesson: { id: string; title: string }) => void;
+  onPreviewLesson: (lesson: CourseLesson, trigger: HTMLButtonElement) => void;
 }
 
 export default function CurriculumTab({
@@ -282,16 +283,18 @@ export default function CurriculumTab({
                             >
                               {/* Lesson Icon */}
                               <span
-                                className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${
+                                className={`relative flex size-9 shrink-0 items-center justify-center rounded-xl border ${
                                   lesson.preview
                                     ? "border-primary/15 bg-primary/10 text-primary"
                                     : "border-brand-border bg-brand-page-secondary text-brand-text-muted"
                                 }`}
                               >
-                                {lesson.preview ? (
-                                  <PlayCircle size={17} />
-                                ) : (
-                                  <Lock size={15} />
+                                <ContentIcon kind={detectContentType({ type: lesson.type })} size={17} />
+                                {!lesson.preview && (
+                                  <span className="absolute -bottom-0.5 -right-0.5 rounded border border-brand-border bg-brand-page-secondary p-px">
+                                    <Lock size={10} aria-hidden="true" />
+                                    <span className="sr-only">Locked</span>
+                                  </span>
                                 )}
                               </span>
 
@@ -308,10 +311,10 @@ export default function CurriculumTab({
                               </div>
 
                               {/* Preview Label */}
-                              {lesson.previewLessonId ? <button type="button"
-                                onClick={() => onPreviewLesson({ id: lesson.previewLessonId!, title: lesson.title })}
+                              {lesson.preview && lesson.previewLessonId ? <button type="button"
+                                onClick={(event) => onPreviewLesson(lesson, event.currentTarget)}
                                 className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-ring">
-                                Play preview
+                                {lesson.type === "VIDEO" ? "Play preview" : "Preview"}
                               </button> : lesson.preview && (
                                 <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-primary">
                                   Preview

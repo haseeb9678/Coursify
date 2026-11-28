@@ -28,8 +28,8 @@ export interface MediaPage {
 const asset = "id originalFileName mimeType sizeBytes purpose status visibility publicUrl createdAt";
 const access = "url expiresAt";
 
-async function request<T>(field: string, query: string, variables?: Record<string, unknown>): Promise<T> {
-  return (await graphqlClient.request<Record<string, T>>(query, variables))[field];
+async function request<T>(field: string, query: string, variables?: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
+  return (await graphqlClient.request<Record<string, T>>({ document: query, variables, signal }))[field];
 }
 
 export const storageApi = {
@@ -43,15 +43,18 @@ export const storageApi = {
   complete: (id: string, parts?: UploadedPart[]) => request<MediaAsset>("completeMediaUpload",
     `mutation ($id:ID!,$parts:[CompleteMediaPart!]) { completeMediaUpload(id:$id,parts:$parts) { ${asset} } }`, { id, parts }),
   abort: (id: string) => request<boolean>("abortMediaUpload", "mutation ($id:ID!) { abortMediaUpload(id:$id) }", { id }),
-  lesson: (courseId: string, lessonId: string, preview = false, height?: number) => {
+  lesson: (courseId: string, lessonId: string, preview = false, height?: number, signal?: AbortSignal) => {
     const name = preview ? "lessonPreviewMediaAccess" : "lessonMediaAccess";
     return request<MediaRead>(name, `query ($courseId:ID!,$lessonId:ID!,$height:Int) {
       ${name}(courseId:$courseId,lessonId:$lessonId,height:$height) { ${access} availableQualities }
-    }`, { courseId, lessonId, height });
+    }`, { courseId, lessonId, height }, signal);
   },
-  resource: (courseId: string, lessonId: string, resourceId: string) => request<MediaRead>("lessonResourceAccess",
+  previewText: (courseId: string, lessonId: string, signal: AbortSignal) => request<string>("lessonPreviewText",
+    "query ($courseId:ID!,$lessonId:ID!) { lessonPreviewText(courseId:$courseId,lessonId:$lessonId) }",
+    { courseId, lessonId }, signal),
+  resource: (courseId: string, lessonId: string, resourceId: string, signal?: AbortSignal) => request<MediaRead>("lessonResourceAccess",
     `query ($courseId:ID!,$lessonId:ID!,$resourceId:ID!) { lessonResourceAccess(courseId:$courseId,lessonId:$lessonId,resourceId:$resourceId) { ${access} } }`,
-    { courseId, lessonId, resourceId }),
+    { courseId, lessonId, resourceId }, signal),
   avatar: (url?: string | null, assetId?: string | null) => request<string | null>("updateMyAvatar",
     "mutation ($url:String,$assetId:ID) { updateMyAvatar(url:$url,assetId:$assetId) }", { url, assetId }),
   stats: () => request<MediaStats>("adminMediaStorageStats", "query { adminMediaStorageStats { enabled storedBytes publicBytes privateBytes reservedBytes softLimit hardLimit stored images videos documents pending failed unattached } }"),

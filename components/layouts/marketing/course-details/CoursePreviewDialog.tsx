@@ -4,7 +4,6 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { PlayCircle, X } from "lucide-react";
 
-import { ManagedMedia } from "@/features/storage/ManagedMedia";
 import LessonVideoPlayer from "@/features/commerce/LessonVideoPlayer";
 import type { CourseDetails } from "@/features/courses/data/course-details.data";
 
@@ -12,18 +11,16 @@ interface CoursePreviewDialogProps {
   course: CourseDetails;
   open: boolean;
   onClose: () => void;
-  lesson?: { id: string; title: string } | null;
 }
 
 export default function CoursePreviewDialog({
   course,
   open,
   onClose,
-  lesson,
 }: CoursePreviewDialogProps) {
   return (
     <AnimatePresence>
-      {open && (lesson || course.previewVideoUrl) && (
+      {open && course.previewVideoUrl && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
@@ -50,10 +47,7 @@ export default function CoursePreviewDialog({
               <X size={18} />
             </button>
 
-            {lesson ? <div className="space-y-4 p-4 sm:p-6">
-              <h3 id="preview-title" className="pr-12 text-lg font-semibold">{lesson.title}</h3>
-              <ManagedMedia key={lesson.id} courseId={course.id} lessonId={lesson.id} kind="video" title={lesson.title} preview />
-            </div> : course.previewVideoUrl && /\.mp4(?:[?#]|$)/i.test(course.previewVideoUrl)
+            {/\.mp4(?:[?#]|$)/i.test(course.previewVideoUrl)
               ? <div className="space-y-4 p-4 sm:p-6">
                 <h3 id="preview-title" className="pr-12 text-lg font-semibold">Course preview</h3>
                 <LessonVideoPlayer source={course.previewVideoUrl} title={course.title} />

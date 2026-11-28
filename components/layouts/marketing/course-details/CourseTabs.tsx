@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 
-import type { CourseDetails } from "@/features/courses/data/course-details.data";
+import type { CourseDetails, CourseLesson } from "@/features/courses/data/course-details.data";
 import { CourseTab } from "./CourseDetailsClient";
 import CurriculumTab from "./tabs/CurriculumTab";
 import OverviewTab from "./tabs/OverviewTab";
@@ -16,7 +16,7 @@ interface CourseTabsProps {
   onTabChange: (tab: CourseTab) => void;
   expandedModules: number[];
   onToggleModule: (index: number) => void;
-  onPreviewLesson: (lesson: { id: string; title: string }) => void;
+  onPreviewLesson: (lesson: CourseLesson, trigger: HTMLButtonElement) => void;
 }
 
 const tabs: { label: string; value: CourseTab }[] = [

@@ -463,7 +463,7 @@ export const PUBLIC_COURSE_QUERY = gql`
     course(identifier: $identifier) {
       ...PublicCourseFields
       updatedAt
-      curriculum { title lessons { title durationSeconds isPreview resourceCount previewLessonId } }
+      curriculum { title lessons { title type durationSeconds isPreview resourceCount previewLessonId } }
     }
   }
 `;

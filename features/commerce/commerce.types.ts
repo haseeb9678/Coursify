@@ -173,7 +173,7 @@ export interface LearningLesson {
   documentUrl: string | null;
   durationSeconds?: number | null;
   hasManagedMedia?: boolean;
-  resources: { id: string; title: string; type: string; url: string; hasManagedMedia?: boolean }[];
+  resources: { id: string; title: string; type: string; url: string; hasManagedMedia?: boolean; fileName?: string | null; mimeType?: string | null }[];
 }
 
 export interface LearningContent {

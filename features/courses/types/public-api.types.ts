@@ -1,4 +1,4 @@
-import type { CourseLevel, CoursePricing } from "@/features/admin/types/learning.types";
+import type { CourseLevel, CoursePricing, LessonType } from "@/features/admin/types/learning.types";
 import type { PaginationMeta } from "@/features/admin/types/management.types";
 
 export interface PublicCourse {
@@ -25,6 +25,7 @@ export interface PublicCourseDetail extends PublicCourse {
     title: string;
     lessons: {
       title: string;
+      type: LessonType;
       durationSeconds: number | null;
       isPreview: boolean;
       previewLessonId?: string | null;
