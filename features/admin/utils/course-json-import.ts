@@ -1,5 +1,5 @@
 import { courseFormSchema } from "@/features/admin/schemas/learning.schemas";
-import { courseJsonSchema, type CourseJson, type CourseJsonInput } from "@/features/admin/schemas/course-json-import.schema";
+import { courseJsonSchema, instructorCourseJsonSchema, type CourseJson, type CourseJsonInput, type ImportedCurriculum } from "@/features/admin/schemas/course-json-import.schema";
 import type { CategoryOption, InstructorOption } from "@/features/admin/types/learning-api.types";
 import type { CourseFormInput } from "@/features/admin/types/learning.types";
 import { parsePriceToMinorUnits, slugifyLearningName } from "@/features/admin/utils/learning.utils";
@@ -26,6 +26,7 @@ export const COURSE_JSON_SAMPLE = {
 } satisfies CourseJsonInput;
 
 export type ImportMode = "fill" | "overwrite";
+export type ImportCourse = CourseJson & { curriculum?: ImportedCurriculum; modules?: ImportedCurriculum };
 export type FormField = keyof CourseFormInput;
 export type ImportPatch = Partial<CourseFormInput>;
 export type InstructorReference = InstructorOption & { email?: string };
@@ -41,6 +42,8 @@ export interface CourseImportPlan {
   warnings: string[];
   category?: CategoryOption;
   instructor?: InstructorReference;
+  curriculum?: ImportedCurriculum;
+  curriculumChange?: "fill" | "preserve" | "overwrite";
 }
 
 export const fieldLabels: Record<FormField, string> = {
@@ -51,8 +54,8 @@ export const fieldLabels: Record<FormField, string> = {
   learningOutcomes: "Learning outcomes", requirements: "Requirements", targetAudience: "Target audience",
 };
 
-export function readJson(source: string): { value: unknown } | { error: string } {
-  if (source.length > MAX_COURSE_JSON_LENGTH) return { error: "Use at most 65,536 characters of JSON." };
+export function readJson(source: string, maxLength = MAX_COURSE_JSON_LENGTH): { value: unknown } | { error: string } {
+  if (source.length > maxLength) return { error: `Use at most ${maxLength.toLocaleString("en-US")} characters of JSON.` };
   if (!source.trim()) return { error: "Paste or load course JSON first." };
   try {
     const value: unknown = JSON.parse(source);
@@ -62,7 +65,7 @@ export function readJson(source: string): { value: unknown } | { error: string }
   }
 }
 
-export function parseCourseJson(source: string) {
+export function parseCourseJson(source: string, instructor = false) {
   const parsed = readJson(source);
   if ("error" in parsed) return { errors: [parsed.error], unknown: [] };
   const { value } = parsed;
@@ -70,14 +73,16 @@ export function parseCourseJson(source: string) {
     return { errors: ["The JSON must contain one course object."], unknown: [] };
   }
   const keys = Object.keys(value);
-  const unknown = keys.filter((key) => !Object.hasOwn(courseJsonSchema.shape, key));
-  const allowed = Object.fromEntries(Object.entries(value).filter(([key]) => Object.hasOwn(courseJsonSchema.shape, key)));
-  const result = courseJsonSchema.safeParse(allowed);
+  const schema = instructor ? instructorCourseJsonSchema : courseJsonSchema;
+  const unknown = keys.filter((key) => !Object.hasOwn(schema.shape, key));
+  const allowed = Object.fromEntries(Object.entries(value).filter(([key]) => Object.hasOwn(schema.shape, key)));
+  const result = schema.safeParse(allowed);
   if (!result.success) return { errors: result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`), unknown };
   if (!Object.keys(result.data).some((key) => key !== "currency")) {
     return { errors: ["Add at least one importable course field."], unknown };
   }
-  return { course: result.data, errors: [], unknown };
+  const course: ImportCourse = result.data;
+  return { course, errors: [], unknown };
 }
 
 export const normalizedName = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
@@ -111,14 +116,25 @@ const directFields = [
 ] as const;
 
 export function createCourseImportPlan(
-  course: CourseJson,
+  course: ImportCourse,
   current: CourseFormInput,
   isDirty: (field: FormField) => boolean,
   customSlug: boolean,
   references: CourseReferences,
   mode: ImportMode,
+  currentCurriculum?: string,
 ): CourseImportPlan {
   const plan: CourseImportPlan = { patch: {}, fields: [], errors: [], warnings: [...(references.warnings ?? [])] };
+  const curriculum = course.curriculum ?? course.modules;
+  if (curriculum !== undefined && JSON.stringify(curriculum, null, 2) !== currentCurriculum) {
+    plan.curriculumChange = currentCurriculum === undefined ? "fill" : mode === "fill" ? "preserve" : "overwrite";
+    if (plan.curriculumChange !== "preserve") {
+      plan.curriculum = curriculum;
+      if (curriculum.some(({ lessons }) => lessons.some(({ type }) => type !== "TEXT"))) {
+        plan.warnings.push("Video and PDF lessons import as draft entries. Attach their private files in the curriculum builder before requesting review.");
+      }
+    }
+  }
   const protectedField = (field: FormField) => {
     if (field === "slug" && customSlug) return true;
     const value = current[field];

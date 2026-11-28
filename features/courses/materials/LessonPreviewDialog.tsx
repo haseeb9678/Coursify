@@ -42,7 +42,7 @@ function PreviewError({ error, retry, busy, fallbackUrl }: {
   </div>;
 }
 
-function TextPreview({ title, load, fallbackUrl }: Extract<LessonPreview, { kind: "text" }>) {
+export function TextPreview({ title, load, fallbackUrl }: Pick<Extract<LessonPreview, { kind: "text" }>, "title" | "load" | "fallbackUrl">) {
   const content = usePreview(load);
   const [copied, setCopied] = useState(false);
   const [copying, setCopying] = useState(false);
@@ -123,7 +123,7 @@ function PdfViewer({ file, title }: { file: Blob; title: string }) {
   </>;
 }
 
-function PdfPreview({ title, load, fallbackUrl }: Extract<LessonPreview, { kind: "pdf" }>) {
+export function PdfPreview({ title, load, fallbackUrl }: Pick<Extract<LessonPreview, { kind: "pdf" }>, "title" | "load" | "fallbackUrl">) {
   const pdf = usePreview(load);
   if (pdf.isPending) return <Skeleton role="status" aria-label="Loading PDF preview" className="h-[min(50dvh,30rem)] rounded-xl" />;
   if (pdf.isError) return <PreviewError error={pdf.error} retry={() => void pdf.refetch()}

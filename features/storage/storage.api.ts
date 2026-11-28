@@ -12,7 +12,8 @@ export interface AdminMedia extends MediaAsset {
   courseScopeId?: string | null;
   attachments: { entityType: string; entityId: string }[];
 }
-export interface MediaOptions { enabled: boolean; maxBytes: number; extensions: string[] }
+export interface MediaOptions { enabled: boolean; maxBytes: number; extensions: string[]; formats: { extension: string; mimeType: string }[] }
+export interface MediaSelectionField { purpose: MediaPurpose; courseId?: string }
 export interface UploadedPart { partNumber: number; etag: string }
 export interface MediaRead { url: string; expiresAt: string | null; availableQualities?: number[] | null }
 export interface MediaStats {
@@ -34,7 +35,13 @@ async function request<T>(field: string, query: string, variables?: Record<strin
 
 export const storageApi = {
   options: (purpose: MediaPurpose) => request<MediaOptions>("mediaUploadOptions",
-    "query ($purpose:MediaPurpose!) { mediaUploadOptions(purpose:$purpose) { enabled maxBytes extensions } }", { purpose }),
+    "query ($purpose:MediaPurpose!) { mediaUploadOptions(purpose:$purpose) { enabled maxBytes extensions formats { extension mimeType } } }", { purpose }),
+  select: (pagination: { page: number; limit: number }, filter: MediaSelectionField & { search?: string; extension?: string }, signal?: AbortSignal) =>
+    request<{ items: MediaAsset[]; meta: MediaPage["meta"] }>("mediaSelection", `query ($pagination:PaginationInput!,$filter:MediaSelectionFilter!) {
+      mediaSelection(pagination:$pagination,filter:$filter) { items { ${asset} } meta { page limit total totalPages hasNext hasPrevious } }
+    }`, { pagination, filter }, signal),
+  selectionPreview: (field: MediaSelectionField, id: string, signal?: AbortSignal) =>
+    request<MediaRead>("mediaSelectionPreview", `query ($field:MediaSelectionField!,$id:ID!) { mediaSelectionPreview(field:$field,id:$id) { ${access} } }`, { field, id }, signal),
   create: (input: { requestId: string; purpose: MediaPurpose; courseId?: string; fileName: string; mimeType: string; sizeBytes: number }) =>
     request<{ asset: MediaAsset; url: string | null; partSize: number | null; expiresAt: string }>("createMediaUpload",
       `mutation ($input:CreateMediaUploadInput!) { createMediaUpload(input:$input) { asset { ${asset} } url partSize expiresAt } }`, { input }),

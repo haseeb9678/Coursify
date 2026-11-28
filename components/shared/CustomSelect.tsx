@@ -68,12 +68,12 @@ export default function CustomSelect({
               disabled={option.disabled}
               className="rounded-lg py-2.5 text-xs font-medium focus:bg-primary/10 focus:text-primary"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex min-w-0 items-center gap-2">
                 {Icon && (
                   <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
 
-                {option.label}
+                <span className="min-w-0 wrap-anywhere">{option.label}</span>
               </span>
             </SelectItem>
           );

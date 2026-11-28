@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  SearchableSelect,
   Select,
   SelectContent,
   SelectItem,
@@ -8,12 +9,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const triggerClassName = "h-10 min-w-32 max-w-[min(100%,24rem)] rounded-lg border-brand-border bg-background px-3 text-xs font-medium text-brand-text transition-colors hover:border-primary/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40";
+
 interface AdminFilterSelectProps {
   label: string;
   value: string;
   options: { value: string; label: string }[];
   onChange: (value: string) => void;
   disabled?: boolean;
+  searchable?: boolean;
 }
 
 export default function AdminFilterSelect({
@@ -22,9 +26,15 @@ export default function AdminFilterSelect({
   options,
   onChange,
   disabled = false,
+  searchable = options.length >= 8,
 }: AdminFilterSelectProps) {
   const selectedLabel =
     options.find((option) => option.value === value)?.label ?? value;
+
+  if (searchable) {
+    return <SearchableSelect aria-label={label} value={value} options={options} onValueChange={onChange}
+      placeholder={selectedLabel} disabled={disabled} className={triggerClassName} />;
+  }
 
   return (
     <Select
@@ -36,9 +46,9 @@ export default function AdminFilterSelect({
     >
       <SelectTrigger
         aria-label={label}
-        className="h-10 min-w-32 rounded-lg border-brand-border bg-background px-3 text-xs font-medium text-brand-text transition-colors hover:border-primary/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+        className={triggerClassName}
       >
-        <SelectValue>{selectedLabel}</SelectValue>
+        <SelectValue title={selectedLabel}>{selectedLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent
         align="start"

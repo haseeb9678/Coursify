@@ -3,6 +3,12 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import MediaUpload from "@/components/shared/media/MediaUpload";
+import { useCourseWorkspace } from "@/features/instructor/course-workspace";
+import InstructorLessonDialog from "@/features/instructor/InstructorLessonDialog";
+import { mapLesson } from "@/features/admin/api/learning.api";
+import { CurriculumSkeleton } from "@/components/layouts/admin/learning/LearningPageSkeletons";
+import { ContentIcon } from "@/features/courses/materials/ContentIcon";
+import { detectContentType } from "@/features/courses/materials/content-type";
 import { useMediaPending } from "@/features/storage/use-media-pending";
 import { ManagedMedia } from "@/features/storage/ManagedMedia";
 import {
@@ -102,6 +108,7 @@ export default function CurriculumBuilderClient({
   courseId: string;
 }) {
   const router = useRouter();
+  const { instructor, coursesPath } = useCourseWorkspace();
   const media = useMediaPending();
   const qualityUploads = useMediaPending();
   const uploading = media.pending || qualityUploads.pending;
@@ -119,27 +126,10 @@ export default function CurriculumBuilderClient({
     createdAt: section.createdAt,
     updatedAt: section.updatedAt,
   }));
-  const allLessons: CourseLesson[] = rawSections.flatMap((section) =>
-    section.lessons.map((lesson) => ({
-      id: lesson.id,
-      sectionId: lesson.sectionId,
-      title: lesson.title,
-      description: lesson.description,
-      type: lesson.type,
-      durationSeconds: lesson.durationSeconds,
-      position: lesson.position,
-      isPreview: lesson.isPreview,
-      content: lesson.content,
-      mediaUrl: lesson.videoUrl ?? lesson.documentUrl ?? "",
-      mediaAssetId: lesson.videoAssetId ?? lesson.documentAssetId,
-      videoQualities: lesson.videoQualities,
-      resources: lesson.resources.map(({ id, title, type, url, mediaAssetId, fileName, fileSize }) => ({ id, title, type, url, mediaAssetId, fileName, fileSize })),
-      createdAt: lesson.createdAt,
-      updatedAt: lesson.updatedAt,
-    })),
-  );
+  const allLessons = rawSections.flatMap((section) => section.lessons.map(mapLesson));
   const [sectionDraft, setSectionDraft] = useState<SectionDraft | null>(null);
   const [viewingLesson, setViewingLesson] = useState<CourseLesson | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
   const [lessonDraft, setLessonDraft] = useState<LessonDraft | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
   const [formError, setFormError] = useState("");
@@ -181,6 +171,7 @@ export default function CurriculumBuilderClient({
   const isReadOnly = !canEditCourse(course?.status);
 
   if (courseQuery.isLoading || curriculumQuery.isLoading) {
+    if (instructor) return <CurriculumSkeleton />;
     return (
       <main className="mx-auto w-full max-w-3xl px-4 py-8" aria-live="polite">
         <p className="text-sm text-brand-text-muted">Loading curriculum…</p>
@@ -199,7 +190,7 @@ export default function CurriculumBuilderClient({
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/admin/courses")}
+            onClick={() => router.push(coursesPath)}
           >
             Back to courses
           </Button>
@@ -215,7 +206,7 @@ export default function CurriculumBuilderClient({
           description={curriculumQuery.error.message}
         />
         <div className="flex justify-center">
-          <Button type="button" variant="outline" onClick={() => router.push(`/admin/courses/${course.id}`)}>
+          <Button type="button" variant="outline" onClick={() => router.push(`${coursesPath}/${course.id}`)}>
             Return to course
           </Button>
         </div>
@@ -469,7 +460,7 @@ export default function CurriculumBuilderClient({
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push(`/admin/courses/${course.id}`)}
+              onClick={() => router.push(`${coursesPath}/${course.id}`)}
             >
               Return to course
             </Button>
@@ -479,7 +470,7 @@ export default function CurriculumBuilderClient({
           type="button"
           variant="ghost"
           className="gap-2"
-          onClick={() => router.push("/admin/courses")}
+          onClick={() => router.push(coursesPath)}
         >
           <ArrowLeft size={15} aria-hidden="true" />
           All courses
@@ -586,6 +577,12 @@ export default function CurriculumBuilderClient({
                       </p>
                     </div>
                   </div>
+                  {instructor && <Button type="button" variant="ghost" size="sm"
+                    aria-controls={`module-lessons-${section.id}`} aria-expanded={!collapsedSections.includes(section.id)}
+                    onClick={() => setCollapsedSections((sections) => sections.includes(section.id)
+                      ? sections.filter((id) => id !== section.id) : [...sections, section.id])}>
+                    {collapsedSections.includes(section.id) ? "Expand lessons" : "Collapse lessons"}
+                  </Button>}
                   {!isReadOnly && (
                     <div className="flex flex-wrap items-center gap-1">
                       <Button
@@ -650,7 +647,7 @@ export default function CurriculumBuilderClient({
                     </div>
                   )}
                 </header>
-                <ol className="divide-y divide-brand-border">
+                <ol id={`module-lessons-${section.id}`} hidden={instructor && collapsedSections.includes(section.id)} className="divide-y divide-brand-border">
                   {sectionLessons.map((lesson, lessonIndex) => (
                     <li
                       key={lesson.id}
@@ -658,7 +655,7 @@ export default function CurriculumBuilderClient({
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          {lesson.type === "VIDEO" ? (
+                          {instructor ? <ContentIcon kind={detectContentType(lesson)} size={15} /> : lesson.type === "VIDEO" ? (
                             <Film size={15} aria-hidden="true" />
                           ) : lesson.type === "PDF" ? (
                             <FileText size={15} aria-hidden="true" />
@@ -703,6 +700,10 @@ export default function CurriculumBuilderClient({
                         </Button>
                       ) : (
                         <div className="flex shrink-0 items-center gap-1">
+                          {instructor && <Button type="button" variant="ghost" size="icon-sm"
+                            aria-label={`View lesson ${lesson.title}`} onClick={() => setViewingLesson(lesson)}>
+                            <Eye size={14} aria-hidden="true" />
+                          </Button>}
                           <Button
                             type="button"
                             variant="ghost"
@@ -947,6 +948,9 @@ export default function CurriculumBuilderClient({
                   disabled={busyAction !== null || qualityUploads.pending}
                   existingFile={lessonDraft.mediaAssetId ? "Verified private file" : lessonDraft.mediaUrl ? "Legacy external media. Upload a local file to replace it." : undefined}
                   onBusyChange={media.track("lesson")}
+                  onRemove={() => setLessonDraft((current) => current ? {
+                    ...current, mediaUrl: "", mediaAssetId: null, videoQualities: [], measuredDuration: undefined,
+                  } : current)}
                   onAsset={(asset, metadata) => setLessonDraft((current) => current ? {
                     ...current, mediaUrl: "", mediaAssetId: asset.id, videoQualities: [],
                     ...(metadata ? { measuredDuration: Math.max(1, Math.round(metadata.duration)), durationMinutes: String(Math.max(1, Math.ceil(metadata.duration / 60))) } : {}),
@@ -1092,8 +1096,14 @@ export default function CurriculumBuilderClient({
                     {resource.type === "LINK" ? <Input aria-label={`Resource ${index + 1} URL`} type="url" placeholder="https://"
                       value={resource.url} onChange={(event) => updateResource(index, "url", event.target.value)} />
                     : <MediaUpload label="Resource file" purpose="LESSON_RESOURCE" courseId={courseId} mode="UPLOAD_ONLY"
+                        allowedExtensions={resource.type === "PDF" ? ["pdf"] : undefined}
                         existingFile={resource.fileName || (resource.mediaAssetId ? "Verified private file" : resource.url ? "Legacy external file" : undefined)}
                         disabled={busyAction !== null} onBusyChange={media.track(`resource-${index}`)}
+                        onRemove={() => setLessonDraft((current) => current ? { ...current,
+                          resources: current.resources.map((item, position) => position === index ? {
+                            ...item, url: "", mediaAssetId: null, fileName: null, fileSize: null,
+                          } : item),
+                        } : current)}
                         onAsset={(asset) => setLessonDraft((current) => current ? { ...current,
                           resources: current.resources.map((item, position) => position === index ? {
                             ...item, url: "", mediaAssetId: asset.id, fileName: asset.originalFileName, fileSize: asset.sizeBytes,
@@ -1112,7 +1122,7 @@ export default function CurriculumBuilderClient({
         )}
       </AdminDialog>
 
-      <AdminDialog
+      {instructor ? <InstructorLessonDialog courseId={courseId} lesson={viewingLesson} onClose={() => setViewingLesson(null)} /> : <AdminDialog
         open={viewingLesson !== null}
         onOpenChange={(open) => { if (!open) setViewingLesson(null); }}
         title={viewingLesson?.title ?? "View lesson"}
@@ -1140,7 +1150,7 @@ export default function CurriculumBuilderClient({
             )}
           </div>
         )}
-      </AdminDialog>
+      </AdminDialog>}
 
       <AdminConfirmDialog
         open={!isReadOnly && pendingDelete !== null}

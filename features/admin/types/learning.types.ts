@@ -55,6 +55,7 @@ export interface AdminCourse {
   targetAudience: string[];
   status: CourseStatus;
   enrollmentCount?: number;
+  durationSeconds?: number | null;
   averageRating?: number | null;
   isFeatured?: boolean;
   canDelete?: boolean;

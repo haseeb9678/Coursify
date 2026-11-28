@@ -428,6 +428,7 @@ export default function AdminCoursesClient() {
           <>
             <AdminFilterSelect
               label="Filter by category"
+              searchable
               value={filters.categoryId}
               options={[
                 { value: "ALL", label: "All categories" },
@@ -440,6 +441,7 @@ export default function AdminCoursesClient() {
             />
             <AdminFilterSelect
               label="Filter by instructor"
+              searchable
               value={filters.instructorId}
               options={[
                 { value: "ALL", label: "All instructors" },
@@ -484,6 +486,7 @@ export default function AdminCoursesClient() {
             />
             <AdminFilterSelect
               label="Filter by language"
+              searchable
               value={filters.language}
               options={[
                 { value: "ALL", label: "All languages" },

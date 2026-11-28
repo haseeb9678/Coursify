@@ -7,13 +7,15 @@ import {
   GraduationCap,
   Menu,
   ArrowUpRight,
-  UserRound,
 } from "lucide-react";
 import { motion } from "motion/react";
 
 import SearchBar from "./SearchBar";
 import MobileNavSidebar from "./MobileNavSidebar";
 import DashboardThemeToggle from "@/components/layouts/dashboard/DashboardThemeToggle";
+import AdminUserAvatar from "@/components/layouts/admin/shared/AdminUserAvatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getRoleDashboardRoute } from "@/features/auth/constants/auth.routes";
 
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
@@ -28,13 +30,7 @@ const Navbar = () => {
     (state) => state.isAuthenticated,
   );
 
-  // Generate user initials
-  const userInitials = user?.name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((name) => name.charAt(0).toUpperCase())
-    .join("");
+  const isInitialized = useAuthStore((state) => state.isInitialized);
 
   return (
     <>
@@ -106,22 +102,15 @@ const Navbar = () => {
             <div className="flex shrink-0 items-center gap-3">
               <DashboardThemeToggle />
 
-              {isAuthenticated && user ? (
+              {!isInitialized ? <Skeleton role="status" aria-label="Loading account" className="size-10 shrink-0 rounded-full sm:size-11" /> : isAuthenticated && user ? (
                 /* Authenticated User Profile */
                 <Link
-                  href="/student/dashboard"
+                  href={getRoleDashboardRoute(user.role)}
                   aria-label={`Open dashboard for ${user.name}`}
                   title={user.name}
                   className="group flex size-10 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-sm font-semibold tracking-wide text-primary transition-colors duration-200 hover:border-primary/30 hover:bg-primary/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary sm:size-11"
                 >
-                  {userInitials ? (
-                    <span>{userInitials}</span>
-                  ) : (
-                    <UserRound
-                      size={20}
-                      strokeWidth={1.8}
-                    />
-                  )}
+                  <AdminUserAvatar name={user.name} avatar={user.avatar} className="size-full border-0 bg-transparent text-sm" />
                 </Link>
               ) : (
                 /* Desktop Guest Authentication */

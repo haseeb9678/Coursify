@@ -22,6 +22,8 @@ const ADMIN_COURSE_FIELDS = gql`
     canDelete
     sectionCount
     lessonCount
+    enrollmentCount
+    durationSeconds
     submittedAt
     approvedAt
     publishedAt

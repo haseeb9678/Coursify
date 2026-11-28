@@ -1,5 +1,7 @@
 "use client";
 
+import { instructorKey, useCourseWorkspace } from "@/features/instructor/course-workspace";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createAdminCategory,
@@ -71,8 +73,9 @@ export const adminLearningKeys = {
 };
 
 function useInvalidateLearning() {
+  const { instructor, userId } = useCourseWorkspace();
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: adminLearningKeys.all });
+  return () => queryClient.invalidateQueries({ queryKey: instructor ? instructorKey(userId) : adminLearningKeys.all });
 }
 
 function useInvalidateCategories() {
@@ -141,16 +144,18 @@ export function useAdminCourses(
   filter?: AdminCoursesFilter,
   sort?: { field: string; direction: "ASC" | "DESC" },
 ) {
+  const { instructor, userId } = useCourseWorkspace();
   return useQuery({
-    queryKey: [...adminLearningKeys.courses(pagination, filter), sort] as const,
-    queryFn: () => getAdminCourses(pagination, filter, sort),
+    queryKey: instructor ? instructorKey(userId, ...[...adminLearningKeys.courses(pagination, filter), sort]) : [...adminLearningKeys.courses(pagination, filter), sort] as const,
+    queryFn: () => getAdminCourses(pagination, filter, sort, instructor),
   });
 }
 
 export function useAdminCourse(id: string, refetchOnMount?: "always") {
+  const { instructor, userId } = useCourseWorkspace();
   return useQuery({
-    queryKey: adminLearningKeys.course(id),
-    queryFn: () => getAdminCourse(id),
+    queryKey: instructor ? instructorKey(userId, ...adminLearningKeys.course(id)) : adminLearningKeys.course(id),
+    queryFn: () => getAdminCourse(id, instructor),
     enabled: Boolean(id),
     refetchOnMount,
   });
@@ -164,31 +169,36 @@ export function useAdminCourseStats() {
 }
 
 export function useCourseInstructorOptions(search?: string) {
+  const { instructor } = useCourseWorkspace();
   return useQuery({
+    enabled: !instructor,
     queryKey: adminLearningKeys.instructorOptions(search),
     queryFn: () => getCourseInstructorOptions(search),
   });
 }
 
 export function useCourseCategoryOptions(search?: string) {
+  const { instructor, userId } = useCourseWorkspace();
   return useQuery({
-    queryKey: adminLearningKeys.categoryOptions(search),
-    queryFn: () => getCourseCategoryOptions(search),
+    queryKey: instructor ? instructorKey(userId, ...adminLearningKeys.categoryOptions(search)) : adminLearningKeys.categoryOptions(search),
+    queryFn: () => getCourseCategoryOptions(search, instructor),
   });
 }
 
 export function useCreateAdminCourse() {
   const invalidate = useInvalidateLearning();
+  const { instructor } = useCourseWorkspace();
   return useMutation({
-    mutationFn: (input: AdminCourseInput) => createAdminCourse(input),
+    mutationFn: (input: AdminCourseInput) => createAdminCourse(input, instructor),
     onSuccess: invalidate,
   });
 }
 
 export function useUpdateAdminCourse() {
   const invalidate = useInvalidateLearning();
+  const { instructor } = useCourseWorkspace();
   return useMutation({
-    mutationFn: (input: Partial<AdminCourseInput> & { id: string }) => updateAdminCourse(input),
+    mutationFn: (input: Partial<AdminCourseInput> & { id: string }) => updateAdminCourse(input, instructor),
     onSuccess: invalidate,
   });
 }
@@ -196,14 +206,16 @@ export function useUpdateAdminCourse() {
 export function useAdminCourseAction() {
   const queryClient = useQueryClient();
   const invalidate = useInvalidateLearning();
+  const { instructor, userId } = useCourseWorkspace();
+  const courseKey = (id: string) => instructor ? instructorKey(userId, ...adminLearningKeys.course(id)) : adminLearningKeys.course(id);
   return useMutation({
     mutationFn: (input: { action: CourseLifecycleAction; id: string; expectedStatus?: CourseStatus }) =>
-      runCourseAction(input.action, input.id, input.expectedStatus),
+      runCourseAction(input.action, input.id, input.expectedStatus, instructor),
     onError: () => invalidate(),
     onSuccess: async (course, input) => {
-      if (course) queryClient.setQueryData(adminLearningKeys.course(course.id), course);
+      if (course) queryClient.setQueryData(courseKey(course.id), course);
       if (input.action === "delete") {
-        queryClient.removeQueries({ queryKey: adminLearningKeys.course(input.id), exact: true });
+        queryClient.removeQueries({ queryKey: courseKey(input.id), exact: true });
       }
       await Promise.all([
         invalidate(),
@@ -227,9 +239,10 @@ export function useUpdateCourseFeatured() {
 }
 
 export function useAdminCurriculum(courseId: string) {
+  const { instructor, userId } = useCourseWorkspace();
   return useQuery({
-    queryKey: adminLearningKeys.curriculum(courseId),
-    queryFn: () => getAdminCurriculum(courseId),
+    queryKey: instructor ? instructorKey(userId, ...adminLearningKeys.curriculum(courseId)) : adminLearningKeys.curriculum(courseId),
+    queryFn: () => getAdminCurriculum(courseId, instructor),
     enabled: Boolean(courseId),
   });
 }
@@ -244,6 +257,7 @@ export function useAdminCurriculumStats(courseId: string) {
 
 export function useCurriculumMutation() {
   const invalidate = useInvalidateLearning();
+  const { instructor } = useCourseWorkspace();
   return useMutation({
     mutationFn: async (input:
       | { action: "create-section"; courseId: string; title: string; description: string }
@@ -259,29 +273,29 @@ export function useCurriculumMutation() {
       | { action: "reorder-resources"; lessonId: string; ids: string[] }) => {
       switch (input.action) {
         case "create-section":
-          return saveSection("create", input);
+          return saveSection("create", input, instructor);
         case "update-section":
-          return saveSection("update", input);
+          return saveSection("update", input, instructor);
         case "delete-section":
-          return deleteSection(input.id);
+          return deleteSection(input.id, instructor);
         case "reorder-sections":
-          return reorderSections(input.courseId, input.ids);
+          return reorderSections(input.courseId, input.ids, instructor);
         case "create-lesson":
         case "update-lesson":
-          return saveLesson(input.action === "create-lesson" ? "create" : "update", input);
+          return saveLesson(input.action === "create-lesson" ? "create" : "update", input, instructor);
         case "delete-lesson":
-          return deleteLesson(input.id);
+          return deleteLesson(input.id, instructor);
         case "reorder-lessons":
-          return reorderLessons(input.sectionId, input.ids);
+          return reorderLessons(input.sectionId, input.ids, instructor);
         case "move-lesson":
-          return moveLesson(input.lessonId, input.destinationSectionId);
+          return moveLesson(input.lessonId, input.destinationSectionId, instructor);
         case "create-resource":
         case "update-resource":
-          return saveLessonResource(input.action === "create-resource" ? "create" : "update", input);
+          return saveLessonResource(input.action === "create-resource" ? "create" : "update", input, instructor);
         case "delete-resource":
-          return deleteLessonResource(input.id);
+          return deleteLessonResource(input.id, instructor);
         case "reorder-resources":
-          return reorderLessonResources(input.lessonId, input.ids);
+          return reorderLessonResources(input.lessonId, input.ids, instructor);
       }
     },
     onSuccess: invalidate,

@@ -1,10 +1,17 @@
+"use client";
+
 import Image from "next/image";
+import { UserRound } from "lucide-react";
+import { useState } from "react";
 import { getUserInitials } from "@/features/dashboard/utils/dashboard.utils";
+import { isMediaUrl } from "@/features/storage/direct-upload";
+import { cn } from "@/lib/utils";
 
 interface AdminUserAvatarProps {
   name: string;
   avatar?: string | null;
   size?: "sm" | "md" | "lg";
+  className?: string;
 }
 
 const sizeClasses = {
@@ -17,16 +24,19 @@ export default function AdminUserAvatar({
   name,
   avatar,
   size = "md",
+  className,
 }: AdminUserAvatarProps) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const source = avatar && isMediaUrl(avatar, true) && failedUrl !== avatar ? avatar : null;
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/15 bg-primary/10 font-semibold text-primary ${sizeClasses[size]}`}
+      className={cn("relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/15 bg-primary/10 font-semibold text-primary", sizeClasses[size], className)}
       aria-label={name}
     >
-      {avatar ? (
-        <Image src={avatar} alt="" fill unoptimized sizes="56px" className="object-cover" />
+      {source ? (
+        <Image src={source} alt="" fill unoptimized sizes="56px" className="object-cover" onError={() => setFailedUrl(source)} />
       ) : (
-        getUserInitials(name)
+        getUserInitials(name) || <UserRound size={18} aria-hidden="true" />
       )}
     </span>
   );

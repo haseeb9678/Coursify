@@ -9,7 +9,6 @@ import {
   ArrowUpRight,
   LogIn,
   UserPlus,
-  UserRound,
   ChevronRight,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -23,6 +22,8 @@ import {
 } from "@/components/ui/sheet";
 
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { getRoleDashboardRoute } from "@/features/auth/constants/auth.routes";
+import AdminUserAvatar from "@/components/layouts/admin/shared/AdminUserAvatar";
 
 interface MobileNavSidebarProps {
   open: boolean;
@@ -60,14 +61,6 @@ export default function MobileNavSidebar({
   const isInitialized = useAuthStore(
     (state) => state.isInitialized,
   );
-
-  // Generate user initials
-  const userInitials = user?.name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((name) => name.charAt(0).toUpperCase())
-    .join("");
 
   const closeSidebar = () => onOpenChange(false);
 
@@ -196,19 +189,13 @@ export default function MobileNavSidebar({
               </p>
 
               <Link
-                href="/student/dashboard"
+                href={getRoleDashboardRoute(user.role)}
                 onClick={closeSidebar}
                 aria-label={`Open dashboard for ${user.name}`}
                 className="group flex items-center gap-3 rounded-xl border border-brand-border bg-card p-3 transition-colors duration-200 hover:border-primary/25 hover:bg-brand-soft/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 {/* Profile Avatar */}
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-sm font-semibold tracking-wide text-primary">
-                  {userInitials ? (
-                    <span>{userInitials}</span>
-                  ) : (
-                    <UserRound size={20} strokeWidth={1.8} />
-                  )}
-                </span>
+                <AdminUserAvatar name={user.name} avatar={user.avatar} className="size-11 text-sm tracking-wide" />
 
                 {/* User Information */}
                 <span className="min-w-0 flex-1">

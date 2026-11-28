@@ -62,7 +62,7 @@ function Courses({ userId }: { userId: string }) {
           <AdminFilterSelect label="Enrollment status" value={status}
             options={[{ label: "All courses", value: "all" }, ...enrollmentStatuses.map((value) => ({ label: statusLabel(value), value }))]}
             onChange={(value) => { setStatus(value); setPage(1); }} />
-          {!!stats.data?.categories.length && <AdminFilterSelect label="Course category" value={category}
+          {!!stats.data?.categories.length && <AdminFilterSelect label="Course category" searchable value={category}
             options={[{ label: "All categories", value: "all" }, ...stats.data.categories.map(({ id, name }) => ({ label: name, value: id }))]}
             onChange={(value) => { setCategory(value); setPage(1); }} />}
         </>} />

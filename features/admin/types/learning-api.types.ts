@@ -1,4 +1,5 @@
 import type { PaginationMeta } from "@/features/admin/types/management.types";
+import type { ImportedCurriculum } from "@/features/admin/schemas/course-json-import.schema";
 import type {
   AdminCategory,
   AdminCourse,
@@ -62,6 +63,8 @@ export interface BackendCourse {
   canDelete?: boolean | null;
   sectionCount?: number;
   lessonCount?: number;
+  enrollmentCount?: number;
+  durationSeconds?: number | null;
   submittedAt: string | null;
   approvedAt?: string | null;
   publishedAt?: string | null;
@@ -152,6 +155,7 @@ export interface AdminCourseInput {
   learningOutcomes: string[];
   requirements: string[];
   targetAudience: string[];
+  curriculum?: ImportedCurriculum;
 }
 
 export interface LessonResourceRecord {

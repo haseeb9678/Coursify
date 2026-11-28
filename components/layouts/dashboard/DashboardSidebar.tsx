@@ -51,7 +51,7 @@ function NavigationItem({
 }) {
   const pathname = usePathname();
   const { isMobile, setOpenMobile } = useSidebar();
-  const isActive = isActiveRoute(pathname, item.href, item.activePaths);
+  const isActive = isActiveRoute(pathname, item.href, item.activePaths, item.excludedPaths);
   const isImplemented = item.implemented !== false;
   const showNotificationCount =
     item.href === notificationRoute && notificationCount > 0;

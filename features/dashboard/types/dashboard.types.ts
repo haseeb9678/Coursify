@@ -8,6 +8,7 @@ export interface DashboardNavigationItem {
   href: string;
   icon: LucideIcon;
   activePaths?: readonly string[];
+  excludedPaths?: readonly string[];
   implemented?: boolean;
 }
 
@@ -44,6 +45,7 @@ export interface DashboardLayoutClientProps {
   children: ReactNode;
   config: DashboardConfiguration;
   defaultOpen?: boolean;
+  restoreSidebarState?: boolean;
   notificationCount?: number;
 }
 

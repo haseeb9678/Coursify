@@ -16,11 +16,13 @@ export default function DashboardLayoutClient({
   children,
   config,
   defaultOpen = true,
+  restoreSidebarState = false,
   notificationCount = 0,
 }: DashboardLayoutClientProps) {
   return (
     <SidebarProvider
       defaultOpen={defaultOpen}
+      restoreOpenFromCookie={restoreSidebarState}
       style={
         {
           "--sidebar-width": "16rem",

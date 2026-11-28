@@ -68,7 +68,8 @@ const LoginForm = () => {
 
       toast.success(response.message);
 
-      router.replace(response.user.role === "STUDENT" && returnTo ? returnTo : "/");
+      router.replace(response.user.role === "INSTRUCTOR" ? "/instructor/dashboard" :
+        response.user.role === "STUDENT" && returnTo ? returnTo : "/");
     } catch (error: unknown) {
       const message = getGraphQLErrorMessage(error);
 

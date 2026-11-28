@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import MediaUpload from "@/components/shared/media/MediaUpload";
+import { useCourseWorkspace } from "@/features/instructor/course-workspace";
 import { useMediaPending } from "@/features/storage/use-media-pending";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
+  SearchableSelect,
   Select,
   SelectContent,
   SelectItem,
@@ -22,11 +24,12 @@ import {
 } from "@/components/ui/select";
 import CourseJsonImportDialog from "./CourseJsonImportDialog";
 import type { CategoryOption, InstructorOption } from "@/features/admin/types/learning-api.types";
-import { importFields, pricingImportFields, sameField, type CourseImportPlan, type ImportPatch } from "@/features/admin/utils/course-json-import";
+import { importFields, MAX_COURSE_JSON_LENGTH, pricingImportFields, readJson, sameField, type CourseImportPlan, type ImportPatch } from "@/features/admin/utils/course-json-import";
 import CourseLifecycleDialog, { type PendingCourseAction } from "./CourseLifecycleDialog";
 import CourseStatusBadge from "./CourseStatusBadge";
 import AdminErrorState from "@/components/layouts/admin/shared/AdminErrorState";
 import AdminPageHeader from "@/components/layouts/admin/shared/AdminPageHeader";
+import { CourseFormSkeleton } from "@/components/layouts/admin/learning/LearningPageSkeletons";
 import {
   useAdminCourse,
   useCourseCategoryOptions,
@@ -40,6 +43,7 @@ import type {
 } from "@/features/admin/types/learning.types";
 import type { AdminCourseInput } from "@/features/admin/types/learning-api.types";
 import { courseFormSchema } from "@/features/admin/schemas/learning.schemas";
+import { importCurriculumSchema, type ImportedCurriculum } from "@/features/admin/schemas/course-json-import.schema";
 import {
   canEditCourse,
   formatCoursePrice,
@@ -51,6 +55,7 @@ import {
 
 type CourseFormValues = CourseFormInput;
 type SaveMode = "draft" | "curriculum";
+const maxStagedCurriculumLength = MAX_COURSE_JSON_LENGTH * 2;
 
 const textareaClassName =
   "min-h-24 w-full resize-y rounded-lg border border-brand-border bg-background px-3 py-2 text-sm text-brand-text outline-none placeholder:text-brand-text-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40";
@@ -63,6 +68,7 @@ export default function CourseFormClient({
   courseId?: string;
 }) {
   const router = useRouter();
+  const { instructor, userId, coursesPath } = useCourseWorkspace();
   const courseQuery = useAdminCourse(courseId ?? "", "always");
   const categoriesQuery = useCourseCategoryOptions();
   const instructorsQuery = useCourseInstructorOptions();
@@ -75,7 +81,12 @@ export default function CourseFormClient({
   const [importOpen, setImportOpen] = useState(false);
   const [importedCategories, setImportedCategories] = useState<CategoryOption[]>([]);
   const [importedInstructors, setImportedInstructors] = useState<InstructorOption[]>([]);
-  const [lastImport, setLastImport] = useState<{ before: CourseFormInput; patch: ImportPatch; customSlug: boolean; explicitSlug: boolean }>();
+  const [curriculumSource, setCurriculumSource] = useState<string>();
+  const [curriculumError, setCurriculumError] = useState("");
+  const [lastImport, setLastImport] = useState<{
+    before: CourseFormInput; patch: ImportPatch; customSlug: boolean; explicitSlug: boolean;
+    curriculum?: { before?: string; after: string };
+  }>();
   const categoryOptions = categoriesQuery.data ?? [];
   const baseInstructors = instructorsQuery.data ?? [];
   const categories = [...categoryOptions, ...importedCategories.filter((item) => !categoryOptions.some(({ id }) => id === item.id))];
@@ -99,8 +110,9 @@ export default function CourseFormClient({
     formState: { errors, isDirty, dirtyFields },
   } = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
-    defaultValues: getCourseFormValues(currentCourse),
+    defaultValues: { ...getCourseFormValues(currentCourse), ...(instructor ? { instructorId: userId ?? "" } : {}) },
   });
+  const hasUnsavedChanges = isDirty || curriculumSource !== undefined;
 
   useEffect(() => {
     if (mode === "edit" && !isCheckingCourse && currentCourse && baseline.current?.id !== currentCourse.id) {
@@ -110,14 +122,31 @@ export default function CourseFormClient({
   }, [currentCourse, isCheckingCourse, mode, reset]);
 
   useEffect(() => {
-    if (!isDirty) return;
+    if (!hasUnsavedChanges) return;
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
+    const handleNavigation = (event: MouseEvent) => {
+      if (!instructor || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+      const anchor = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href]") : null;
+      if (!anchor || anchor.target === "_blank" || anchor.origin !== location.origin || anchor.pathname === location.pathname) return;
+      if (!window.confirm("Leave this page and discard unsaved course changes?")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener("click", handleNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleNavigation, true);
+    };
+  }, [instructor, hasUnsavedChanges]);
+
+  function leaveCourse(href: string) {
+    if (!instructor || !hasUnsavedChanges || window.confirm("Leave this page and discard unsaved course changes?")) router.push(href);
+  }
 
   const isFree = useWatch({ control, name: "isFree" });
   const thumbnailDataUrl = useWatch({ control, name: "thumbnailDataUrl" });
@@ -145,26 +174,30 @@ export default function CourseFormClient({
   const importCourse = (plan: CourseImportPlan, explicitSlug: boolean) => {
     if (mode !== "create" || submitting.current || plan.errors.length) return;
     const category = plan.category;
+    const patch = instructor ? { ...plan.patch, instructorId: undefined } : plan.patch;
+    const curriculum = instructor && plan.curriculum ? JSON.stringify(plan.curriculum, null, 2) : undefined;
     if (plan.patch.categoryId && category) {
       setImportedCategories((items) => [...items.filter(({ id }) => id !== category.id), category]);
     }
-    if (plan.patch.instructorId && plan.instructor) {
+    if (patch.instructorId && plan.instructor) {
       const { id, name, avatar } = plan.instructor;
       setImportedInstructors((items) => [...items.filter((item) => item.id !== id), { id, name, avatar }]);
     }
     setLastImport({
       before: structuredClone(getValues()),
-      patch: plan.patch,
+      patch,
       customSlug: slugManuallyEdited,
-      explicitSlug: Boolean(explicitSlug && plan.patch.slug !== undefined),
+      explicitSlug: Boolean(explicitSlug && patch.slug !== undefined),
+      curriculum: curriculum === undefined ? undefined : { before: curriculumSource, after: curriculum },
     });
-    applyImportPatch(plan.patch);
-    if (explicitSlug && plan.patch.slug !== undefined) setSlugManuallyEdited(true);
+    applyImportPatch(patch);
+    if (curriculum !== undefined) { setCurriculumSource(curriculum); setCurriculumError(""); }
+    if (explicitSlug && patch.slug !== undefined) setSlugManuallyEdited(true);
   };
 
   const undoImport = () => {
     if (!lastImport || mode !== "create" || submitting.current) return;
-    const { before, patch, customSlug, explicitSlug } = lastImport;
+    const { before, patch, customSlug, explicitSlug, curriculum } = lastImport;
     const current = getValues();
     const after = { ...before, ...patch };
     const pricingChanged = pricingImportFields.some((field) => !sameField(current[field], after[field]));
@@ -176,8 +209,10 @@ export default function CourseFormClient({
     for (const field of restore) setValue(field, before[field], { shouldDirty: true });
     if (restore.includes("slug") && explicitSlug && slugManuallyEdited) setSlugManuallyEdited(customSlug);
     if (restore.length) void trigger(restore);
+    const restoredCurriculum = curriculum !== undefined && curriculumSource === curriculum.after;
+    if (restoredCurriculum) { setCurriculumSource(curriculum.before); setCurriculumError(""); }
     setLastImport(undefined);
-    toast.info(restore.length ? "Import undone. Later edits were preserved." : "The imported values were already changed.");
+    toast.info(restore.length || restoredCurriculum ? "Import undone. Later edits were preserved." : "The imported values were already changed.");
   };
 
   const saveCourse = async (values: CourseFormValues, saveMode: SaveMode) => {
@@ -187,11 +222,23 @@ export default function CourseFormClient({
       toast.error("Check the course price values and try again.");
       return;
     }
+    let curriculum: ImportedCurriculum | undefined;
+    if (instructor && mode === "create" && curriculumSource !== undefined) {
+      const json = readJson(curriculumSource, maxStagedCurriculumLength);
+      const validated = "error" in json ? null : importCurriculumSchema.safeParse(json.value);
+      if (!validated?.success) {
+        const issue = validated?.error.issues[0];
+        setCurriculumError("error" in json ? json.error : `${issue?.path.join(".") || "Curriculum"}: ${issue?.message ?? "Invalid curriculum"}`);
+        toast.error("Check the imported curriculum and try again.");
+        return;
+      }
+      curriculum = validated.data;
+    }
 
     try {
       let savedCourse: AdminCourse;
       if (mode === "create") {
-        savedCourse = await createCourse.mutateAsync(input);
+        savedCourse = await createCourse.mutateAsync({ ...input, ...(curriculum ? { curriculum } : {}) });
         toast.success("Course created.");
       } else if (currentCourse) {
         const initial = baseline.current ?? currentCourse;
@@ -208,9 +255,9 @@ export default function CourseFormClient({
         return;
       }
       if (saveMode === "curriculum") {
-        router.push(`/admin/courses/${savedCourse.id}/curriculum`);
+        router.push(`${coursesPath}/${savedCourse.id}/curriculum`);
       } else {
-        router.push(`/admin/courses/${savedCourse.id}`);
+        router.push(`${coursesPath}/${savedCourse.id}`);
       }
     } catch (error) {
       toast.error(getGraphQLErrorMessage(error));
@@ -251,6 +298,7 @@ export default function CourseFormClient({
   };
 
   if (isCheckingCourse) {
+    if (instructor) return <CourseFormSkeleton />;
     return (
       <main className="mx-auto w-full max-w-3xl px-4 py-8" aria-live="polite">
         <p className="text-sm text-brand-text-muted">Loading course details…</p>
@@ -269,7 +317,7 @@ export default function CourseFormClient({
           <Button
             type="button"
             variant="outline"
-            onClick={() => router.push("/admin/courses")}
+            onClick={() => leaveCourse(coursesPath)}
           >
             Back to courses
           </Button>
@@ -281,7 +329,7 @@ export default function CourseFormClient({
   if (mode === "edit" && currentCourse && !canEditCourse(currentCourse.status)) {
     const action = currentCourse.status === "PENDING_REVIEW" ? "withdraw" : "restore";
     const description = currentCourse.status === "PUBLISHED"
-      ? publishedCourseEditWarning
+      ? (instructor ? "Archive this course before returning it to draft for a new review." : publishedCourseEditWarning)
       : currentCourse.status === "PENDING_REVIEW"
         ? "Withdraw this submission before making changes to the course."
         : "Return this course to draft before editing. It will need to be reviewed again before publication.";
@@ -292,12 +340,13 @@ export default function CourseFormClient({
         </div>
         <AdminErrorState title="Course editing is restricted" description={description} />
         <div className="flex flex-wrap justify-center gap-3">
-          <Button type="button" variant="outline" onClick={() => router.push(`/admin/courses/${currentCourse.id}`)}>
+          <Button type="button" variant="outline" onClick={() => router.push(`${coursesPath}/${currentCourse.id}`)}>
             Back to course details
           </Button>
-          <Button type="button" onClick={() => setPendingAction({ course: currentCourse, action })}>
-            {getCourseActionCopy(action, currentCourse).label}
-          </Button>
+          {(!instructor || currentCourse.status === "PENDING_REVIEW" || (currentCourse.status === "ARCHIVED" && !currentCourse.enrollmentCount)) &&
+            <Button type="button" onClick={() => setPendingAction({ course: currentCourse, action })}>
+              {getCourseActionCopy(action, currentCourse).label}
+            </Button>}
         </div>
         <CourseLifecycleDialog pending={pendingAction} onClose={() => setPendingAction(null)} />
       </main>
@@ -330,7 +379,7 @@ export default function CourseFormClient({
             type="button"
             variant="outline"
             className="gap-2"
-            onClick={() => router.push("/admin/courses")}
+            onClick={() => leaveCourse(coursesPath)}
           >
             <ArrowLeft size={15} aria-hidden="true" />
             Back to courses
@@ -380,31 +429,19 @@ export default function CourseFormClient({
                 name="categoryId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <SearchableSelect
+                    id="course-category"
                     value={field.value}
-                    onValueChange={(value) => {
-                      if (value !== null) field.onChange(value);
-                    }}
-                  >
-                    <SelectTrigger
-                      id="course-category"
-                      aria-invalid={Boolean(errors.categoryId)}
-                      className="h-10 w-full border-brand-border bg-background text-sm"
-                    >
-                      <SelectValue placeholder="Choose a category" />
-                    </SelectTrigger>
-                    <SelectContent align="start">
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onValueChange={field.onChange}
+                    options={categories.map(({ id, name }) => ({ value: id, label: name }))}
+                    placeholder="Choose a category"
+                    aria-invalid={Boolean(errors.categoryId)}
+                    className="h-10 w-full border-brand-border bg-background text-sm"
+                  />
                 )}
               />
             </FormField>
-            <FormField
+            {!instructor && <FormField
               id="course-instructor"
               label="Assigned instructor"
               error={errors.instructorId?.message}
@@ -413,33 +450,18 @@ export default function CourseFormClient({
                 name="instructorId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <SearchableSelect
+                    id="course-instructor"
                     value={field.value}
-                    onValueChange={(value) => {
-                      if (value !== null) field.onChange(value);
-                    }}
-                  >
-                    <SelectTrigger
-                      id="course-instructor"
-                      aria-invalid={Boolean(errors.instructorId)}
-                      className="h-10 w-full border-brand-border bg-background text-sm"
-                    >
-                      <SelectValue placeholder="Choose an instructor" />
-                    </SelectTrigger>
-                    <SelectContent align="start">
-                      {instructorOptions.map((instructor) => (
-                        <SelectItem
-                          key={instructor.id}
-                          value={instructor.id}
-                        >
-                          {instructor.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onValueChange={field.onChange}
+                    options={instructorOptions.map(({ id, name }) => ({ value: id, label: name }))}
+                    placeholder="Choose an instructor"
+                    aria-invalid={Boolean(errors.instructorId)}
+                    className="h-10 w-full border-brand-border bg-background text-sm"
+                  />
                 )}
               />
-            </FormField>
+            </FormField>}
             <FormField id="course-level" label="Difficulty level">
               <Controller
                 name="level"
@@ -610,21 +632,30 @@ export default function CourseFormClient({
           placeholder="e.g. Developers starting with Next.js"
         />
 
+        {instructor && curriculumSource !== undefined && <FormSection title="Imported curriculum" description="Review or edit the modules before saving the draft. You can attach private lesson files in the curriculum builder.">
+          <FormField id="imported-curriculum" label="Curriculum JSON" error={curriculumError || undefined}>
+            <textarea id="imported-curriculum" rows={8} value={curriculumSource} maxLength={maxStagedCurriculumLength}
+              disabled={pendingSaveMode !== null} spellCheck={false} aria-invalid={Boolean(curriculumError)}
+              className={`${textareaClassName} font-mono`} onChange={(event) => { setCurriculumSource(event.target.value); setCurriculumError(""); }} />
+          </FormField>
+          <Button type="button" variant="outline" disabled={pendingSaveMode !== null} onClick={() => { setCurriculumSource(undefined); setCurriculumError(""); }}>Remove imported curriculum</Button>
+        </FormSection>}
+
         <div className="flex flex-col-reverse gap-2 border-t border-brand-border pt-4 sm:flex-row sm:justify-between">
           <Button
             type="button"
             variant="outline"
             onClick={() => {
               if (
-                isDirty &&
+                hasUnsavedChanges &&
                 !window.confirm("Discard your unsaved course changes?")
               ) {
                 return;
               }
               router.push(
                 mode === "edit" && currentCourse
-                  ? `/admin/courses/${currentCourse.id}`
-                  : "/admin/courses",
+                  ? `${coursesPath}/${currentCourse.id}`
+                  : coursesPath,
               );
             }}
           >
@@ -652,11 +683,12 @@ export default function CourseFormClient({
       </form>
       {mode === "create" && importOpen && (
         <CourseJsonImportDialog
+          instructor={instructor}
           categories={categoryOptions}
           instructors={baseInstructors}
           availability={{ categories: categoriesQuery.isSuccess, instructors: instructorsQuery.isSuccess }}
-          optionsLoading={categoriesQuery.isPending || instructorsQuery.isPending}
-          getSnapshot={() => ({ values: getValues(), isDirty: (field) => Boolean(dirtyFields[field]), customSlug: slugManuallyEdited })}
+          optionsLoading={categoriesQuery.isPending || (!instructor && instructorsQuery.isPending)}
+          getSnapshot={() => ({ values: getValues(), isDirty: (field) => Boolean(dirtyFields[field]), customSlug: slugManuallyEdited, curriculum: curriculumSource })}
           onApply={importCourse}
           onClose={() => setImportOpen(false)}
         />

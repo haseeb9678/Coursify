@@ -26,7 +26,7 @@ export default function AvatarDialog({ onClose }: { onClose: () => void }) {
     onError: (error) => toast.error(getGraphQLErrorMessage(error)),
   });
   const busy = uploading || save.isPending;
-  return <AdminDialog open title="Edit profile photo" description="Upload an image or enter its public HTTPS address."
+  return <AdminDialog open title="Edit profile photo" description="Upload an image, enter a public HTTPS address, or choose one of your saved images."
     busy={busy} onOpenChange={(open) => { if (!open && !busy) onClose(); }}
     footer={<>
       <Button type="button" variant="outline" disabled={busy} onClick={onClose}>Cancel</Button>

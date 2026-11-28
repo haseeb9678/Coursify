@@ -1,4 +1,4 @@
-import { getAdminCategories } from "@/features/admin/api/learning.api";
+import { getAdminCategories, getCourseCategoryOptions } from "@/features/admin/api/learning.api";
 import { getAdminUser, getAdminUsers } from "@/features/admin/api/users.api";
 import type { CourseJson } from "@/features/admin/schemas/course-json-import.schema";
 import type { CategoryOption, InstructorOption } from "@/features/admin/types/learning-api.types";
@@ -75,10 +75,11 @@ export async function resolveCourseImportReferences(
   categories: readonly CategoryOption[],
   instructors: readonly InstructorOption[],
   availability: { categories: boolean; instructors: boolean },
+  instructor = false,
 ): Promise<CourseReferences> {
   const [categoryResult, instructorResult] = await Promise.allSettled([
-    eligibleCategories(course, categories, availability.categories),
-    eligibleInstructors(course, instructors, availability.instructors),
+    instructor ? instructorCategories(course, categories, availability.categories) : eligibleCategories(course, categories, availability.categories),
+    instructor ? Promise.resolve([]) : eligibleInstructors(course, instructors, availability.instructors),
   ]);
   return {
     categories: categoryResult.status === "fulfilled" ? categoryResult.value : [],
@@ -88,4 +89,12 @@ export async function resolveCourseImportReferences(
       ...(instructorResult.status === "rejected" ? ["The instructor lookup failed. Retry validation or select an instructor manually."] : []),
     ],
   };
+}
+
+async function instructorCategories(course: CourseJson, options: readonly CategoryOption[], available: boolean) {
+  const search = course.categoryId ?? course.categorySlug ?? course.categoryName;
+  if (!search || (available && options.length < optionLimit) || options.some((item) =>
+    item.id === course.categoryId || item.slug === course.categorySlug ||
+    (course.categoryName && normalizedName(item.name) === normalizedName(course.categoryName)))) return options;
+  return getCourseCategoryOptions(search, true);
 }

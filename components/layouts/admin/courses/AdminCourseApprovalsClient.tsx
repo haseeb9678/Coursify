@@ -382,6 +382,7 @@ export default function AdminCourseApprovalsClient({ initialCourseId }: { initia
           <>
             <AdminFilterSelect
               label="Filter by category"
+              searchable
               value={filters.categoryId}
               options={[
                 { value: "ALL", label: "All categories" },

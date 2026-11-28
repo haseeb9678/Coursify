@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { courseFormSchema } from "./learning.schemas";
+import { courseFormSchema, lessonSchema, sectionSchema } from "./learning.schemas";
 import { parsePriceToMinorUnits } from "@/features/admin/utils/learning.utils";
 
 const current = courseFormSchema.shape;
@@ -50,3 +50,43 @@ export const courseJsonSchema = z.object({
 
 export type CourseJsonInput = z.input<typeof courseJsonSchema>;
 export type CourseJson = z.infer<typeof courseJsonSchema>;
+
+const publicHttps = url.refine((value) => !value || (/^https:\/\//i.test(value) && URL.canParse(value) &&
+  ![...new URL(value).searchParams.keys()].some((key) => /^x-amz-/i.test(key))), "Use a public HTTPS URL without a storage signature.");
+
+const importResource = z.strictObject({
+  title: z.string().trim().min(2).max(180),
+  type: z.literal("LINK").default("LINK"),
+  url: publicHttps.pipe(z.string().min(1)),
+});
+
+const importLesson = z.strictObject({
+  title: lessonSchema.shape.title,
+  description: z.string().trim().max(500).optional(),
+  type: lessonSchema.shape.type,
+  content: z.string().trim().max(10_000).optional(),
+  durationSeconds: z.number().int().min(0).max(1_000_000).nullish(),
+  isPreview: z.boolean().default(false),
+  resources: z.array(importResource).max(20).default([]),
+});
+
+export const importCurriculumSchema = z.array(z.strictObject({
+  title: sectionSchema.shape.title,
+  description: sectionSchema.shape.description.optional(),
+  lessons: z.array(importLesson).max(100).default([]),
+})).max(25).superRefine((modules, context) => {
+  const lessons = modules.flatMap((module) => module.lessons);
+  if (lessons.length > 100) context.addIssue({ code: "custom", message: "Import up to 100 lessons per course." });
+  if (lessons.reduce((total, lesson) => total + lesson.resources.length, 0) > 250) {
+    context.addIssue({ code: "custom", message: "Import up to 250 linked resources per course." });
+  }
+});
+
+export const instructorCourseJsonSchema = courseJsonSchema.omit({ instructorId: true, instructorName: true, instructorEmail: true }).extend({
+  thumbnailUrl: publicHttps.nullish(),
+  promotionalVideoUrl: publicHttps.nullish(),
+  curriculum: importCurriculumSchema.optional(),
+  modules: importCurriculumSchema.optional(),
+}).refine((data) => !(data.curriculum && data.modules), "Provide either curriculum or modules.");
+
+export type ImportedCurriculum = z.infer<typeof importCurriculumSchema>;

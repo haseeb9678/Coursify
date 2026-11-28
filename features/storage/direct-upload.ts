@@ -18,7 +18,12 @@ export function isMediaUrl(value: string, localPaths = false) {
 }
 
 export function validateSelectedFile(file: File, options: MediaOptions) {
-  if (!options.extensions.some((extension) => file.name.toLowerCase().endsWith(`.${extension}`))) throw new Error("Choose an accepted file type.");
+  const extension = file.name.toLowerCase().match(/\.([a-z0-9]{1,5})$/)?.[1];
+  const expected = options.formats.find((format) => format.extension === extension)?.mimeType;
+  const declared = file.type.trim().toLowerCase();
+  const csvAlias = extension === "csv" && ["application/vnd.ms-excel", "text/plain"].includes(declared);
+  const zipAlias = extension === "zip" && declared === "application/x-zip-compressed";
+  if (!expected || (declared && declared !== expected && !csvAlias && !zipAlias)) throw new Error("Choose an accepted file type.");
   if (!file.size || file.size > options.maxBytes) throw new Error(`Choose a nonempty file up to ${fileSize(options.maxBytes)}.`);
 }
 

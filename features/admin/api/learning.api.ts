@@ -1,3 +1,4 @@
+import { courseWorkspaceClient } from "@/features/instructor/course-workspace";
 import { graphqlClient } from "@/lib/graphql/client";
 import {
   ADMIN_APPROVE_COURSE_MUTATION,
@@ -127,6 +128,8 @@ function mapCourse(course: BackendCourse): AdminCourse {
     canDelete: course.canDelete ?? undefined,
     sectionCount: course.sectionCount ?? 0,
     lessonCount: course.lessonCount ?? 0,
+    enrollmentCount: course.enrollmentCount,
+    durationSeconds: course.durationSeconds,
     createdAt: course.createdAt,
     updatedAt: course.updatedAt,
     submittedAt: course.submittedAt,
@@ -157,7 +160,7 @@ function mapResource(resource: LessonResourceRecord): LessonResource {
   };
 }
 
-function mapLesson(lesson: LessonRecord): CourseLesson {
+export function mapLesson(lesson: LessonRecord): CourseLesson {
   return {
     id: lesson.id,
     sectionId: lesson.sectionId,
@@ -245,9 +248,8 @@ export async function deleteAdminCategory(id: string): Promise<void> {
 export async function getAdminCourses(
   pagination: PaginationInput,
   filter?: AdminCoursesFilter,
-  sort?: SortVariables,
-): Promise<LearningPage<AdminCourse>> {
-  const result = await graphqlClient.request<
+  sort?: SortVariables, instructor = false): Promise<LearningPage<AdminCourse>> {
+  const result = await courseWorkspaceClient(instructor).request<
     { adminCourses: BackendPage<BackendCourse> },
     { pagination: PaginationInput; filter?: AdminCoursesFilter; sort?: SortVariables }
   >(ADMIN_COURSES_QUERY, { pagination, filter, sort });
@@ -257,8 +259,8 @@ export async function getAdminCourses(
   };
 }
 
-export async function getAdminCourse(id: string): Promise<AdminCourse> {
-  const result = await graphqlClient.request<
+export async function getAdminCourse(id: string, instructor = false): Promise<AdminCourse> {
+  const result = await courseWorkspaceClient(instructor).request<
     { adminCourse: BackendCourse },
     { id: string }
   >(ADMIN_COURSE_QUERY, { id });
@@ -280,30 +282,33 @@ export async function getCourseInstructorOptions(search?: string): Promise<Instr
   return result.adminCourseInstructorOptions;
 }
 
-export async function getCourseCategoryOptions(search?: string): Promise<CategoryOption[]> {
-  const result = await graphqlClient.request<
+export async function getCourseCategoryOptions(search?: string, instructor = false): Promise<CategoryOption[]> {
+  const result = await courseWorkspaceClient(instructor).request<
     { adminCourseCategoryOptions: CategoryOption[] },
     { search?: string }
   >(ADMIN_COURSE_CATEGORY_OPTIONS_QUERY, { search });
   return result.adminCourseCategoryOptions;
 }
 
-export async function createAdminCourse(input: AdminCourseInput): Promise<AdminCourse> {
-  const result = await graphqlClient.request<
+export async function createAdminCourse(input: AdminCourseInput, instructor = false): Promise<AdminCourse> {
+  const { instructorId, curriculum, ...courseFields } = input;
+  const payload = instructor ? { ...courseFields, ...(curriculum?.length ? { curriculum } : {}) } : { ...courseFields, instructorId };
+  const result = await courseWorkspaceClient(instructor).request<
     { adminCreateCourse: { success: boolean; message: string; course: BackendCourse } },
-    { input: AdminCourseInput }
-  >(ADMIN_CREATE_COURSE_MUTATION, { input });
+    { input: Omit<AdminCourseInput, "instructorId"> & { instructorId?: string } }
+  >(ADMIN_CREATE_COURSE_MUTATION, { input: payload });
   assertSuccess(result.adminCreateCourse);
   return mapCourse(result.adminCreateCourse.course);
 }
 
 export async function updateAdminCourse(
-  input: Partial<AdminCourseInput> & { id: string },
-): Promise<AdminCourse> {
-  const result = await graphqlClient.request<
+  input: Partial<AdminCourseInput> & { id: string }, instructor = false): Promise<AdminCourse> {
+  const { instructorId, ...courseFields } = input;
+  const payload = instructor ? courseFields as typeof input : { ...courseFields, instructorId };
+  const result = await courseWorkspaceClient(instructor).request<
     { adminUpdateCourse: { success: boolean; message: string; course: BackendCourse } },
     { input: Partial<AdminCourseInput> & { id: string } }
-  >(ADMIN_UPDATE_COURSE_MUTATION, { input });
+  >(ADMIN_UPDATE_COURSE_MUTATION, { input: payload });
   assertSuccess(result.adminUpdateCourse);
   return mapCourse(result.adminUpdateCourse.course);
 }
@@ -317,8 +322,7 @@ export async function runCourseAction(
     | "archive"
     | "restore",
   id: string,
-  expectedStatus?: CourseStatus,
-): Promise<AdminCourse | void> {
+  expectedStatus?: CourseStatus, instructor = false): Promise<AdminCourse | void> {
   const configs = {
     delete: { document: ADMIN_DELETE_COURSE_MUTATION, field: "adminDeleteCourse" },
     submit: { document: ADMIN_SUBMIT_COURSE_MUTATION, field: "adminSubmitCourseForReview" },
@@ -328,7 +332,7 @@ export async function runCourseAction(
     restore: { document: ADMIN_RESTORE_COURSE_MUTATION, field: "adminRestoreCourse" },
   } as const;
   const config = configs[action];
-  const result = await graphqlClient.request<Record<string, { success: boolean; message: string; course?: BackendCourse }>, { id: string; expectedStatus?: typeof expectedStatus }>(
+  const result = await courseWorkspaceClient(instructor).request<Record<string, { success: boolean; message: string; course?: BackendCourse }>, { id: string; expectedStatus?: typeof expectedStatus }>(
     config.document,
     action === "restore" ? { id, expectedStatus } : { id },
   );
@@ -349,8 +353,8 @@ export async function updateCourseFeatured(
   return mapCourse(result.adminUpdateCourseFeaturedStatus.course);
 }
 
-export async function getAdminCurriculum(courseId: string): Promise<CurriculumRecord> {
-  const result = await graphqlClient.request<{ adminCourseCurriculum: CurriculumRecord }, { courseId: string }>(
+export async function getAdminCurriculum(courseId: string, instructor = false): Promise<CurriculumRecord> {
+  const result = await courseWorkspaceClient(instructor).request<{ adminCourseCurriculum: CurriculumRecord }, { courseId: string }>(
     ADMIN_COURSE_CURRICULUM_QUERY,
     { courseId },
   );
@@ -367,11 +371,10 @@ export async function getAdminCurriculumStats(courseId: string) {
 
 export async function saveSection(
   action: "create" | "update",
-  input: { courseId?: string; id?: string; title: string; description: string },
-): Promise<CourseSection> {
+  input: { courseId?: string; id?: string; title: string; description: string }, instructor = false): Promise<CourseSection> {
   if (action === "create") {
     const createInput = { courseId: input.courseId ?? "", title: input.title, description: input.description };
-    const result = await graphqlClient.request<
+    const result = await courseWorkspaceClient(instructor).request<
       { adminCreateCourseSection: { success: boolean; message: string; section: SectionRecord } },
       { input: typeof createInput }
     >(ADMIN_CREATE_SECTION_MUTATION, { input: createInput });
@@ -379,7 +382,7 @@ export async function saveSection(
     return mapSection(result.adminCreateCourseSection.section);
   }
   const updateInput = { id: input.id ?? "", title: input.title, description: input.description };
-  const result = await graphqlClient.request<
+  const result = await courseWorkspaceClient(instructor).request<
     { adminUpdateCourseSection: { success: boolean; message: string; section: SectionRecord } },
     { input: typeof updateInput }
   >(ADMIN_UPDATE_SECTION_MUTATION, { input: updateInput });
@@ -387,17 +390,17 @@ export async function saveSection(
   return mapSection(result.adminUpdateCourseSection.section);
 }
 
-export async function deleteSection(id: string) {
-  const result = await graphqlClient.request<{ adminDeleteCourseSection: MutationResponse }, { id: string }>(
+export async function deleteSection(id: string, instructor = false) {
+  const result = await courseWorkspaceClient(instructor).request<{ adminDeleteCourseSection: MutationResponse }, { id: string }>(
     ADMIN_DELETE_SECTION_MUTATION,
     { id },
   );
   assertSuccess(result.adminDeleteCourseSection);
 }
 
-export async function reorderSections(courseId: string, orderedSectionIds: string[]) {
+export async function reorderSections(courseId: string, orderedSectionIds: string[], instructor = false) {
   const input = { courseId, orderedSectionIds };
-  const result = await graphqlClient.request<{ adminReorderCourseSections: MutationResponse }, { input: typeof input }>(
+  const result = await courseWorkspaceClient(instructor).request<{ adminReorderCourseSections: MutationResponse }, { input: typeof input }>(
     ADMIN_REORDER_SECTIONS_MUTATION,
     { input },
   );
@@ -420,11 +423,10 @@ export async function saveLesson(
     isPreview: boolean;
     videoQualities?: CourseLesson["videoQualities"];
     resources?: { id?: string; title: string; type: "LINK" | "PDF" | "FILE" | "DOCUMENT"; url: string; mediaAssetId?: string | null }[];
-  },
-): Promise<CourseLesson> {
+  }, instructor = false): Promise<CourseLesson> {
   if (input.resources) {
     const { id, sectionId, title, description, type, content, videoUrl, documentUrl, durationSeconds, isPreview, mediaAssetId, resources, videoQualities } = input;
-    const saved = await graphqlClient.request<{ adminSaveCourseLesson: { success: boolean; message: string; lesson: LessonRecord } }>(
+    const saved = await courseWorkspaceClient(instructor).request<{ adminSaveCourseLesson: { success: boolean; message: string; lesson: LessonRecord } }>(
       ADMIN_SAVE_LESSON_MUTATION, { input: { id, sectionId, title, description, type, content, videoUrl, documentUrl, durationSeconds, isPreview, mediaAssetId, resources, videoQualities } },
     );
     assertSuccess(saved.adminSaveCourseLesson);
@@ -442,7 +444,7 @@ export async function saveLesson(
       durationSeconds: input.durationSeconds,
       isPreview: input.isPreview,
     };
-    const result = await graphqlClient.request<
+    const result = await courseWorkspaceClient(instructor).request<
       { adminCreateCourseLesson: { success: boolean; message: string; lesson: LessonRecord } },
       { input: typeof createInput }
     >(ADMIN_CREATE_LESSON_MUTATION, { input: createInput });
@@ -460,7 +462,7 @@ export async function saveLesson(
     durationSeconds: input.durationSeconds,
     isPreview: input.isPreview,
   };
-  const result = await graphqlClient.request<
+  const result = await courseWorkspaceClient(instructor).request<
     { adminUpdateCourseLesson: { success: boolean; message: string; lesson: LessonRecord } },
     { input: typeof updateInput }
   >(ADMIN_UPDATE_LESSON_MUTATION, { input: updateInput });
@@ -468,26 +470,26 @@ export async function saveLesson(
   return mapLesson({ ...result.adminUpdateCourseLesson.lesson, resources: [] });
 }
 
-export async function deleteLesson(id: string) {
-  const result = await graphqlClient.request<{ adminDeleteCourseLesson: MutationResponse }, { id: string }>(
+export async function deleteLesson(id: string, instructor = false) {
+  const result = await courseWorkspaceClient(instructor).request<{ adminDeleteCourseLesson: MutationResponse }, { id: string }>(
     ADMIN_DELETE_LESSON_MUTATION,
     { id },
   );
   assertSuccess(result.adminDeleteCourseLesson);
 }
 
-export async function reorderLessons(sectionId: string, orderedLessonIds: string[]) {
+export async function reorderLessons(sectionId: string, orderedLessonIds: string[], instructor = false) {
   const input = { sectionId, orderedLessonIds };
-  const result = await graphqlClient.request<{ adminReorderCourseLessons: MutationResponse }, { input: typeof input }>(
+  const result = await courseWorkspaceClient(instructor).request<{ adminReorderCourseLessons: MutationResponse }, { input: typeof input }>(
     ADMIN_REORDER_LESSONS_MUTATION,
     { input },
   );
   assertSuccess(result.adminReorderCourseLessons);
 }
 
-export async function moveLesson(lessonId: string, destinationSectionId: string) {
+export async function moveLesson(lessonId: string, destinationSectionId: string, instructor = false) {
   const input = { lessonId, destinationSectionId };
-  const result = await graphqlClient.request<{ adminMoveCourseLesson: MutationResponse }, { input: typeof input }>(
+  const result = await courseWorkspaceClient(instructor).request<{ adminMoveCourseLesson: MutationResponse }, { input: typeof input }>(
     ADMIN_MOVE_LESSON_MUTATION,
     { input },
   );
@@ -496,8 +498,7 @@ export async function moveLesson(lessonId: string, destinationSectionId: string)
 
 export async function saveLessonResource(
   action: "create" | "update",
-  input: { id?: string; lessonId?: string; title: string; type: "LINK" | "PDF" | "DOCUMENT" | "FILE"; url: string; mediaAssetId?: string | null; fileName?: string; fileSize?: number },
-) {
+  input: { id?: string; lessonId?: string; title: string; type: "LINK" | "PDF" | "DOCUMENT" | "FILE"; url: string; mediaAssetId?: string | null; fileName?: string; fileSize?: number }, instructor = false) {
   if (action === "create") {
     const createInput = {
       lessonId: input.lessonId ?? "",
@@ -508,7 +509,7 @@ export async function saveLessonResource(
       fileSize: input.fileSize,
       mediaAssetId: input.mediaAssetId || undefined,
     };
-    const result = await graphqlClient.request<
+    const result = await courseWorkspaceClient(instructor).request<
       { adminCreateLessonResource: { success: boolean; message: string; resource: LessonResourceRecord } },
       { input: typeof createInput }
     >(ADMIN_CREATE_RESOURCE_MUTATION, { input: createInput });
@@ -516,7 +517,7 @@ export async function saveLessonResource(
     return result.adminCreateLessonResource.resource;
   }
   const updateInput = { id: input.id ?? "", title: input.title, type: input.type, url: input.url, mediaAssetId: input.mediaAssetId || undefined };
-  const result = await graphqlClient.request<
+  const result = await courseWorkspaceClient(instructor).request<
     { adminUpdateLessonResource: { success: boolean; message: string; resource: LessonResourceRecord } },
     { input: typeof updateInput }
   >(ADMIN_UPDATE_RESOURCE_MUTATION, { input: updateInput });
@@ -524,17 +525,17 @@ export async function saveLessonResource(
   return result.adminUpdateLessonResource.resource;
 }
 
-export async function deleteLessonResource(id: string) {
-  const result = await graphqlClient.request<{ adminDeleteLessonResource: MutationResponse }, { id: string }>(
+export async function deleteLessonResource(id: string, instructor = false) {
+  const result = await courseWorkspaceClient(instructor).request<{ adminDeleteLessonResource: MutationResponse }, { id: string }>(
     ADMIN_DELETE_RESOURCE_MUTATION,
     { id },
   );
   assertSuccess(result.adminDeleteLessonResource);
 }
 
-export async function reorderLessonResources(lessonId: string, orderedResourceIds: string[]) {
+export async function reorderLessonResources(lessonId: string, orderedResourceIds: string[], instructor = false) {
   const input = { lessonId, orderedResourceIds };
-  const result = await graphqlClient.request<{ adminReorderLessonResources: MutationResponse }, { input: typeof input }>(
+  const result = await courseWorkspaceClient(instructor).request<{ adminReorderLessonResources: MutationResponse }, { input: typeof input }>(
     ADMIN_REORDER_RESOURCES_MUTATION,
     { input },
   );

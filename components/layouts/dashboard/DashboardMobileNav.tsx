@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, GraduationCap, UserRound } from "lucide-react";
+import { ArrowUpRight, GraduationCap } from "lucide-react";
+import AdminUserAvatar from "@/components/layouts/admin/shared/AdminUserAvatar";
 import { usePathname } from "next/navigation";
 
 import {
@@ -21,7 +21,6 @@ import type {
 } from "@/features/dashboard/types/dashboard.types";
 import {
   formatNotificationCount,
-  getUserInitials,
   isActiveRoute,
 } from "@/features/dashboard/utils/dashboard.utils";
 import { useAuthStore } from "@/features/auth/store/auth.store";
@@ -40,7 +39,7 @@ function MobileNavigationItem({
 }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
-  const isActive = isActiveRoute(pathname, item.href, item.activePaths);
+  const isActive = isActiveRoute(pathname, item.href, item.activePaths, item.excludedPaths);
   const isImplemented = item.implemented !== false;
   const Icon = item.icon;
   const content = (
@@ -137,22 +136,7 @@ export default function DashboardMobileNav({
       ) : isAuthenticated && user ? (
         <div className="shrink-0 border-b border-brand-border px-5 py-4">
           <div className="flex items-center gap-3">
-            <span className="relative flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/15 bg-primary/10 text-sm font-semibold tracking-wide text-primary">
-              {user.avatar ? (
-                <Image
-                  src={user.avatar}
-                  unoptimized
-                  alt={user.name}
-                  fill
-                  sizes="44px"
-                  className="object-cover"
-                />
-              ) : (
-                getUserInitials(user.name) || (
-                  <UserRound size={21} strokeWidth={1.8} />
-                )
-              )}
-            </span>
+            <AdminUserAvatar name={user.name} avatar={user.avatar} className="size-11 text-sm tracking-wide" />
 
             <div className="min-w-0 flex-1">
               <p

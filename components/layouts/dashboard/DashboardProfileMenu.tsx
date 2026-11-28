@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+import AdminUserAvatar from "@/components/layouts/admin/shared/AdminUserAvatar";
 import AvatarDialog from "@/features/storage/AvatarDialog";
 import Link from "next/link";
 import {
@@ -19,7 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { DashboardProfileMenuProps } from "@/features/dashboard/types/dashboard.types";
-import { getUserInitials } from "@/features/dashboard/utils/dashboard.utils";
+
+const menuItemClass = "min-h-10 gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors duration-200 [&_svg]:size-[17px] [&_svg]:shrink-0";
 
 export default function DashboardProfileMenu({
   user,
@@ -29,7 +30,6 @@ export default function DashboardProfileMenu({
 }: DashboardProfileMenuProps) {
   const [avatarOpen, setAvatarOpen] = useState(false);
   const name = user.name.trim() || user.role.toLowerCase();
-  const initials = getUserInitials(name);
 
   const handleLogout = () => {
     if (!isLoggingOut) {
@@ -51,28 +51,15 @@ export default function DashboardProfileMenu({
           />
         }
       >
-        <span className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/15 bg-primary/10 text-xs font-semibold text-primary">
-          {isLoggingOut ? (
+        {isLoggingOut ? (
+          <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full border border-primary/15 bg-primary/10 text-primary">
             <LoaderCircle
               size={19}
               strokeWidth={1.8}
               className="animate-spin motion-reduce:animate-none"
             />
-          ) : user.avatar ? (
-            <Image
-              src={user.avatar}
-              unoptimized
-              alt={name}
-              fill
-              sizes="36px"
-              className="object-cover"
-            />
-          ) : initials ? (
-            initials
-          ) : (
-            <UserRound size={19} strokeWidth={1.8} />
-          )}
-        </span>
+          </span>
+        ) : <AdminUserAvatar name={name} avatar={user.avatar} className="size-9" />}
 
         <span className="hidden max-w-28 text-left 2xl:block">
           <span
@@ -95,9 +82,11 @@ export default function DashboardProfileMenu({
       <DropdownMenuContent
         align="end"
         sideOffset={12}
-        className="w-64 rounded-xl border-brand-border bg-card p-1.5 shadow-lg"
+        className="w-64 max-w-[calc(100dvw-1.5rem)] rounded-xl border-brand-border bg-card p-1.5 shadow-lg"
       >
-        <div className="space-y-1 px-3 py-3">
+        <div className="flex min-w-0 items-start gap-2.5 px-3 py-2.5">
+          <AdminUserAvatar name={name} avatar={user.avatar} />
+          <div className="min-w-0 flex-1 space-y-1">
           <p
             title={name}
             className="truncate text-sm font-semibold text-brand-text"
@@ -113,12 +102,13 @@ export default function DashboardProfileMenu({
           <span className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-[10px] font-medium capitalize text-primary">
             {user.role.toLowerCase()} account
           </span>
+          </div>
         </div>
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem disabled={isLoggingOut} onClick={() => setAvatarOpen(true)}>
-          <UserRound aria-hidden="true" /> Edit profile photo
+        <DropdownMenuItem className={menuItemClass} disabled={isLoggingOut} onClick={() => setAvatarOpen(true)}>
+          <UserRound strokeWidth={1.7} className="text-brand-text-muted" aria-hidden="true" /> <span className="min-w-0 truncate">Edit profile photo</span>
         </DropdownMenuItem>
 
         {accountNavigation.map((item) => {
@@ -131,14 +121,15 @@ export default function DashboardProfileMenu({
               render={
                 isImplemented ? <Link href={item.href} /> : undefined
               }
-              className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-brand-text transition-colors duration-200"
+              className={menuItemClass}
             >
               <item.icon
                 size={17}
                 strokeWidth={1.7}
                 className="text-brand-text-muted"
+                aria-hidden="true"
               />
-              <span>{item.label}</span>
+              <span className="min-w-0 truncate">{item.label}</span>
               {!isImplemented && (
                 <span className="ml-auto text-[10px] text-brand-text-muted">
                   Planned
@@ -154,7 +145,7 @@ export default function DashboardProfileMenu({
           disabled={isLoggingOut}
           onClick={handleLogout}
           variant="destructive"
-          className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive transition-colors duration-200 data-highlighted:bg-destructive/10 data-highlighted:text-destructive [&_svg]:text-destructive data-disabled:cursor-not-allowed data-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60"
+          className={`${menuItemClass} font-medium text-destructive data-highlighted:bg-destructive/10 data-highlighted:text-destructive [&_svg]:text-destructive data-disabled:cursor-not-allowed data-disabled:opacity-60 disabled:cursor-not-allowed disabled:opacity-60`}
         >
           {isLoggingOut ? (
             <LoaderCircle
