@@ -1,4 +1,4 @@
-import { graphqlClient } from "@/lib/graphql/client";
+import { graphqlClient, sessionTransport } from "@/lib/graphql/client";
 
 import {
     REGISTER_MUTATION,
@@ -36,35 +36,31 @@ export async function registerUser(
 }
 
 // Login user
-export async function loginUser(
-    input: LoginInput,
-): Promise<AuthResponse> {
-    const response = await graphqlClient.request<
-        LoginResponse,
-        LoginVariables
-    >(LOGIN_MUTATION, {
-        input,
+export function loginUser(input: LoginInput) {
+    return sessionTransport.runIdentityAction("login", async () => {
+        const response = await graphqlClient.request<LoginResponse, LoginVariables>({
+            document: LOGIN_MUTATION,
+            variables: { input },
+            signal: AbortSignal.timeout(15_000),
+        });
+        return response.login;
     });
-
-    return response.login;
 }
 
 // Get currently authenticated user
-export async function getMe(): Promise<User> {
-    const response = await graphqlClient.request<MeResponse>(
-        ME_QUERY,
-    );
+export async function getMe(signal?: AbortSignal): Promise<User> {
+    const response = await graphqlClient.request<MeResponse>({ document: ME_QUERY, signal });
 
     return response.me;
 }
 
-export async function logoutUser(): Promise<
-    LogoutResponse["logout"]
-> {
-    const response =
-        await graphqlClient.request<LogoutResponse>(
-            LOGOUT_MUTATION,
-        );
-
-    return response.logout;
+export function logoutUser() {
+    return sessionTransport.runIdentityAction("logout", async () => {
+        const { logout } = await graphqlClient.request<LogoutResponse>({
+            document: LOGOUT_MUTATION,
+            signal: AbortSignal.timeout(15_000),
+        });
+        if (!logout.success) throw new Error(logout.message);
+        return logout;
+    });
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-
-
-import { isAuthenticationError } from "@/lib/graphql/error";
+import { useQueryClient } from "@tanstack/react-query";
+import { sessionTransport } from "@/lib/graphql/client";
 import { useAuthStore } from "@/features/auth/store/auth.store";
+import { authKeys } from "@/features/auth/constants/auth.keys";
 import { useMe } from "@/features/auth/hooks/use-me";
 
 interface AuthProviderProps {
@@ -14,47 +14,51 @@ interface AuthProviderProps {
 export default function AuthProvider({
     children,
 }: AuthProviderProps) {
-    const setUser = useAuthStore(
-        (state) => state.setUser,
-    );
-
-    const clearAuth = useAuthStore(
-        (state) => state.clearAuth,
-    );
-
-    const {
-        data: user,
-        isSuccess,
-        isError,
-        error,
-        refetch,
-    } = useMe();
+    const queryClient = useQueryClient();
+    const isInitialized = useAuthStore((state) => state.isInitialized);
+    const { isError, refetch } = useMe();
 
     useEffect(() => {
-        // Valid authentication session
-        if (isSuccess && user) {
-            setUser(user);
-            return;
-        }
+        const unsubscribe = sessionTransport.subscribe((event) => {
+            const auth = useAuthStore.getState();
+            if (event === "refresh-start" || event === "refresh-end") {
+                auth.setRefreshing(event === "refresh-start");
+                return;
+            }
 
-        // Invalid or expired authentication session
-        if (
-            isError &&
-            isAuthenticationError(error)
-        ) {
-            clearAuth();
-        }
-    }, [
-        user,
-        isSuccess,
-        isError,
-        error,
-        setUser,
-        clearAuth,
-    ]);
+            const identity = sessionTransport.identity();
+            if (event === "signed-out") auth.clearAuth();
+            else auth.initialize();
+            void queryClient.cancelQueries().then(() => {
+                if (sessionTransport.identity() !== identity) return;
+                queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== authKeys.me()[0] });
+                queryClient.setQueryData(authKeys.me(), null);
+                if (event === "identity-changed") void refetch();
+            });
+        });
+        const activity = () => {
+            if (document.visibilityState === "visible" && useAuthStore.getState().isAuthenticated) {
+                sessionTransport.activity();
+            }
+        };
+        window.addEventListener("storage", sessionTransport.onStorage);
+        window.addEventListener("focus", activity);
+        window.addEventListener("online", activity);
+        window.addEventListener("pointerdown", activity, { passive: true });
+        window.addEventListener("keydown", activity);
+        document.addEventListener("visibilitychange", activity);
+        return () => {
+            unsubscribe();
+            window.removeEventListener("storage", sessionTransport.onStorage);
+            window.removeEventListener("focus", activity);
+            window.removeEventListener("online", activity);
+            window.removeEventListener("pointerdown", activity);
+            window.removeEventListener("keydown", activity);
+            document.removeEventListener("visibilitychange", activity);
+        };
+    }, [queryClient, refetch]);
 
-    // Temporary network or server error
-    if (isError && !isAuthenticationError(error)) {
+    if (isError && !isInitialized) {
         return (
             <div
                 role="alert"

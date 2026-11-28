@@ -9,6 +9,8 @@ import {
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import AccessibilityProvider from "@/components/accessibility/AccessibilityProvider";
+import { isAuthenticationError } from "@/lib/graphql/error";
+import { SessionRefreshUnavailableError } from "@/lib/graphql/session-transport";
 
 interface ProvidersProps {
   children: ReactNode;
@@ -21,7 +23,8 @@ export default function Providers({ children }: ProvidersProps) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000,
-            retry: 1,
+            retry: (failureCount, error) => failureCount < 1 &&
+              !isAuthenticationError(error) && !(error instanceof SessionRefreshUnavailableError),
             refetchOnWindowFocus: false,
           },
           mutations: {

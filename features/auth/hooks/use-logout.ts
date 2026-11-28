@@ -13,6 +13,7 @@ import { authKeys } from "../constants/auth.keys";
 import { useAuthStore } from "../store/auth.store";
 
 import { getGraphQLErrorMessage } from "@/lib/graphql/error";
+import { sessionTransport } from "@/lib/graphql/client";
 
 export function useLogout() {
     const router = useRouter();
@@ -25,22 +26,15 @@ export function useLogout() {
     return useMutation({
         mutationKey: ["auth", "logout"],
 
-        mutationFn: async () => {
-            const response = await logoutUser();
-
-            if (!response.success) {
-                throw new Error(response.message);
-            }
-
-            return response;
-        },
+        mutationFn: logoutUser,
 
         retry: false,
 
-        onSuccess: async (response) => {
+        onSuccess: async ({ result, identity }) => {
             // Cancel pending queries to prevent stale
             // authenticated data from being restored.
             await queryClient.cancelQueries();
+            if (sessionTransport.identity() !== identity) return;
 
             // Replace the cached authenticated user.
             queryClient.setQueryData(
@@ -55,7 +49,7 @@ export function useLogout() {
             queryClient.clear();
 
             // Display success notification.
-            toast.success(response.message);
+            toast.success(result.message);
 
             // Redirect to login.
             router.replace("/login");

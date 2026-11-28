@@ -11,7 +11,9 @@ interface AuthState {
 
     isLoading: boolean;
 
-    setLoading: (isLoading: boolean) => void;
+    isRefreshing: boolean;
+    setRefreshing: (isRefreshing: boolean) => void;
+    initialize: () => void;
 
     setUser: (user: User) => void;
 
@@ -27,12 +29,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     isInitialized: false,
 
     isLoading: true,
+    isRefreshing: false,
 
-    // Update authentication loading state
-    setLoading: (isLoading) =>
-        set({
-            isLoading,
-        }),
+    setRefreshing: (isRefreshing) => set({ isRefreshing }),
+
+    initialize: () => set({ user: null, isAuthenticated: false, isInitialized: false, isLoading: true }),
 
     // Set authenticated user
     setUser: (user) =>
@@ -50,5 +51,6 @@ export const useAuthStore = create<AuthState>((set) => ({
             isAuthenticated: false,
             isInitialized: true,
             isLoading: false,
+            isRefreshing: false,
         }),
 }));

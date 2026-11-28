@@ -9,6 +9,8 @@ import { loginUser } from "../api/auth.api";
 import { authKeys } from "../constants/auth.keys";
 import { useAuthStore } from "../store/auth.store";
 import { commerceKeys } from "@/features/commerce/commerce-cache";
+import { sessionTransport } from "@/lib/graphql/client";
+import type { LoginInput } from "../types/auth.types";
 
 export function useLogin() {
     const queryClient = useQueryClient();
@@ -20,30 +22,28 @@ export function useLogin() {
     return useMutation({
         mutationKey: ["auth", "login"],
 
-        mutationFn: loginUser,
+        mutationFn: async (input: LoginInput) => {
+            const { result, identity } = await loginUser(input);
 
-        retry: false,
-
-        gcTime: 0,
-
-        onSuccess: async (response) => {
-            // Cancel any previous me request
             await queryClient.cancelQueries({
                 queryKey: authKeys.me(),
             });
+            if (sessionTransport.identity() !== identity) throw new Error("The session changed. Please try again.");
 
-            if (useAuthStore.getState().user?.id !== response.user.id) {
+            if (useAuthStore.getState().user?.id !== result.user.id) {
                 queryClient.removeQueries({ queryKey: commerceKeys.all });
             }
 
-            // Update TanStack Query cache
             queryClient.setQueryData(
                 authKeys.me(),
-                response.user,
+                result.user,
             );
 
-            // Update Zustand authentication state
-            setUser(response.user);
+            setUser(result.user);
+            return result;
         },
+
+        retry: false,
+        gcTime: 0,
     });
 }

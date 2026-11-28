@@ -32,13 +32,9 @@ export function getGraphQLErrorCode(
     return undefined;
 }
 
-export function isAuthenticationError(
-    error: unknown,
-): boolean {
-    const code = getGraphQLErrorCode(error);
-
-    return (
-        code === "UNAUTHENTICATED" ||
-        code === "FORBIDDEN"
-    );
+export function isAuthenticationError(error: unknown): boolean {
+    if (!(error instanceof ClientError)) return false;
+    const { errors, status } = error.response;
+    return status === 401 || status === 403 || errors?.some(({ extensions }) =>
+        extensions?.code === "UNAUTHENTICATED" || extensions?.code === "FORBIDDEN") === true;
 }
